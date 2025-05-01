@@ -15,11 +15,11 @@
         android:id="@+id/navigation_dashboard"
         android:name="com.gemahripah.banksampah.nasabah.ui.pengumuman.PengumumanFragment"
         android:label="@string/title_dashboard"
-        tools:layout="@layout/fragment_pengumuman_nasabah" />
+        tools:layout="@layout/fragment_pengumuman" />
 
     <fragment
         android:id="@+id/navigation_notifications"
         android:name="com.gemahripah.banksampah.nasabah.ui.profil.ProfilFragment"
         android:label="@string/title_notifications"
-        tools:layout="@layout/fragment_profil_nasabah" />
+        tools:layout="@layout/fragment_profil" />
 </navigation>

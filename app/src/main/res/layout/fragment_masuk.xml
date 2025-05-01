@@ -38,7 +38,7 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="30dp"
         android:hint="Masukkan Email"
-        android:inputType="date"
+        android:inputType="text"
         android:background="@drawable/et_border"
         android:padding="20dp"
         android:layout_marginTop="30dp"
@@ -53,7 +53,7 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="30dp"
         android:hint="Masukkan Password"
-        android:inputType="date"
+        android:inputType="text"
         android:background="@drawable/et_border"
         android:padding="20dp"
         android:layout_marginTop="20dp"
@@ -63,10 +63,10 @@
         />
 
     <Button
-        android:id="@+id/daftar"
+        android:id="@+id/masuk"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Daftar"
+        android:text="Masuk"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/password"

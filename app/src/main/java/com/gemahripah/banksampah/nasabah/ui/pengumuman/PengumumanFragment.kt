@@ -7,11 +7,11 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import com.gemahripah.banksampah.databinding.FragmentPengumumanNasabahBinding
+import com.gemahripah.banksampah.databinding.FragmentPengumumanBinding
 
 class PengumumanFragment : Fragment() {
 
-    private var _binding: FragmentPengumumanNasabahBinding? = null
+    private var _binding: FragmentPengumumanBinding? = null
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -25,7 +25,7 @@ class PengumumanFragment : Fragment() {
         val pengumumanViewModel =
             ViewModelProvider(this).get(PengumumanViewModel::class.java)
 
-        _binding = FragmentPengumumanNasabahBinding.inflate(inflater, container, false)
+        _binding = FragmentPengumumanBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
         return root

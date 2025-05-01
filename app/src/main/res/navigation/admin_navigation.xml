@@ -25,15 +25,14 @@
 
     <fragment
         android:id="@+id/navigation_pengumuman"
-        android:name="com.gemahripah.banksampah.admin.ui.pengguna.PenggunaFragment"
-        android:label="Pengumuman"
-        tools:layout="@layout/fragment_pengumuman_admin" />
+        android:name="com.gemahripah.banksampah.nasabah.ui.pengumuman.PengumumanFragment"
+        android:label="fragment_pengumuman_nasabah"
+        tools:layout="@layout/fragment_pengumuman" />
 
     <fragment
         android:id="@+id/navigation_pengaturan"
-        android:name="com.gemahripah.banksampah.admin.ui.pengaturan.PengaturanFragment"
-        android:label="Pengaturan"
-        tools:layout="@layout/fragment_pengaturan_admin" />
-
+        android:name="com.gemahripah.banksampah.nasabah.ui.profil.ProfilFragment"
+        android:label="fragment_profil"
+        tools:layout="@layout/fragment_profil" />
 
 </navigation>

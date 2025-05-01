@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/welcome_navigation"
+    app:startDestination="@id/landingFragment">
+
+    <fragment
+        android:id="@+id/landingFragment"
+        android:name="com.gemahripah.banksampah.welcome.LandingFragment"
+        android:label="fragment_landing"
+        tools:layout="@layout/fragment_landing" >
+        <action
+            android:id="@+id/action_landingFragment_to_daftarFragment"
+            app:destination="@id/daftarFragment" />
+        <action
+            android:id="@+id/action_landingFragment_to_masukFragment"
+            app:destination="@id/masukFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/daftarFragment"
+        android:name="com.gemahripah.banksampah.welcome.DaftarFragment"
+        android:label="fragment_daftar"
+        tools:layout="@layout/fragment_daftar" >
+        <action
+            android:id="@+id/action_daftarFragment_to_landingFragment"
+            app:destination="@id/landingFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/masukFragment"
+        android:name="com.gemahripah.banksampah.welcome.MasukFragment"
+        android:label="fragment_masuk"
+        tools:layout="@layout/fragment_masuk" >
+        <action
+            android:id="@+id/action_masukFragment_to_landingFragment"
+            app:destination="@id/landingFragment" />
+    </fragment>
+</navigation>
