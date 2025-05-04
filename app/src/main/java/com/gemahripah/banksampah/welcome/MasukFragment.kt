@@ -17,6 +17,7 @@ import com.gemahripah.banksampah.admin.AdminActivity
 import com.gemahripah.banksampah.data.datastore.SessionPreference
 import com.gemahripah.banksampah.data.remote.Pengguna
 import com.gemahripah.banksampah.data.remote.SessionData
+import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentMasukBinding
 import com.gemahripah.banksampah.nasabah.NasabahActivity
 import io.github.jan.supabase.auth.auth
@@ -64,19 +65,19 @@ class MasukFragment : Fragment() {
 
             lifecycleScope.launch {
                 try {
-                    MainActivity.supabase.auth.signInWith(Email) {
+                    SupabaseProvider.client.auth.signInWith(Email) {
                         this.email = email
                         this.password = password
                     }
 
-                    val session = MainActivity.supabase.auth.currentSessionOrNull()
+                    val session = SupabaseProvider.client.auth.currentSessionOrNull()
 
                     if (session != null) {
                         val userId = session.user?.id
                         val accessToken = session.accessToken
 
                         if (userId != null && accessToken != null) {
-                            val response = MainActivity.supabase.postgrest
+                            val response = SupabaseProvider.client.postgrest
                                 .from("pengguna")
                                 .select {
                                     filter {

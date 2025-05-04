@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context=".admin.ui.pengaturan.JenisSampahFragment">
+    tools:context=".admin.ui.pengaturan.jenis.JenisSampahFragment">
 
     <TextView
         android:id="@+id/judul"
@@ -38,18 +38,30 @@
         />
 
     <Button
-        android:id="@+id/tambah"
+        android:id="@+id/tambah_kategori"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Tambah"
-        android:textColor="@color/secondary"
-        android:backgroundTint="@android:color/transparent"
-        android:background="@drawable/border_biru"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/garis_judul"
         android:layout_marginTop="15dp"
-        android:layout_marginEnd="30dp"
-        />
+        android:background="@drawable/border_biru"
+        android:backgroundTint="@android:color/transparent"
+        android:text="Tambah Kategori"
+        android:textColor="@color/secondary"
+        app:layout_constraintEnd_toStartOf="@+id/tambah_jenis"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/back" />
+
+    <Button
+        android:id="@+id/tambah_jenis"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:background="@drawable/border_biru"
+        android:backgroundTint="@android:color/transparent"
+        android:text="Tambah Jenis Sampah"
+        android:textColor="@color/secondary"
+        app:layout_constraintStart_toEndOf="@+id/tambah_kategori"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/back" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_jenis_sampah"
@@ -57,8 +69,8 @@
         android:layout_height="wrap_content"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/back"
-        android:layout_marginTop="30dp"
+        app:layout_constraintTop_toBottomOf="@+id/tambah_kategori"
+        android:layout_marginTop="10dp"
         android:layout_marginHorizontal="30dp"
         />
 

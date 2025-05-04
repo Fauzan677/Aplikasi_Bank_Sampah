@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.admin.ui.pengaturan
+package com.gemahripah.banksampah.admin.ui.pengaturan.jenis
 
 import androidx.fragment.app.viewModels
 import android.os.Bundle
@@ -8,13 +8,13 @@ import android.view.View
 import android.view.ViewGroup
 import com.gemahripah.banksampah.R
 
-class JenisSampahFragment : Fragment() {
+class DetailJenisSampahFragment : Fragment() {
 
     companion object {
-        fun newInstance() = JenisSampahFragment()
+        fun newInstance() = DetailJenisSampahFragment()
     }
 
-    private val viewModel: JenisSampahViewModel by viewModels()
+    private val viewModel: DetailJenisSampahViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,6 +26,6 @@ class JenisSampahFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return inflater.inflate(R.layout.fragment_jenis_sampah, container, false)
+        return inflater.inflate(R.layout.fragment_detail_jenis_sampah, container, false)
     }
 }

@@ -5,14 +5,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.gemahripah.banksampah.MainActivity
+import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentProfilBinding
-import com.gemahripah.banksampah.nasabah.NasabahActivity
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.launch
@@ -33,10 +31,11 @@ class ProfilFragment : Fragment() {
             lifecycleScope.launch {
                 try {
                     // Log out the user
-                    MainActivity.supabase.auth.signOut()
+                    SupabaseProvider.client.auth.signOut()
 
-                    // After logging out, navigate to the login screen (MasukFragment)
+                    // Arahkan kembali ke halaman login (atau WelcomeActivity)
                     val intent = Intent(requireContext(), MainActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
 
                     Toast.makeText(requireContext(), "Logout berhasil", Toast.LENGTH_SHORT).show()

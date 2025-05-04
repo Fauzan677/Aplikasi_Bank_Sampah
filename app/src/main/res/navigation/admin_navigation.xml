@@ -25,14 +25,69 @@
 
     <fragment
         android:id="@+id/navigation_pengumuman"
-        android:name="com.gemahripah.banksampah.nasabah.ui.pengumuman.PengumumanFragment"
-        android:label="fragment_pengumuman_nasabah"
+        android:name="com.gemahripah.banksampah.admin.ui.pengumuman.PengumumanFragment"
+        android:label="pengumuman"
         tools:layout="@layout/fragment_pengumuman" />
 
     <fragment
         android:id="@+id/navigation_pengaturan"
-        android:name="com.gemahripah.banksampah.nasabah.ui.profil.ProfilFragment"
-        android:label="fragment_profil"
-        tools:layout="@layout/fragment_profil" />
+        android:name="com.gemahripah.banksampah.admin.ui.pengaturan.PengaturanFragment"
+        android:label="pengaturan"
+        tools:layout="@layout/fragment_profil" >
+        <action
+            android:id="@+id/action_navigation_pengaturan_to_jenisSampahFragment"
+            app:destination="@id/jenisSampahFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/jenisSampahFragment"
+        android:name="com.gemahripah.banksampah.admin.ui.pengaturan.jenis.JenisSampahFragment"
+        android:label="fragment_jenis_sampah"
+        tools:layout="@layout/fragment_jenis_sampah" >
+        <action
+            android:id="@+id/action_jenisSampahFragment_to_tambahKategoriFragment"
+            app:destination="@id/tambahKategoriFragment" />
+        <action
+            android:id="@+id/action_jenisSampahFragment_to_tambahJenisSampahFragment"
+            app:destination="@id/tambahJenisSampahFragment" />
+        <action
+            android:id="@+id/action_jenisSampahFragment_to_editJenisSampahFragment"
+            app:destination="@id/editJenisSampahFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/tambahKategoriFragment"
+        android:name="com.gemahripah.banksampah.admin.ui.pengaturan.jenis.tambah.TambahKategoriFragment"
+        android:label="fragment_tambah_kategori"
+        tools:layout="@layout/fragment_tambah_kategori" >
+        <action
+            android:id="@+id/action_tambahKategoriFragment_to_jenisSampahFragment"
+            app:destination="@id/jenisSampahFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/tambahJenisSampahFragment"
+        android:name="com.gemahripah.banksampah.admin.ui.pengaturan.jenis.tambah.TambahJenisSampahFragment"
+        android:label="tambah_jenis_sampah"
+        tools:layout="@layout/fragment_tambah_jenis_sampah" >
+        <action
+            android:id="@+id/action_tambahJenisSampahFragment_to_jenisSampahFragment"
+            app:destination="@id/jenisSampahFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/editJenisSampahFragment"
+        android:name="com.gemahripah.banksampah.admin.ui.pengaturan.jenis.edit.EditJenisSampahFragment"
+        android:label="EditJenisSampahFragment"
+        tools:layout="@layout/fragment_tambah_jenis_sampah">
+
+        <argument
+            android:name="kategoridanSampah"
+            app:argType="com.gemahripah.banksampah.data.model.sampah.KategoridanSampah" />
+
+        <action
+            android:id="@+id/action_editJenisSampahFragment_to_jenisSampahFragment"
+            app:destination="@id/jenisSampahFragment" />
+    </fragment>
 
 </navigation>

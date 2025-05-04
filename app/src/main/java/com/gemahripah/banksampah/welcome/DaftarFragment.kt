@@ -10,6 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.MainActivity
 import com.gemahripah.banksampah.R
+import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentDaftarBinding
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -54,12 +55,12 @@ class DaftarFragment : Fragment() {
             lifecycleScope.launch {
                 try {
                     // Sign up user ke Supabase Auth
-                    MainActivity.supabase.auth.signUpWith(Email) {
+                    SupabaseProvider.client.auth.signUpWith(Email) {
                         this.email = email
                         this.password = password
                     }
 
-                    val session = MainActivity.supabase.auth.currentSessionOrNull()
+                    val session = SupabaseProvider.client.auth.currentSessionOrNull()
                     val user = session?.user
 
                     if (user != null) {
@@ -68,7 +69,7 @@ class DaftarFragment : Fragment() {
 
                         // Masukkan data pengguna ke tabel "pengguna" di Supabase
                         try {
-                            MainActivity.supabase.from("pengguna").insert(
+                            SupabaseProvider.client.from("pengguna").insert(
                                 mapOf(
                                     "nama" to userName,
                                     "email" to userEmail
@@ -77,7 +78,7 @@ class DaftarFragment : Fragment() {
 
                             Toast.makeText(requireContext(), "Pendaftaran berhasil", Toast.LENGTH_SHORT).show()
 
-                            MainActivity.supabase.auth.signOut()
+                            SupabaseProvider.client.auth.signOut()
                             findNavController().navigate(R.id.action_daftarFragment_to_landingFragment)
 
                         } catch (e: Exception) {

@@ -4,11 +4,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".admin.ui.pengaturan.jenis.DetailJenisSampahFragment">
+    tools:context=".admin.ui.pengaturan.jenis.tambah.TambahKategoriFragment">
 
     <TextView
         android:id="@+id/judul"
-        android:text="Detail Jenis Sampah"
+        android:text="Tambah Kategori Sampah"
         style="@style/TextJudulHalaman"
         />
 
@@ -21,10 +21,9 @@
         />
 
     <TextView
-        android:id="@+id/sampah"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Kertas"
+        android:text="Masukkan Kategori!"
         android:fontFamily="@font/nunito_bold"
         android:textColor="@color/black"
         android:textSize="30sp"
@@ -36,42 +35,19 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="@font/nunito_semibold"
-        android:text="Jenis Sampah"
+        android:text="Kategori Sampah"
         android:textSize="20sp"
         android:textColor="@color/black"
         android:layout_marginStart="30dp"
-        android:layout_marginTop="30dp"
+        android:layout_marginTop="20dp"
         />
 
     <EditText
-        android:id="@+id/nama"
+        android:id="@+id/kategori"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="30dp"
-        android:hint="Masukkan Jenis Sampah"
-        android:inputType="text"
-        android:background="@drawable/et_border"
-        android:padding="20dp"
-        android:layout_marginTop="10dp"
-        />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/nunito_semibold"
-        android:text="Harga"
-        android:textSize="20sp"
-        android:textColor="@color/black"
-        android:layout_marginStart="30dp"
-        android:layout_marginTop="10dp"
-        />
-
-    <EditText
-        android:id="@+id/email"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="30dp"
-        android:hint="Masukkan Harga Sampah"
+        android:hint="Masukkan Kategori Sampah"
         android:inputType="text"
         android:background="@drawable/et_border"
         android:padding="20dp"
