@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/jenisSampahLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Jenis Sampah"
+        android:textColor="@color/black"
+        android:textSize="20sp"
+        android:fontFamily="@font/nunito_semibold"
+        android:layout_marginStart="30dp"
+        android:layout_marginTop="10dp" />
+
+    <AutoCompleteTextView
+        android:id="@+id/autoCompleteJenis"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="30dp"
+        android:hint="Pilih Jenis Sampah"
+        android:background="@drawable/et_border"
+        android:padding="20dp"
+        android:layout_marginTop="10dp"
+        android:dropDownHeight="wrap_content"
+        android:dropDownVerticalOffset="10dp"
+        android:inputType="none"
+        android:focusable="false"
+        android:clickable="true" />
+
+    <TextView
+        android:id="@+id/jumlahSetorLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Jumlah Setor (Kilogram)"
+        android:textColor="@color/black"
+        android:textSize="20sp"
+        android:fontFamily="@font/nunito_semibold"
+        android:layout_marginStart="30dp"
+        android:layout_marginTop="10dp" />
+
+    <EditText
+        android:id="@+id/editTextJumlah"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="30dp"
+        android:hint="Masukkan Jumlah Setor"
+        android:inputType="number"
+        android:background="@drawable/et_border"
+        android:padding="20dp"
+        android:layout_marginTop="10dp" />
+
+</LinearLayout>

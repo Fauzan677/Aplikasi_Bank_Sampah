@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.admin.ui.sampah
+package com.gemahripah.banksampah.admin.ui.sampah.tambah
 
 import androidx.lifecycle.ViewModel
 

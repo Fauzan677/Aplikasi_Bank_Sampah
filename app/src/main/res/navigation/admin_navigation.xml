@@ -15,7 +15,11 @@
         android:id="@+id/navigation_sampah"
         android:name="com.gemahripah.banksampah.admin.ui.sampah.SampahFragment"
         android:label="Sampah"
-        tools:layout="@layout/fragment_sampah_admin" />
+        tools:layout="@layout/fragment_sampah_admin" >
+        <action
+            android:id="@+id/action_navigation_sampah_to_setorSampahFragment"
+            app:destination="@id/setorSampahFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_pengguna"
@@ -53,6 +57,9 @@
         <action
             android:id="@+id/action_jenisSampahFragment_to_editJenisSampahFragment"
             app:destination="@id/editJenisSampahFragment" />
+        <action
+            android:id="@+id/action_jenisSampahFragment_to_navigation_pengaturan"
+            app:destination="@id/navigation_pengaturan" />
     </fragment>
 
     <fragment
@@ -88,6 +95,15 @@
         <action
             android:id="@+id/action_editJenisSampahFragment_to_jenisSampahFragment"
             app:destination="@id/jenisSampahFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/setorSampahFragment"
+        android:name="com.gemahripah.banksampah.admin.ui.sampah.tambah.SetorSampahFragment"
+        android:label="fragment_setor_sampah"
+        tools:layout="@layout/fragment_setor_sampah" >
+        <action
+            android:id="@+id/action_setorSampahFragment_to_navigation_sampah"
+            app:destination="@id/navigation_sampah" />
     </fragment>
 
 </navigation>

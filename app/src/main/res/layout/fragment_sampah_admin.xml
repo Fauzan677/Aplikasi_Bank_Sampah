@@ -71,7 +71,7 @@
         />
 
     <Button
-        android:id="@+id/penarikan"
+        android:id="@+id/setor"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Setor Sampah"
@@ -86,7 +86,7 @@
         android:id="@+id/transaksi_masuk"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/penarikan"
+        app:layout_constraintTop_toBottomOf="@id/setor"
         android:text="Transaksi Masuk"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/transaksi_keluar"
@@ -97,7 +97,7 @@
         android:id="@+id/transaksi_keluar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/penarikan"
+        app:layout_constraintTop_toBottomOf="@id/setor"
         android:text="Transaksi Masuk"
         app:layout_constraintStart_toEndOf="@+id/transaksi_masuk"
         app:layout_constraintEnd_toEndOf="parent"

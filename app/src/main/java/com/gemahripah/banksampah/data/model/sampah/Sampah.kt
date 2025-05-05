@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 data class Sampah(
     val id: Long? = null,
     val created_at: String? = null,
-    val kategori: Long,
+    val kategori: Long? = null,
     val jenis: String,
     val satuan: String? = null,
     val harga: Int? = null,

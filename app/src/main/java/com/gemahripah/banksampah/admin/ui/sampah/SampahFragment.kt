@@ -7,6 +7,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.fragment.findNavController
+import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.databinding.FragmentSampahAdminBinding
 
 class SampahFragment : Fragment() {
@@ -27,6 +29,10 @@ class SampahFragment : Fragment() {
 
         _binding = FragmentSampahAdminBinding.inflate(inflater, container, false)
         val root: View = binding.root
+
+        binding.setor.setOnClickListener {
+            findNavController().navigate(R.id.action_navigation_sampah_to_setorSampahFragment)
+        }
 
         return root
     }
