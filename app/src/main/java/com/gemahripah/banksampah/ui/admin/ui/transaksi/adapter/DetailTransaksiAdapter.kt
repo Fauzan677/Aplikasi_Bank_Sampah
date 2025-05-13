@@ -1,33 +1,41 @@
 package com.gemahripah.banksampah.ui.admin.ui.transaksi.adapter
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.gemahripah.banksampah.data.model.transaksi.DetailTransaksi
 import com.gemahripah.banksampah.data.model.transaksi.DetailTransaksiItem
+import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
 import com.gemahripah.banksampah.databinding.ItemDetailTransaksiBinding
 
 class DetailTransaksiAdapter(
-    private val detailList: List<DetailTransaksiItem>
-) : RecyclerView.Adapter<DetailTransaksiAdapter.DetailViewHolder>() {
+    private val detailList: List<DetailTransaksiRelasi>
+) : RecyclerView.Adapter<DetailTransaksiAdapter.DetailTransaksiViewHolder>() {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DetailViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DetailTransaksiViewHolder {
         val binding = ItemDetailTransaksiBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return DetailViewHolder(binding)
+        return DetailTransaksiViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: DetailViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: DetailTransaksiViewHolder, position: Int) {
         val detail = detailList[position]
         holder.bind(detail)
     }
 
     override fun getItemCount(): Int = detailList.size
 
-    inner class DetailViewHolder(private val binding: ItemDetailTransaksiBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(detail: DetailTransaksiItem) {
-            // Mengisi jenis, berat, dan harga di TextView sesuai dengan data
-            binding.jenis.text = detail.jenis
-            binding.berat.text = detail.berat.toString()
-            binding.harga.text = detail.harga.toString()
+    class DetailTransaksiViewHolder(
+        private val binding: ItemDetailTransaksiBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
+
+        @SuppressLint("SetTextI18n")
+        fun bind(detail: DetailTransaksiRelasi) {
+            binding.berat.text = "${detail.dtlJumlah ?: 0.0} kg"
+            binding.jenis.text = detail.dtlSphId?.sphJenis ?: "-"
+            binding.harga.text = detail.dtlJumlah.toString()
         }
     }
 }
+
+
