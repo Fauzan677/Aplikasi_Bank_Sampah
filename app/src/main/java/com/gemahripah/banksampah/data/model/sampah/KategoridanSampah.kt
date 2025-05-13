@@ -6,7 +6,7 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class KategoridanSampah(
     val sampah: Sampah,
-    val namaKategori: String
+    val namaKategori: String?
 ) : Parcelable
 
 

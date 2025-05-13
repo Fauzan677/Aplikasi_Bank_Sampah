@@ -7,14 +7,9 @@
         android:title="Beranda" />
 
     <item
-        android:id="@+id/navigation_sampah"
+        android:id="@+id/navigation_transaksi"
         android:icon="@drawable/sampah"
-        android:title="Sampah" />
-
-    <item
-        android:id="@+id/navigation_pengguna"
-        android:icon="@drawable/profil"
-        android:title="Pengguna" />
+        android:title="Transaksi" />
 
     <item
         android:id="@+id/navigation_pengumuman"

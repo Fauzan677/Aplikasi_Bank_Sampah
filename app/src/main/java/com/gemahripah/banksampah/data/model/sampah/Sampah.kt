@@ -7,11 +7,11 @@ import kotlinx.serialization.Serializable
 @Parcelize
 @Serializable
 data class Sampah(
-    val id: Long? = null,
+    val sphId: Long? = null,
     val created_at: String? = null,
-    val kategori: Long? = null,
-    val jenis: String,
-    val satuan: String? = null,
-    val harga: Int? = null,
-    val keterangan: String? = null
+    val sphKtgId: Long? = null,
+    val sphJenis: String? = null,
+    val sphSatuan: String? = null,
+    val sphHarga: Double? = null,
+    val sphKeterangan: String? = null
 ) : Parcelable

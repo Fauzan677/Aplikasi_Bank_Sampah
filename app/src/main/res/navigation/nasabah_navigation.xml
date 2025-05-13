@@ -7,19 +7,19 @@
 
     <fragment
         android:id="@+id/navigation_home"
-        android:name="com.gemahripah.banksampah.nasabah.ui.beranda.BerandaFragment"
+        android:name="com.gemahripah.banksampah.ui.nasabah.ui.beranda.BerandaFragment"
         android:label="@string/title_home"
         tools:layout="@layout/fragment_beranda_nasabah" />
 
     <fragment
         android:id="@+id/navigation_dashboard"
-        android:name="com.gemahripah.banksampah.nasabah.ui.pengumuman.PengumumanFragment"
+        android:name="com.gemahripah.banksampah.ui.nasabah.ui.pengumuman.PengumumanFragment"
         android:label="@string/title_dashboard"
         tools:layout="@layout/fragment_pengumuman" />
 
     <fragment
         android:id="@+id/navigation_notifications"
-        android:name="com.gemahripah.banksampah.nasabah.ui.profil.ProfilFragment"
+        android:name="com.gemahripah.banksampah.ui.nasabah.ui.profil.ProfilFragment"
         android:label="@string/title_notifications"
         tools:layout="@layout/fragment_profil" />
 </navigation>

@@ -3,8 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context=".admin.ui.beranda.PenarikanSaldoFragment">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -26,28 +26,28 @@
             android:layout_marginTop="10dp"
             />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="@font/nunito_semibold"
-            android:text="Tanggal"
-            android:textSize="20sp"
-            android:textColor="@color/black"
-            android:layout_marginStart="30dp"
-            android:layout_marginTop="30dp"
-            />
-
-        <EditText
-            android:id="@+id/tanggal"
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
             android:layout_marginHorizontal="30dp"
-            android:hint="Masukkan Tanggal"
-            android:inputType="date"
-            android:background="@drawable/et_border"
-            android:padding="20dp"
-            android:layout_marginTop="10dp"
-            />
+            app:cardCornerRadius="10dp"
+            android:backgroundTint="@color/primary"
+            >
+
+                <TextView
+                    android:id="@+id/saldo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Saldo"
+                    android:textSize="25dp"
+                    android:fontFamily="@font/nunito_bold"
+                    android:textColor="@color/black"
+                    android:layout_gravity="center"
+                    android:layout_margin="10dp"
+                    />
+
+        </androidx.cardview.widget.CardView>
 
         <TextView
             android:layout_width="wrap_content"
@@ -57,19 +57,24 @@
             android:textSize="20sp"
             android:textColor="@color/black"
             android:layout_marginStart="30dp"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="20dp"
             />
 
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/nama"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="30dp"
             android:hint="Masukkan Nama Nasabah"
-            android:inputType="date"
             android:background="@drawable/et_border"
             android:padding="20dp"
             android:layout_marginTop="10dp"
+            android:dropDownHeight="wrap_content"
+            android:dropDownVerticalOffset="10dp"
+            android:inputType="text"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:clickable="true"
             />
 
         <TextView
@@ -84,12 +89,12 @@
             />
 
         <EditText
-            android:id="@+id/email"
+            android:id="@+id/jumlah"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="30dp"
             android:hint="Masukkan Jumlah Penarikan"
-            android:inputType="text"
+            android:inputType="numberDecimal"
             android:background="@drawable/et_border"
             android:padding="20dp"
             android:layout_marginTop="10dp"
@@ -136,12 +141,39 @@
 
         </FrameLayout>
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/nunito_semibold"
+            android:text="Keterangan"
+            android:textSize="20sp"
+            android:textColor="@color/black"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="10dp"
+            />
+
+        <EditText
+            android:id="@+id/keterangan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Masukkan Keterangan"
+            android:inputType="textMultiLine"
+            android:lines="5"
+            android:maxLines="20"
+            android:scrollbars="vertical"
+            android:padding="10dp"
+            android:background="@drawable/et_border"
+            android:gravity="top"
+            android:layout_marginHorizontal="30dp"
+            android:layout_marginTop="10dp"
+            />
+
         <Button
             android:id="@+id/konfirmasi"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Konfirmasi"
-            android:layout_marginTop="50dp"
+            android:layout_marginVertical="50dp"
             android:layout_marginHorizontal="30dp"
             />
 

@@ -48,6 +48,7 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:postgrest-kt:3.1.4")
     implementation("io.github.jan-tennert.supabase:auth-kt:3.1.4")
     implementation("io.github.jan-tennert.supabase:storage-kt:3.1.4")
+    implementation("io.github.jan-tennert.supabase:functions-kt:3.1.4")
 
     // Ktor (sesuai kebutuhan)
     implementation("io.ktor:ktor-client-android:3.1.2")
@@ -57,6 +58,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
     implementation("com.google.code.gson:gson:2.8.8")
+    implementation("androidx.exifinterface:exifinterface:1.4.1")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

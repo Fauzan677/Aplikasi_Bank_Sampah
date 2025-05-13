@@ -4,10 +4,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Pengguna(
-    val id: String,
-    val created_at: String?,
-    val nama: String?,
-    val email: String?,
-    val admin: Boolean
+    val pgnId: String? = null,
+    val created_at: String? = null,
+    val pgnNama: String? = null,
+    val pgnEmail: String? = null,
+    val pgnIsAdmin: Boolean? = null
 )
+
 

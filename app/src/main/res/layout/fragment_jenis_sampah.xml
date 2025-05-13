@@ -3,8 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context=".admin.ui.pengaturan.jenis.JenisSampahFragment">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <TextView
         android:id="@+id/judul"
@@ -65,12 +64,13 @@
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_jenis_sampah"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tambah_kategori"
-        android:layout_marginTop="10dp"
+        android:layout_marginVertical="10dp"
         android:layout_marginHorizontal="30dp"
         />
 

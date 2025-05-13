@@ -16,6 +16,7 @@
         >
 
         <TextView
+            android:id="@+id/jenis"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Jenis"
@@ -32,6 +33,7 @@
             />
 
         <TextView
+            android:id="@+id/berat"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Berat"
@@ -42,6 +44,7 @@
             />
 
         <TextView
+            android:id="@+id/harga"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Harga"
