@@ -11,6 +11,7 @@ data class RiwayatTransaksi(
     val nama: String,
     val tanggal: String,
     val tipe: String,
+    val tskKeterangan: String?,
     val totalBerat: Double?, // null jika tipe keluar
     val totalHarga: Double? // selalu tampil
 ) : Parcelable

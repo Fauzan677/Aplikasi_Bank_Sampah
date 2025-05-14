@@ -1,7 +1,9 @@
 package com.gemahripah.banksampah.data.model.transaksi
 
+import android.os.Parcelable
 import kotlinx.serialization.Serializable
 
+@kotlinx.parcelize.Parcelize
 @Serializable
 data class Transaksi(
     val tskId: Long? = null,
@@ -10,5 +12,5 @@ data class Transaksi(
     val tskGambar: String? = null,
     val tskKeterangan: String? = null,
     val tskTipe: String? = null
-)
+) : Parcelable
 

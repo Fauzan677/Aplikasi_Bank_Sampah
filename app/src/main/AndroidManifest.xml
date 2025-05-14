@@ -26,11 +26,10 @@
         <activity
             android:name=".ui.nasabah.NasabahActivity"
             android:exported="false"
-            android:label="@string/title_activity_nasabah"/>
-
+            android:label="@string/title_activity_nasabah" />
         <activity
             android:name=".ui.MainActivity"
-            android:exported="true" >
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -47,7 +46,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-
     </application>
 
 </manifest>

@@ -7,13 +7,13 @@
 
     <fragment
         android:id="@+id/navigation_beranda"
-        android:name="com.gemahripah.banksampah.ui.admin.ui.beranda.BerandaFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.beranda.BerandaFragment"
         android:label="Beranda"
         tools:layout="@layout/fragment_beranda_admin" />
 
     <fragment
         android:id="@+id/navigation_transaksi"
-        android:name="com.gemahripah.banksampah.ui.admin.ui.transaksi.TransaksiFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.transaksi.TransaksiFragment"
         android:label="Transaksi"
         tools:layout="@layout/fragment_transaksi" >
         <action
@@ -29,13 +29,13 @@
 
     <fragment
         android:id="@+id/navigation_pengumuman"
-        android:name="com.gemahripah.banksampah.ui.admin.ui.pengumuman.PengumumanFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengumuman.PengumumanFragment"
         android:label="pengumuman"
         tools:layout="@layout/fragment_pengumuman" />
 
     <fragment
         android:id="@+id/navigation_pengaturan"
-        android:name="com.gemahripah.banksampah.ui.admin.ui.pengaturan.PengaturanFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.PengaturanFragment"
         android:label="pengaturan"
         tools:layout="@layout/fragment_profil" >
         <action
@@ -45,7 +45,7 @@
 
     <fragment
         android:id="@+id/jenisSampahFragment"
-        android:name="com.gemahripah.banksampah.ui.admin.ui.pengaturan.jenis.JenisSampahFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.jenis.JenisSampahFragment"
         android:label="fragment_jenis_sampah"
         tools:layout="@layout/fragment_jenis_sampah" >
         <action
@@ -64,7 +64,7 @@
 
     <fragment
         android:id="@+id/tambahKategoriFragment"
-        android:name="com.gemahripah.banksampah.ui.admin.ui.pengaturan.jenis.tambah.TambahKategoriFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.jenis.tambah.TambahKategoriFragment"
         android:label="fragment_tambah_kategori"
         tools:layout="@layout/fragment_tambah_kategori" >
         <action
@@ -74,7 +74,7 @@
 
     <fragment
         android:id="@+id/tambahJenisSampahFragment"
-        android:name="com.gemahripah.banksampah.ui.admin.ui.pengaturan.jenis.tambah.TambahJenisSampahFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.jenis.tambah.TambahJenisSampahFragment"
         android:label="tambah_jenis_sampah"
         tools:layout="@layout/fragment_tambah_jenis_sampah" >
         <action
@@ -84,7 +84,7 @@
 
     <fragment
         android:id="@+id/editJenisSampahFragment"
-        android:name="com.gemahripah.banksampah.ui.admin.ui.pengaturan.jenis.edit.EditJenisSampahFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.jenis.edit.EditJenisSampahFragment"
         android:label="EditJenisSampahFragment"
         tools:layout="@layout/fragment_tambah_jenis_sampah">
 
@@ -98,17 +98,17 @@
     </fragment>
     <fragment
         android:id="@+id/setorSampahFragment"
-        android:name="com.gemahripah.banksampah.ui.admin.ui.transaksi.masuk.SetorSampahFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.transaksi.masuk.SetorSampahFragment"
         android:label="fragment_setor_sampah"
         tools:layout="@layout/fragment_setor_sampah" >
         <action
-            android:id="@+id/action_setorSampahFragment_to_navigation_sampah"
+            android:id="@+id/action_setorSampahFragment_to_navigation_transaksi"
             app:destination="@id/navigation_transaksi" />
     </fragment>
 
     <fragment
         android:id="@+id/penarikanSaldoFragment"
-        android:name="com.gemahripah.banksampah.ui.admin.ui.transaksi.keluar.PenarikanSaldoFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.transaksi.keluar.PenarikanSaldoFragment"
         android:label="PenarikanSaldo"
         tools:layout="@layout/fragment_penarikan_saldo">
         <action
@@ -117,14 +117,58 @@
     </fragment>
     <fragment
         android:id="@+id/detailTransaksiFragment"
-        android:name="com.gemahripah.banksampah.ui.admin.ui.transaksi.detail.DetailTransaksiFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.transaksi.detail.DetailTransaksiFragment"
         android:label="fragment_detail_transaksi"
         tools:layout="@layout/fragment_detail_transaksi">
 
         <argument
             android:name="riwayat"
             app:argType="com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi" />
+        <action
+            android:id="@+id/action_detailTransaksiFragment_to_editTransaksiMasukFragment"
+            app:destination="@id/editTransaksiMasukFragment" />
+        <action
+            android:id="@+id/action_detailTransaksiFragment_to_editTransaksiKeluarFragment"
+            app:destination="@id/editTransaksiKeluarFragment" />
 
+    </fragment>
+    <fragment
+        android:id="@+id/editTransaksiMasukFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.transaksi.masuk.edit.EditTransaksiMasukFragment"
+        android:label="EditTransaksiMasukFragment"
+        tools:layout="@layout/fragment_setor_sampah">
+
+        <argument
+            android:name="riwayat"
+            app:argType="com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi"
+            app:nullable="false" />
+
+        <argument
+            android:name="enrichedList"
+            app:argType="com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi[]" />
+        <action
+            android:id="@+id/action_editTransaksiMasukFragment_to_navigation_transaksi"
+            app:destination="@id/navigation_transaksi" />
+
+    </fragment>
+    <fragment
+        android:id="@+id/editTransaksiKeluarFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.transaksi.keluar.edit.EditTransaksiKeluarFragment"
+        android:label="fragment_edit_transaksi_keluar"
+        tools:layout="@layout/fragment_penarikan_saldo" >
+
+        <argument
+            android:name="riwayat"
+            app:argType="com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi"
+            app:nullable="false" />
+
+        <argument
+            android:name="enrichedList"
+            app:argType="com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi[]" />
+
+        <action
+            android:id="@+id/action_editTransaksiKeluarFragment_to_navigation_transaksi"
+            app:destination="@id/navigation_transaksi" />
     </fragment>
 
 </navigation>

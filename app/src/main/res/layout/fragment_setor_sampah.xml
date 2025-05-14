@@ -3,8 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context=".ui.admin.ui.transaksi.masuk.SetorSampahFragment">
+    android:orientation="vertical">
 
     <LinearLayout
         android:id="@+id/container_input"
@@ -15,7 +14,7 @@
 
         <TextView
             android:id="@+id/judul"
-            android:text="Setor Sampah"
+            android:text="Menabung Sampah"
             style="@style/TextJudulHalaman"
             />
 
