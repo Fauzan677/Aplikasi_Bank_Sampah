@@ -72,8 +72,60 @@ class DetailTransaksiFragment : Fragment() {
             }
         }
 
+        binding.hapus.setOnClickListener {
+            showDeleteConfirmationDialog()
+        }
 
         return binding.root
+    }
+
+    private fun showDeleteConfirmationDialog() {
+        val builder = android.app.AlertDialog.Builder(requireContext())
+        builder.setTitle("Hapus Transaksi")
+        builder.setMessage("Apakah Anda yakin ingin menghapus transaksi ini? Semua data terkait akan hilang.")
+
+        builder.setPositiveButton("Hapus") { _, _ ->
+            deleteTransaksi()
+        }
+
+        builder.setNegativeButton("Batal", null)
+        builder.show()
+    }
+
+    private fun deleteTransaksi() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val tskId = args.riwayat.tskId
+
+            try {
+                SupabaseProvider.client
+                    .from("detail_transaksi")
+                    .delete {
+                        filter {
+                            eq("dtlTskId", tskId)
+                        }
+                    }
+
+                // Hapus transaksi utama
+                SupabaseProvider.client
+                    .from("transaksi")
+                    .delete {
+                        filter {
+                            eq("tskId", tskId)
+                        }
+                    }
+
+                withContext(Dispatchers.Main) {
+                    // Navigasi kembali setelah penghapusan
+                    findNavController().popBackStack()
+                }
+
+            } catch (e: Exception) {
+                Log.e("DetailTransaksi", "Gagal hapus data: ${e.message}", e)
+                withContext(Dispatchers.Main) {
+                    android.widget.Toast.makeText(requireContext(), "Gagal menghapus transaksi", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     private fun getDetailTransaksi(idTransaksi: Long) {
