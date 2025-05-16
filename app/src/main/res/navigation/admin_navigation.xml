@@ -35,7 +35,11 @@
         android:id="@+id/navigation_pengumuman"
         android:name="com.gemahripah.banksampah.ui.admin.pengumuman.PengumumanFragment"
         android:label="pengumuman"
-        tools:layout="@layout/fragment_pengumuman" />
+        tools:layout="@layout/fragment_pengumuman" >
+        <action
+            android:id="@+id/action_navigation_pengumuman_to_tambahPengumumanFragment"
+            app:destination="@id/tambahPengumumanFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_pengaturan"
@@ -269,5 +273,11 @@
             app:nullable="false" />
 
     </fragment>
+    <fragment
+        android:id="@+id/tambahPengumumanFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengumuman.TambahPengumumanFragment"
+        android:label="TambahPengumumanFragment"
+        tools:layout="@layout/fragment_tambah_pengumuman"
+        />
 
 </navigation>

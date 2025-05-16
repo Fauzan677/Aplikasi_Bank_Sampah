@@ -1,5 +1,8 @@
 package com.gemahripah.banksampah.data.model.pengumuman
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Pengumuman(
     val pmnId: Long? = null,
     val created_at: String? = null,

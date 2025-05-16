@@ -46,14 +46,26 @@
         app:layout_constraintEnd_toEndOf="parent"
         />
 
+    <Button
+        android:id="@+id/tambah"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Tambah"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/terbaru"
+        android:layout_marginHorizontal="50dp"
+        android:layout_marginTop="20dp"
+        />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_pengumuman"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="20dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/terbaru"
+        app:layout_constraintTop_toBottomOf="@id/tambah"
         />
 
 
