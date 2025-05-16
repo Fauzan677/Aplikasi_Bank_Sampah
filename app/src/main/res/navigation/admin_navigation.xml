@@ -9,7 +9,11 @@
         android:id="@+id/navigation_beranda"
         android:name="com.gemahripah.banksampah.ui.admin.beranda.BerandaFragment"
         android:label="Beranda"
-        tools:layout="@layout/fragment_beranda_admin" />
+        tools:layout="@layout/fragment_beranda_admin" >
+        <action
+            android:id="@+id/action_navigation_beranda_to_detailPenggunaFragment"
+            app:destination="@id/detailPenggunaFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_transaksi"
@@ -41,6 +45,13 @@
         <action
             android:id="@+id/action_navigation_pengaturan_to_jenisSampahFragment"
             app:destination="@id/jenisSampahFragment" />
+        <action
+            android:id="@+id/action_navigation_pengaturan_to_penggunaFragment"
+            app:destination="@id/penggunaFragment" />
+        <action
+            android:id="@+id/action_navigation_pengaturan_to_editProfilFragment"
+            app:destination="@id/editProfilFragment" />
+
     </fragment>
 
     <fragment
@@ -104,6 +115,11 @@
         <action
             android:id="@+id/action_setorSampahFragment_to_navigation_transaksi"
             app:destination="@id/navigation_transaksi" />
+
+        <argument
+            android:name="pengguna"
+            app:argType="com.gemahripah.banksampah.data.model.pengguna.Pengguna"
+            app:nullable="false" />
     </fragment>
 
     <fragment
@@ -114,6 +130,11 @@
         <action
             android:id="@+id/action_penarikanSaldoFragment_to_navigation_transaksi"
             app:destination="@id/navigation_transaksi" />
+
+        <argument
+            android:name="pengguna"
+            app:argType="com.gemahripah.banksampah.data.model.pengguna.Pengguna"
+            app:nullable="false" />
     </fragment>
     <fragment
         android:id="@+id/detailTransaksiFragment"
@@ -169,6 +190,84 @@
         <action
             android:id="@+id/action_editTransaksiKeluarFragment_to_navigation_transaksi"
             app:destination="@id/navigation_transaksi" />
+    </fragment>
+    <fragment
+        android:id="@+id/detailPenggunaFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.beranda.detail.DetailPenggunaFragment"
+        tools:layout="@layout/fragment_detail_pengguna"
+        android:label="DetailPenggunaFragment">
+
+        <argument
+            android:name="pengguna"
+            app:argType="com.gemahripah.banksampah.data.model.pengguna.Pengguna"
+            app:nullable="false" />
+        <action
+            android:id="@+id/action_detailPenggunaFragment_to_detailTransaksiFragment"
+            app:destination="@id/detailTransaksiFragment" />
+        <action
+            android:id="@+id/action_detailPenggunaFragment_to_setorSampahFragment"
+            app:destination="@id/setorSampahFragment" />
+        <action
+            android:id="@+id/action_detailPenggunaFragment_to_penarikanSaldoFragment"
+            app:destination="@id/penarikanSaldoFragment" />
+
+    </fragment>
+
+    <fragment
+        android:id="@+id/penggunaFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.nasabah.PenggunaFragment"
+        android:label="PenggunaFragment"
+        tools:layout="@layout/fragment_pengguna_admin">
+        <action
+            android:id="@+id/action_penggunaFragment_to_editPenggunaFragment"
+            app:destination="@id/editPenggunaFragment" />
+        <action
+            android:id="@+id/action_penggunaFragment_to_tambahPenggunaFragment"
+            app:destination="@id/tambahPenggunaFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/editPenggunaFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.nasabah.edit.EditPenggunaFragment"
+        android:label="EditPenggunaFragment"
+        tools:layout="@layout/fragment_tambah_pengguna">
+
+        <argument
+            android:name="pengguna"
+            app:argType="com.gemahripah.banksampah.data.model.pengguna.Pengguna"
+            app:nullable="false" />
+
+        <action
+            android:id="@+id/action_editPenggunaFragment_to_penggunaFragment"
+            app:destination="@id/penggunaFragment" />
+
+    </fragment>
+
+    <fragment
+        android:id="@+id/tambahPenggunaFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.nasabah.tambah.TambahPenggunaFragment"
+        android:label="TambahPenggunaFragment"
+        tools:layout="@layout/fragment_tambah_pengguna">
+        <action
+            android:id="@+id/action_tambahPenggunaFragment_to_penggunaFragment"
+            app:destination="@id/penggunaFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/editProfilFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.profil.EditProfilFragment"
+        android:label="fragment_edit_profil"
+        tools:layout="@layout/fragment_tambah_pengguna" >
+
+        <action
+            android:id="@+id/action_editProfilFragment_to_navigation_pengaturan"
+            app:destination="@id/navigation_pengaturan" />
+
+        <argument
+            android:name="pengguna"
+            app:argType="com.gemahripah.banksampah.data.model.pengguna.Pengguna"
+            app:nullable="false" />
+
     </fragment>
 
 </navigation>

@@ -17,7 +17,7 @@ class RiwayatTransaksiAdapter(
     inner class ViewHolder(private val binding: ItemRiwayatBinding) : RecyclerView.ViewHolder(binding.root) {
         @SuppressLint("SetTextI18n")
         fun bind(item: RiwayatTransaksi) = with(binding) {
-            nama.text = item.nama
+            nama.text = item.hari ?: item.nama
             tanggal.text = item.tanggal
             nominal.text = "Rp ${item.totalHarga?.toInt()}"
             if (item.tipe == "Masuk") {

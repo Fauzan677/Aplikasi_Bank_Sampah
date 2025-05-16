@@ -3,8 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".admin.ui.pengguna.PenggunaFragment">
+    android:layout_height="match_parent">
 
     <TextView
         android:id="@+id/judul"
@@ -65,7 +64,7 @@
                 />
 
             <TextView
-                android:id="@+id/nominal"
+                android:id="@+id/jumlah"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="2000"
@@ -108,7 +107,7 @@
         />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_riwayat"
+        android:id="@+id/rv_list_Nasabah"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"

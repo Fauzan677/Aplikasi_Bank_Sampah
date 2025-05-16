@@ -18,6 +18,7 @@ import com.gemahripah.banksampah.data.model.transaksi.SaldoPengguna
 import com.gemahripah.banksampah.data.model.transaksi.Transaksi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentPenarikanSaldoBinding
+import com.gemahripah.banksampah.ui.admin.transaksi.masuk.SetorSampahFragmentArgs
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
@@ -44,6 +45,14 @@ class PenarikanSaldoFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        val pengguna = arguments?.let { PenarikanSaldoFragmentArgs.fromBundle(it).pengguna }
+
+        pengguna?.let {
+            binding.nama.setText(it.pgnNama, false) // false agar tidak trigger item click listener
+            selectedPgnId = it.pgnId // set juga userId jika penggunanya sudah diketahui
+        }
+
         fetchNamaPengguna()
         setupKonfirmasiButton()
     }

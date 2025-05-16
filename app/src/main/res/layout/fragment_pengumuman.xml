@@ -33,45 +33,21 @@
         />
 
     <TextView
-        android:id="@+id/penting"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Pengumuman Penting"
-        android:layout_marginTop="20dp"
-        android:fontFamily="@font/nunito_bold"
-        android:textColor="@color/black"
-        android:textSize="24sp"
-        android:layout_marginStart="20dp"
-        app:layout_constraintTop_toBottomOf="@+id/garis_judul"
-        app:layout_constraintStart_toStartOf="parent"
-        />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_penting"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/penting"
-        />
-
-    <TextView
         android:id="@+id/terbaru"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Pengumuman Terbaru"
-        android:layout_marginTop="30dp"
+        android:layout_marginTop="20dp"
         android:fontFamily="@font/nunito_bold"
         android:textColor="@color/black"
         android:textSize="24sp"
-        android:layout_marginStart="20dp"
-        app:layout_constraintTop_toBottomOf="@+id/rv_penting"
+        app:layout_constraintTop_toBottomOf="@+id/garis_judul"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_terbaru"
+        android:id="@+id/rv_pengumuman"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"

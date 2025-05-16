@@ -4,31 +4,184 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.databinding.FragmentBerandaAdminBinding
+import com.gemahripah.banksampah.data.supabase.SupabaseProvider
+import com.gemahripah.banksampah.ui.admin.beranda.adapter.NasabahAdapter
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.text.NumberFormat
+import java.util.*
 
 class BerandaFragment : Fragment() {
 
     private var _binding: FragmentBerandaAdminBinding? = null
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
     private val binding get() = _binding!!
+
+    private var totalMasuk: Double = 0.0
+    private var totalKeluar: Double = 0.0
+
+    private var nasabahList = listOf<Pengguna>()
+    private lateinit var nasabahAdapter: NasabahAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val berandaViewModel =
-            ViewModelProvider(this).get(BerandaViewModel::class.java)
-
         _binding = FragmentBerandaAdminBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
+        nasabahAdapter = NasabahAdapter(nasabahList) { pengguna ->
+            val action = BerandaFragmentDirections.actionNavigationBerandaToDetailPenggunaFragment(pengguna)
+            findNavController().navigate(action)
+        }
+
+        binding.rvListNasabah.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvListNasabah.adapter = nasabahAdapter
+
+        ambilTotalSaldo()
+        ambilTotalSetoran()
+        ambilTotalTransaksiMasuk()
+        ambilTotalTransaksiKeluar()
+        ambilTotalNasabah()
+
+        ambilPengguna()
+
         return root
+    }
+
+    private fun ambilPengguna() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // ambil list pengguna dari tabel "pengguna"
+                val penggunaList = SupabaseProvider.client
+                    .from("pengguna")
+                    .select(){
+                        filter {
+                            eq("pgnIsAdmin", "False")
+                        }
+                    }
+                    .decodeList<Pengguna>()
+
+                launch(Dispatchers.Main) {
+                    val adapter = NasabahAdapter(penggunaList) { pengguna ->
+                        val action = BerandaFragmentDirections.actionNavigationBerandaToDetailPenggunaFragment(pengguna)
+                        findNavController().navigate(action)
+                    }
+                    binding.rvListNasabah.adapter = adapter
+                }
+            } catch (e: Exception) {
+                launch(Dispatchers.Main) {
+                    Toast.makeText(requireContext(), "Gagal memuat data pengguna", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun ambilTotalNasabah() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val result = SupabaseProvider.client.postgrest.rpc("hitung_total_nasabah")
+                val jumlah = result.data.toString().toIntOrNull() ?: 0
+
+                launch(Dispatchers.Main) {
+                    binding.nasabah.text = jumlah.toString()
+                }
+            } catch (e: Exception) {
+                launch(Dispatchers.Main) {
+                    binding.nasabah.text = "Gagal memuat"
+                }
+            }
+        }
+    }
+
+    private fun ambilTotalTransaksiMasuk() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val result = SupabaseProvider.client.postgrest.rpc("hitung_total_transaksi_masuk")
+                totalMasuk = result.data.toDoubleOrNull() ?: 0.0
+                updateTotalTransaksi()
+            } catch (e: Exception) {
+                launch(Dispatchers.Main) {
+                    binding.transaksi.text = "Gagal memuat (Masuk)"
+                }
+            }
+        }
+    }
+
+    private fun ambilTotalTransaksiKeluar() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val result = SupabaseProvider.client.postgrest.rpc(
+                    function = "hitung_total_jumlah_berdasarkan_tipe",
+                    parameters = mapOf("tipe_transaksi" to "Keluar")
+                )
+                totalKeluar = result.data.toDoubleOrNull() ?: 0.0
+                updateTotalTransaksi()
+            } catch (e: Exception) {
+                launch(Dispatchers.Main) {
+                    binding.transaksi.text = "Gagal memuat (Keluar)"
+                }
+            }
+        }
+    }
+
+    private fun updateTotalTransaksi() {
+        val total = totalMasuk + totalKeluar
+        CoroutineScope(Dispatchers.Main).launch {
+            binding.transaksi.text = formatRupiah(total)
+        }
+    }
+
+    private fun ambilTotalSetoran() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val result = SupabaseProvider.client.postgrest.rpc(
+                    function = "hitung_total_jumlah_berdasarkan_tipe",
+                    parameters = mapOf("tipe_transaksi" to "Masuk")
+                )
+                val total = result.data.toDoubleOrNull()
+
+                launch(Dispatchers.Main) {
+                    binding.setoran.text = total?.let { "${it} Kg" } ?: "0 Kg"
+                }
+            } catch (e: Exception) {
+                launch(Dispatchers.Main) {
+                    binding.setoran.text = "Gagal memuat"
+                }
+            }
+        }
+    }
+
+    private fun ambilTotalSaldo() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val result = SupabaseProvider.client.postgrest.rpc("hitung_total_saldo_pengguna")
+                val saldo = result.data.toDoubleOrNull()
+
+                launch(Dispatchers.Main) {
+                    binding.nominal.text = saldo?.let { formatRupiah(it) }
+                }
+            } catch (e: Exception) {
+                launch(Dispatchers.Main) {
+                    binding.nominal.text = "Gagal memuat saldo"
+                }
+            }
+        }
+    }
+
+    private fun formatRupiah(number: Double): String {
+        val format = NumberFormat.getCurrencyInstance(Locale("in", "ID"))
+        return format.format(number)
     }
 
     override fun onDestroyView() {

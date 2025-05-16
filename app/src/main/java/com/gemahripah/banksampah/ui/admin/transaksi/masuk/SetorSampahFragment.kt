@@ -24,6 +24,7 @@ import com.gemahripah.banksampah.data.model.transaksi.Transaksi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentSetorSampahBinding
 import com.gemahripah.banksampah.databinding.ItemSetorSampahBinding
+import com.gemahripah.banksampah.ui.admin.beranda.detail.DetailPenggunaFragmentArgs
 import com.gemahripah.banksampah.utils.reduceFileImage
 import com.gemahripah.banksampah.utils.uriToFile
 import io.github.jan.supabase.postgrest.from
@@ -67,7 +68,15 @@ class SetorSampahFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val pengguna = arguments?.let { SetorSampahFragmentArgs.fromBundle(it).pengguna }
+
         loadNamaNasabah()
+
+        pengguna?.let {
+            binding.nama.setText(it.pgnNama, false) // false agar tidak trigger item click listener
+            selectedUserId = it.pgnId // set juga userId jika penggunanya sudah diketahui
+        }
+
         loadJenisSampah()
 
         binding.tambah.setOnClickListener {

@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.admin.pengguna
+package com.gemahripah.banksampah.ui.admin.pengaturan.nasabah
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
