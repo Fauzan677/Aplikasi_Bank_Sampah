@@ -10,8 +10,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.gemahripah.banksampah.R
+import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.ui.admin.AdminActivity
-import com.gemahripah.banksampah.data.remote.Pengguna
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.ActivityMainBinding
 import com.gemahripah.banksampah.ui.nasabah.NasabahActivity
@@ -53,10 +53,14 @@ class MainActivity : AppCompatActivity() {
 
                 val isAdmin = response?.pgnIsAdmin ?: false
 
+                val pengguna = response
+
                 val intent = if (isAdmin) {
                     Intent(this@MainActivity, AdminActivity::class.java)
                 } else {
-                    Intent(this@MainActivity, NasabahActivity::class.java)
+                    Intent(this@MainActivity, NasabahActivity::class.java).apply {
+                        putExtra("EXTRA_PENGGUNA", pengguna)
+                    }
                 }
 
                 try {

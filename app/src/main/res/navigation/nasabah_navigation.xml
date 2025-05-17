@@ -9,7 +9,11 @@
         android:id="@+id/navigation_home"
         android:name="com.gemahripah.banksampah.ui.nasabah.ui.beranda.BerandaFragment"
         android:label="@string/title_home"
-        tools:layout="@layout/fragment_beranda_nasabah" />
+        tools:layout="@layout/fragment_beranda_nasabah" >
+        <action
+            android:id="@+id/action_navigation_home_to_detailTransaksiFragment"
+            app:destination="@id/detailTransaksiFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_dashboard"
@@ -22,4 +26,16 @@
         android:name="com.gemahripah.banksampah.ui.nasabah.ui.profil.ProfilFragment"
         android:label="@string/title_notifications"
         tools:layout="@layout/fragment_profil" />
+
+    <fragment
+        android:id="@+id/detailTransaksiFragment"
+        android:name="com.gemahripah.banksampah.ui.nasabah.ui.beranda.detail.DetailTransaksiFragment"
+        android:label="DetailTransaksiFragment"
+        tools:layout="@layout/fragment_detail_transaksi">
+
+        <argument
+            android:name="riwayat"
+            app:argType="com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi" />
+
+    </fragment>
 </navigation>

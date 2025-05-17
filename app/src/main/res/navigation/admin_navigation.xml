@@ -39,6 +39,9 @@
         <action
             android:id="@+id/action_navigation_pengumuman_to_tambahPengumumanFragment"
             app:destination="@id/tambahPengumumanFragment" />
+        <action
+            android:id="@+id/action_navigation_pengumuman_to_detailPengumumanFragment"
+            app:destination="@id/detailPengumumanFragment" />
     </fragment>
 
     <fragment
@@ -278,6 +281,24 @@
         android:name="com.gemahripah.banksampah.ui.admin.pengumuman.TambahPengumumanFragment"
         android:label="TambahPengumumanFragment"
         tools:layout="@layout/fragment_tambah_pengumuman"
-        />
+        >
+        <action
+            android:id="@+id/action_tambahPengumumanFragment_to_navigation_pengumuman"
+            app:destination="@id/navigation_pengumuman" />
+    </fragment>
+    <fragment
+        android:id="@+id/detailPengumumanFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengumuman.detail.DetailPengumumanFragment"
+        android:label="fragment_detail_pengumuman"
+        tools:layout="@layout/fragment_detail_pengumuman_nasabah" >
+        <action
+            android:id="@+id/action_detailPengumumanFragment_to_tambahPengumumanFragment"
+            app:destination="@id/tambahPengumumanFragment" />
+
+        <argument
+            android:name="pengumuman"
+            app:argType="com.gemahripah.banksampah.data.model.pengumuman.Pengumuman"
+            app:nullable="false" />
+    </fragment>
 
 </navigation>

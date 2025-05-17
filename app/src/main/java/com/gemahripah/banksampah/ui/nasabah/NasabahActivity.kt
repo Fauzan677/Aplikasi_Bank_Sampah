@@ -3,20 +3,30 @@ package com.gemahripah.banksampah.ui.nasabah
 import android.os.Bundle
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.gemahripah.banksampah.R
+import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.databinding.ActivityNasabahBinding
 
 class NasabahActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityNasabahBinding
+    private var pengguna: Pengguna? = null
+    private lateinit var viewModel: NasabahViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        pengguna = intent.getParcelableExtra<Pengguna>("EXTRA_PENGGUNA")
+
+        // Inisialisasi ViewModel
+        viewModel = ViewModelProvider(this)[NasabahViewModel::class.java]
+        viewModel.setPengguna(pengguna)
 
         binding = ActivityNasabahBinding.inflate(layoutInflater)
         setContentView(binding.root)
