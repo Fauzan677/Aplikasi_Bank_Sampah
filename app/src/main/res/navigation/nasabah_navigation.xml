@@ -19,13 +19,21 @@
         android:id="@+id/navigation_dashboard"
         android:name="com.gemahripah.banksampah.ui.nasabah.ui.pengumuman.PengumumanFragment"
         android:label="@string/title_dashboard"
-        tools:layout="@layout/fragment_pengumuman" />
+        tools:layout="@layout/fragment_pengumuman" >
+        <action
+            android:id="@+id/action_navigation_dashboard_to_detailPengumumanFragment2"
+            app:destination="@id/detailPengumumanFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_notifications"
         android:name="com.gemahripah.banksampah.ui.nasabah.ui.profil.ProfilFragment"
         android:label="@string/title_notifications"
-        tools:layout="@layout/fragment_profil" />
+        tools:layout="@layout/fragment_profil" >
+        <action
+            android:id="@+id/action_navigation_notifications_to_editProfilFragment2"
+            app:destination="@id/editProfilFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/detailTransaksiFragment"
@@ -38,4 +46,21 @@
             app:argType="com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi" />
 
     </fragment>
+    <fragment
+        android:id="@+id/detailPengumumanFragment"
+        android:name="com.gemahripah.banksampah.ui.nasabah.ui.pengumuman.detail.DetailPengumumanFragment"
+        android:label="fragment_detail_pengumuman"
+        tools:layout="@layout/fragment_detail_pengumuman_nasabah" >
+
+        <argument
+            android:name="pengumuman"
+            app:argType="com.gemahripah.banksampah.data.model.pengumuman.Pengumuman"
+            app:nullable="false" />
+
+    </fragment>
+    <fragment
+        android:id="@+id/editProfilFragment"
+        android:name="com.gemahripah.banksampah.ui.nasabah.ui.profil.edit.EditProfilFragment"
+        android:label="fragment_edit_profil"
+        tools:layout="@layout/fragment_tambah_pengguna" />
 </navigation>

@@ -7,10 +7,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
+import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.ui.MainActivity
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentProfilBinding
+import com.gemahripah.banksampah.ui.nasabah.NasabahViewModel
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.launch
@@ -20,11 +24,24 @@ class ProfilFragment : Fragment() {
     private var _binding: FragmentProfilBinding? = null
     private val binding get() = _binding!!
 
+    private val viewModel: NasabahViewModel by activityViewModels()
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentProfilBinding.inflate(inflater, container, false)
+
+        viewModel.pengguna.observe(viewLifecycleOwner) { pengguna ->
+            if (pengguna != null) {
+                binding.nama.text = pengguna.pgnNama ?: "Nama tidak tersedia"
+                binding.email.text = pengguna.pgnEmail ?: "Email tidak tersedia"
+            }
+        }
+
+        binding.btProfil.setOnClickListener {
+            findNavController().navigate(R.id.action_navigation_notifications_to_editProfilFragment2)
+        }
 
         // Set up logout action
         binding.logout.setOnClickListener {
