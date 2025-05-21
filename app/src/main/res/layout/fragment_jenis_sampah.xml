@@ -3,7 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/light_gray">
 
     <TextView
         android:id="@+id/judul"
@@ -25,42 +26,35 @@
         app:layout_constraintEnd_toEndOf="parent"
         />
 
-    <ImageView
-        android:id="@+id/back"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:src="@drawable/back"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/garis_judul"
-        android:layout_marginStart="25dp"
-        android:layout_marginTop="20dp"
-        />
-
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/tambah_kategori"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
-        android:background="@drawable/border_biru"
+        app:strokeColor="@color/hijau"
+        app:strokeWidth="2dp"
+        app:cornerRadius="10dp"
         android:backgroundTint="@android:color/transparent"
         android:text="Tambah Kategori"
-        android:textColor="@color/secondary"
+        android:textColor="@color/black"
         app:layout_constraintEnd_toStartOf="@+id/tambah_jenis"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/back" />
+        app:layout_constraintTop_toBottomOf="@id/garis_judul" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/tambah_jenis"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
-        android:background="@drawable/border_biru"
+        app:strokeColor="@color/secondary"
+        app:strokeWidth="2dp"
+        app:cornerRadius="10dp"
         android:backgroundTint="@android:color/transparent"
         android:text="Tambah Jenis Sampah"
-        android:textColor="@color/secondary"
+        android:textColor="@color/black"
         app:layout_constraintStart_toEndOf="@+id/tambah_kategori"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/back" />
+        app:layout_constraintTop_toBottomOf="@id/garis_judul" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_jenis_sampah"
@@ -71,7 +65,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tambah_kategori"
         android:layout_marginVertical="10dp"
-        android:layout_marginHorizontal="30dp"
         />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

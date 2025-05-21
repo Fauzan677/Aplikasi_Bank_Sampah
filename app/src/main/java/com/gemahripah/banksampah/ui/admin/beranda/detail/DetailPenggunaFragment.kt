@@ -2,7 +2,6 @@ package com.gemahripah.banksampah.ui.admin.beranda.detail
 
 import android.annotation.SuppressLint
 import android.os.Build
-import androidx.fragment.app.viewModels
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -12,6 +11,7 @@ import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.beranda.TotalSampahPerJenis
@@ -22,7 +22,6 @@ import com.gemahripah.banksampah.data.model.transaksi.Transaksi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentDetailPenggunaBinding
 import com.gemahripah.banksampah.ui.admin.beranda.adapter.TotalSampahAdapter
-import com.gemahripah.banksampah.ui.admin.transaksi.TransaksiFragmentDirections
 import com.gemahripah.banksampah.ui.admin.transaksi.adapter.RiwayatTransaksiAdapter
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
@@ -58,7 +57,7 @@ class DetailPenggunaFragment : Fragment() {
 
         // Siapkan layout manager sebelum adapter di-assign
         binding.rvTotal.layoutManager =
-            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            GridLayoutManager(requireContext(), 2)
 
         val pengguna = arguments?.let { DetailPenggunaFragmentArgs.fromBundle(it).pengguna }
 
@@ -90,6 +89,15 @@ class DetailPenggunaFragment : Fragment() {
                 findNavController().navigate(action)
             }
         }
+
+        binding.rvRiwayat.post {
+            val maxHeight = resources.getDimensionPixelSize(R.dimen.recycler_max_height) // misalnya 300dp di dimen
+            if (binding.rvRiwayat.height > maxHeight) {
+                binding.rvRiwayat.layoutParams.height = maxHeight
+                binding.rvRiwayat.requestLayout()
+            }
+        }
+
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

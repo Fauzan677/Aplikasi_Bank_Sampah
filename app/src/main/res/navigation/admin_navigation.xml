@@ -58,6 +58,9 @@
         <action
             android:id="@+id/action_navigation_pengaturan_to_editProfilFragment"
             app:destination="@id/editProfilFragment" />
+        <action
+            android:id="@+id/action_navigation_pengaturan_to_laporanFragment"
+            app:destination="@id/laporanFragment" />
 
     </fragment>
 
@@ -114,6 +117,7 @@
             android:id="@+id/action_editJenisSampahFragment_to_jenisSampahFragment"
             app:destination="@id/jenisSampahFragment" />
     </fragment>
+
     <fragment
         android:id="@+id/setorSampahFragment"
         android:name="com.gemahripah.banksampah.ui.admin.transaksi.masuk.SetorSampahFragment"
@@ -126,7 +130,10 @@
         <argument
             android:name="pengguna"
             app:argType="com.gemahripah.banksampah.data.model.pengguna.Pengguna"
-            app:nullable="false" />
+            app:nullable="true"
+            android:defaultValue="@null"
+            />
+
     </fragment>
 
     <fragment
@@ -141,8 +148,11 @@
         <argument
             android:name="pengguna"
             app:argType="com.gemahripah.banksampah.data.model.pengguna.Pengguna"
-            app:nullable="false" />
+            app:nullable="true"
+            android:defaultValue="@null"
+            />
     </fragment>
+
     <fragment
         android:id="@+id/detailTransaksiFragment"
         android:name="com.gemahripah.banksampah.ui.admin.transaksi.detail.DetailTransaksiFragment"
@@ -169,7 +179,7 @@
         <argument
             android:name="riwayat"
             app:argType="com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi"
-            app:nullable="false" />
+            />
 
         <argument
             android:name="enrichedList"
@@ -188,7 +198,7 @@
         <argument
             android:name="riwayat"
             app:argType="com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi"
-            app:nullable="false" />
+            />
 
         <argument
             android:name="enrichedList"
@@ -207,7 +217,7 @@
         <argument
             android:name="pengguna"
             app:argType="com.gemahripah.banksampah.data.model.pengguna.Pengguna"
-            app:nullable="false" />
+            />
         <action
             android:id="@+id/action_detailPenggunaFragment_to_detailTransaksiFragment"
             app:destination="@id/detailTransaksiFragment" />
@@ -242,7 +252,7 @@
         <argument
             android:name="pengguna"
             app:argType="com.gemahripah.banksampah.data.model.pengguna.Pengguna"
-            app:nullable="false" />
+            />
 
         <action
             android:id="@+id/action_editPenggunaFragment_to_penggunaFragment"
@@ -273,12 +283,12 @@
         <argument
             android:name="pengguna"
             app:argType="com.gemahripah.banksampah.data.model.pengguna.Pengguna"
-            app:nullable="false" />
+            />
 
     </fragment>
     <fragment
         android:id="@+id/tambahPengumumanFragment"
-        android:name="com.gemahripah.banksampah.ui.admin.pengumuman.TambahPengumumanFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengumuman.tambah.TambahPengumumanFragment"
         android:label="TambahPengumumanFragment"
         tools:layout="@layout/fragment_tambah_pengumuman"
         >
@@ -297,8 +307,13 @@
 
         <argument
             android:name="pengumuman"
-            app:argType="com.gemahripah.banksampah.data.model.pengumuman.Pengumuman"
-            app:nullable="false" />
+            app:argType="com.gemahripah.banksampah.data.model.pengumuman.Pengumuman"/>
+
     </fragment>
+    <fragment
+        android:id="@+id/laporanFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.laporan.LaporanFragment"
+        android:label="fragment_laporan"
+        tools:layout="@layout/fragment_laporan" />
 
 </navigation>

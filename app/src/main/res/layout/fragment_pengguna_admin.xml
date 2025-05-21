@@ -7,14 +7,8 @@
 
     <TextView
         android:id="@+id/judul"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        style="@style/TextJudulHalaman"
         android:text="Pengguna"
-        android:fontFamily="@font/nunito_bold"
-        android:textColor="@color/black"
-        android:textSize="16sp"
-        android:gravity="center"
-        android:layout_marginTop="20dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -39,7 +33,6 @@
         android:layout_marginHorizontal="20dp"
         app:cardCornerRadius="15dp"
         app:cardElevation="2dp"
-        app:cardBackgroundColor="@color/primary"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/garis_judul"
@@ -50,6 +43,7 @@
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:gravity="center_horizontal"
+            android:background="@drawable/gradient_kuning_biru"
             >
 
             <TextView
@@ -79,13 +73,11 @@
 
     </androidx.cardview.widget.CardView>
 
-
-
     <TextView
         android:id="@+id/pengguna"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Pengguna"
+        android:text="List Pengguna"
         android:layout_marginTop="30dp"
         android:fontFamily="@font/nunito_bold"
         android:textColor="@color/black"

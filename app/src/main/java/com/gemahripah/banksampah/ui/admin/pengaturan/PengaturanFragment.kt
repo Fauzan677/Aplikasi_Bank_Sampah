@@ -80,6 +80,10 @@ class PengaturanFragment : Fragment() {
             }
         }
 
+        binding.btCetak.setOnClickListener{
+            findNavController().navigate(R.id.action_navigation_pengaturan_to_laporanFragment)
+        }
+
         binding.jenis.setOnClickListener {
             findNavController().navigate(R.id.action_navigation_pengaturan_to_jenisSampahFragment)
         }

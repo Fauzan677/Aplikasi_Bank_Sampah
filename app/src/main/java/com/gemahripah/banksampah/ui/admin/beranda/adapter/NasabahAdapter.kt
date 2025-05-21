@@ -13,11 +13,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.util.Locale
 
 class NasabahAdapter(
-    private val list: List<Pengguna>,
+    private var list: List<Pengguna>,
     private val onItemClick: (Pengguna) -> Unit
 ) : RecyclerView.Adapter<NasabahAdapter.ViewHolder>() {
+
+    private var listFull: List<Pengguna> = ArrayList(list) // Salin data asli
 
     inner class ViewHolder(val binding: ItemListNasabahBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
@@ -45,21 +48,15 @@ class NasabahAdapter(
         pengguna.pgnId?.let { penggunaId ->
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    // Hitung total berat
                     val resultBerat = SupabaseProvider.client.postgrest.rpc(
                         "hitung_total_jumlah_per_pengguna_masuk",
-                        buildJsonObject {
-                            put("pgn_id_input", penggunaId)
-                        }
+                        buildJsonObject { put("pgn_id_input", penggunaId) }
                     )
                     val berat = resultBerat.data.toString().toDoubleOrNull() ?: 0.0
 
-                    // Hitung saldo
                     val resultSaldo = SupabaseProvider.client.postgrest.rpc(
                         "hitung_saldo_pengguna",
-                        buildJsonObject {
-                            put("pgn_id_input", penggunaId)
-                        }
+                        buildJsonObject { put("pgn_id_input", penggunaId) }
                     )
                     val saldo = resultSaldo.data.toString().toDoubleOrNull() ?: 0.0
 
@@ -78,5 +75,23 @@ class NasabahAdapter(
             binding.berat.text = "-"
             binding.nominal.text = "-"
         }
+    }
+
+    // Fungsi filter cari berdasarkan nama
+    fun filterList(query: String) {
+        val filteredList = if (query.isEmpty()) {
+            listFull
+        } else {
+            listFull.filter { it.pgnNama?.lowercase(Locale.getDefault())?.contains(query.lowercase(Locale.getDefault())) == true }
+        }
+        list = filteredList
+        notifyDataSetChanged()
+    }
+
+    // Update data (misal setelah fetch ulang dari server)
+    fun updateData(newList: List<Pengguna>) {
+        listFull = ArrayList(newList)
+        list = newList
+        notifyDataSetChanged()
     }
 }

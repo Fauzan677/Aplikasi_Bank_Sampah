@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.admin.transaksi
+package com.gemahripah.banksampah.ui.admin.pengaturan.jenis.detail
 
 import androidx.fragment.app.viewModels
 import android.os.Bundle
@@ -8,13 +8,13 @@ import android.view.View
 import android.view.ViewGroup
 import com.gemahripah.banksampah.R
 
-class TotalSampahFragment : Fragment() {
+class DetailJenisSampahFragment : Fragment() {
 
     companion object {
-        fun newInstance() = TotalSampahFragment()
+        fun newInstance() = DetailJenisSampahFragment()
     }
 
-    private val viewModel: TotalSampahViewModel by viewModels()
+    private val viewModel: DetailJenisSampahViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,6 +26,6 @@ class TotalSampahFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return inflater.inflate(R.layout.fragment_total_sampah, container, false)
+        return inflater.inflate(R.layout.fragment_detail_jenis_sampah, container, false)
     }
 }

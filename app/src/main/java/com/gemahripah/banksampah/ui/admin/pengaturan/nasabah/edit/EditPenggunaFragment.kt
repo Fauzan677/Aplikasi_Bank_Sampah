@@ -15,14 +15,8 @@ import com.gemahripah.banksampah.data.supabase.SupabaseAdminProvider
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentTambahPenggunaBinding
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
-import io.ktor.http.Headers
-import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-
 class EditPenggunaFragment : Fragment() {
 
     private var _binding: FragmentTambahPenggunaBinding? = null
@@ -89,7 +83,7 @@ class EditPenggunaFragment : Fragment() {
             }
         }
 
-        binding.Hapus.setOnClickListener {
+        binding.hapus.setOnClickListener {
 
             if (userId.isNullOrEmpty()) {
                 Toast.makeText(requireContext(), "ID pengguna tidak ditemukan", Toast.LENGTH_SHORT).show()

@@ -27,6 +27,7 @@ class EditProfilFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         _binding = FragmentTambahPenggunaBinding.inflate(inflater, container, false)
+
         return binding.root
     }
 
@@ -35,6 +36,9 @@ class EditProfilFragment : Fragment() {
 
         val pengguna = args.pengguna
         val userId = pengguna.pgnId
+
+        binding.judul.text = "Edit Pengguna"
+        binding.hapus.visibility = View.GONE
 
         binding.nama.setText(pengguna.pgnNama ?: "")
         binding.email.setText(pengguna.pgnEmail ?: "")
@@ -49,7 +53,6 @@ class EditProfilFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            // Jalankan pembaruan data dengan Supabase
             lifecycleScope.launch {
                 try {
                     SupabaseProvider.client.from("pengguna").update(

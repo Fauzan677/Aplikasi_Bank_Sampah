@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
@@ -24,8 +26,12 @@ class RiwayatTransaksiAdapter(
                 berat.visibility = View.VISIBLE
                 berat.text = "${item.totalBerat ?: 0.0} Kg"
             } else {
+                binding.cardRiwayat.setCardBackgroundColor(ContextCompat.getColor(binding
+                    .root.context, R.color.merah))
+                lurus.visibility = View.GONE
                 berat.visibility = View.GONE
-                root.setCardBackgroundColor(root.context.getColor(R.color.merah))
+                (nominal.layoutParams as ConstraintLayout.LayoutParams).topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                tegak.setBackgroundResource(R.color.black)
             }
 
             root.setOnClickListener { onItemClick(item) }

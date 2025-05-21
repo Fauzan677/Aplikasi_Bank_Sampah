@@ -10,10 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
-import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
@@ -24,9 +20,6 @@ import com.gemahripah.banksampah.data.model.transaksi.Transaksi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentSetorSampahBinding
 import com.gemahripah.banksampah.databinding.ItemSetorSampahBinding
-import com.gemahripah.banksampah.ui.admin.beranda.detail.DetailPenggunaFragmentArgs
-import com.gemahripah.banksampah.utils.reduceFileImage
-import com.gemahripah.banksampah.utils.uriToFile
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.launch
@@ -37,24 +30,10 @@ class SetorSampahFragment : Fragment() {
     private var _binding: FragmentSetorSampahBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var cameraLauncher: ActivityResultLauncher<Uri>
-    private lateinit var galleryLauncher: ActivityResultLauncher<String>
-    private var currentImageUri: Uri? = null
-
-    private var jumlahInput = 1 // Awalnya 1 form
-    private var jenisList: List<String> = emptyList() // Global list jenis transaksi
+    private var jumlahInput = 1
+    private var jenisList: List<String> = emptyList()
     private var jenisToSatuanMap: Map<String, String> = emptyMap()
     private val tambahanSampahList = mutableListOf<ItemSetorSampahBinding>()
-
-    private val requestCameraPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            openCameraInternal() // jalankan kamera jika izin diberikan
-        } else {
-            Toast.makeText(requireContext(), "Izin kamera ditolak", Toast.LENGTH_SHORT).show()
-        }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -81,26 +60,6 @@ class SetorSampahFragment : Fragment() {
 
         binding.tambah.setOnClickListener {
             tambahInputSampah()
-        }
-
-        binding.gambarFile.setOnClickListener {
-            showImagePickerDialog()
-        }
-
-        cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            if (success && currentImageUri != null) {
-                binding.selectedImageView.setImageURI(currentImageUri)
-                binding.selectedImageView.visibility = View.VISIBLE
-                binding.uploadText.visibility = View.GONE
-            }
-        }
-
-        galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            uri?.let {
-                binding.selectedImageView.setImageURI(it)
-                binding.selectedImageView.visibility = View.VISIBLE
-                binding.uploadText.visibility = View.GONE
-            }
         }
 
         binding.konfirmasi.setOnClickListener {
@@ -182,53 +141,6 @@ class SetorSampahFragment : Fragment() {
             }
         }
 
-    }
-
-    private fun showImagePickerDialog() {
-        val options = arrayOf("Kamera", "Galeri")
-        AlertDialog.Builder(requireContext())
-            .setTitle("Pilih Sumber Gambar")
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> openCamera()
-                    1 -> openGallery()
-                }
-            }
-            .show()
-    }
-
-    private fun openCamera() {
-        if (requireContext().checkSelfPermission(android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            openCameraInternal()
-        } else {
-            requestCameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-        }
-    }
-
-    private fun openCameraInternal() {
-        val imageFile = File.createTempFile("IMG_", ".jpg", requireContext().cacheDir).apply {
-            createNewFile()
-            deleteOnExit()
-        }
-        currentImageUri = FileProvider.getUriForFile(
-            requireContext(),
-            "${requireContext().packageName}.fileprovider",
-            imageFile
-        )
-        currentImageUri?.let { uri ->
-            cameraLauncher.launch(uri)
-        }
-    }
-
-    private fun openGallery() {
-        galleryLauncher.launch("image/*")
-    }
-
-    private fun uploadImage() {
-        currentImageUri?.let { uri ->
-            val imageFile = uriToFile(uri, requireContext()).reduceFileImage()
-            // Lanjutkan proses upload dengan imageFile
-        } ?: Toast.makeText(requireContext(), "Gambar belum dipilih", Toast.LENGTH_SHORT).show()
     }
 
     private var namaToIdMap: Map<String, Long> = emptyMap()

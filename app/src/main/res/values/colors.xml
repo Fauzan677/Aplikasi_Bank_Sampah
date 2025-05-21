@@ -7,4 +7,11 @@
     <color name="hijau">#50AD14</color>
     <color name="merah">#F2954B</color>
     <color name="abuabu">#1A1A1A</color>
+    <color name="abu2">#D9D9D9</color>
+    <color name="light_gray">#F5F5F5</color>
+
+    <!-- Backgrounds / Surfaces -->
+    <color name="surface">#FFFFFF</color>
+    <color name="onSurface">#000000</color>
+
 </resources>

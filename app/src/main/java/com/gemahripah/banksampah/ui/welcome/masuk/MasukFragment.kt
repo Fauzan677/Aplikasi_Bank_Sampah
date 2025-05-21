@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.welcome
+package com.gemahripah.banksampah.ui.welcome.masuk
 
 import android.content.Intent
 import androidx.fragment.app.viewModels

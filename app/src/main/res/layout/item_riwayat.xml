@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView android:layout_width="match_parent"
+<androidx.cardview.widget.CardView
+    android:id="@+id/card_riwayat"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_marginVertical="5dp"
+    android:layout_marginHorizontal="5dp"
     app:cardCornerRadius="10dp"
-    android:layout_marginVertical="10dp"
-    android:layout_marginHorizontal="20dp"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+    >
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="15dp">
+        android:layout_height="wrap_content">
 
         <TextView
             android:id="@+id/nama"
@@ -19,48 +21,79 @@
             android:fontFamily="@font/nunito_medium"
             android:text="Nama"
             android:textColor="@color/black"
-            android:textSize="18sp"
+            android:textSize="20sp"
+            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintEnd_toStartOf="@+id/tegak"
+            app:layout_constraintBottom_toTopOf="@+id/tanggal"
+            android:layout_margin="5dp"
+            />
 
         <TextView
             android:id="@+id/tanggal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
             android:fontFamily="@font/nunito_regular"
             android:text="Tanggal"
             android:textColor="@color/abuabu"
-            android:textSize="14sp"
+            android:textSize="15sp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/nama" />
+            app:layout_constraintEnd_toStartOf="@+id/tegak"
+            app:layout_constraintTop_toBottomOf="@+id/nama"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_margin="5dp"
+            />
+
+        <View
+            android:id="@+id/tegak"
+            android:layout_width="1dp"
+            android:layout_height="0dp"
+            android:background="@color/abu2"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            />
 
         <TextView
             android:id="@+id/berat"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintEnd_toStartOf="@+id/nominal"
+            app:layout_constraintStart_toEndOf="@+id/tegak"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginEnd="10dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/lurus"
             android:text="Berat"
             android:fontFamily="@font/nunito_regular"
             android:textColor="@color/black"
-            android:textSize="20sp"
+            android:textSize="15sp"
+            android:layout_margin="10dp"
+            />
+
+        <View
+            android:id="@+id/lurus"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:background="@color/abu2"
+            app:layout_constraintTop_toBottomOf="@+id/berat"
+            app:layout_constraintStart_toEndOf="@+id/tegak"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/nominal"
             />
 
         <TextView
             android:id="@+id/nominal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:layout_constraintStart_toEndOf="@+id/tegak"
+            app:layout_constraintTop_toBottomOf="@+id/lurus"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginEnd="10dp"
             android:text="Nominal"
             android:fontFamily="@font/nunito_regular"
             android:textColor="@color/black"
-            android:textSize="20sp"
+            android:textSize="15sp"
+            android:layout_margin="10dp"
             />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

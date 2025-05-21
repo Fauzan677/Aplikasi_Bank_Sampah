@@ -1,31 +1,14 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.BankSampah" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.BankSampah" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
-        <item name="colorPrimaryVariant">@color/secondary</item>
+        <item name="colorSecondary">@color/secondary</item>
         <item name="colorOnPrimary">@color/abuabu</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/onSurface</item>
+        <item name="colorControlActivated">@color/secondary</item>
     </style>
 
     <style name="Theme.BankSampah" parent="Base.Theme.BankSampah" />
-
-    <style name="TextSubJudul">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:fontFamily">@font/nunito_bold</item>
-        <item name="android:textColor">@color/black</item>
-        <item name="android:textSize">24sp</item>
-        <item name="android:layout_marginTop">20dp</item>
-        <item name="android:layout_marginStart">20dp</item>
-    </style>
-
-    <style name="TextJudulHalaman">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:fontFamily">@font/nunito_bold</item>
-        <item name="android:textColor">@color/black</item>
-        <item name="android:textSize">20sp</item>
-        <item name="android:gravity">center</item>
-        <item name="android:layout_marginTop">20dp</item>
-    </style>
 
 </resources>

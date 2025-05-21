@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.admin.pengumuman
+package com.gemahripah.banksampah.ui.admin.pengumuman.tambah
 
 import android.net.Uri
 import android.os.Bundle
@@ -13,14 +13,11 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentTambahPengumumanBinding
 import com.gemahripah.banksampah.utils.reduceFileImage
 import com.gemahripah.banksampah.utils.uriToFile
-import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.primitives.Bytes
 import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.storage.UploadData
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.launch
 import java.io.File

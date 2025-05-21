@@ -31,6 +31,14 @@ class TambahPenggunaFragment : Fragment() {
     ): View {
         _binding = FragmentTambahPenggunaBinding.inflate(inflater, container, false)
 
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        binding.hapus.visibility = View.GONE
+
         binding.konfirmasi.setOnClickListener {
             val nama = binding.nama.text.toString().trim()
             val email = binding.email.text.toString().trim()
@@ -77,8 +85,6 @@ class TambahPenggunaFragment : Fragment() {
             }
 
         }
-
-        return binding.root
     }
 
     override fun onDestroyView() {

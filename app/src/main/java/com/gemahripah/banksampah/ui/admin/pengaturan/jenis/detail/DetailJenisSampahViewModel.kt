@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.admin.pengaturan.jenis
+package com.gemahripah.banksampah.ui.admin.pengaturan.jenis.detail
 
 import androidx.lifecycle.ViewModel
 

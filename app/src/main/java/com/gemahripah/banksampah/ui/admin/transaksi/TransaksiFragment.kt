@@ -1,6 +1,5 @@
 package com.gemahripah.banksampah.ui.admin.transaksi
 
-import android.icu.text.SimpleDateFormat
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -27,7 +26,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
-import io.github.jan.supabase.decode
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.time.OffsetDateTime
@@ -46,8 +44,6 @@ class TransaksiFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val transaksiViewModel =
-            ViewModelProvider(this).get(com.gemahripah.banksampah.ui.admin.transaksi.TransaksiViewModel::class.java)
 
         _binding = FragmentTransaksiBinding.inflate(inflater, container, false)
         val root: View = binding.root

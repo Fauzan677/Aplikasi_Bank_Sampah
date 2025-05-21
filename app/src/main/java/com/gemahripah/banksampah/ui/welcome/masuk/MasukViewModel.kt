@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.welcome
+package com.gemahripah.banksampah.ui.welcome.masuk
 
 import androidx.lifecycle.ViewModel
 

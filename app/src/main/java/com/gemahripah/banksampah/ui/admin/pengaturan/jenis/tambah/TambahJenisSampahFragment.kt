@@ -30,6 +30,8 @@ class TambahJenisSampahFragment : Fragment(R.layout.fragment_tambah_jenis_sampah
         super.onViewCreated(view, savedInstanceState)
         binding = FragmentTambahJenisSampahBinding.bind(view)
 
+        binding.hapus.visibility = View.GONE
+
         fetchKategoriSampah()
         setupKonfirmasiButton()
     }

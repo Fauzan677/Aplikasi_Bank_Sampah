@@ -1,12 +1,17 @@
 package com.gemahripah.banksampah.data.model.transaksi.gabungan
 
+import android.os.Parcelable
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
+import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 
+@Parcelize
+@Serializable
 data class TransaksiRelasi(
-    val tskId: Long,
-    val created_at: String,
-    val tskIdPengguna: Pengguna,  // Relasi dengan Pengguna
-    val tskGambar: String?,
-    val tskKeterangan: String?,
-    val tskTipe: String?
-)
+    val tskId: Long? = null,
+    val created_at: String? = null,
+    val tskIdPengguna: Pengguna? = null,
+    val tskGambar: String? = null,
+    val tskKeterangan: String? = null,
+    val tskTipe: String? = null,
+) : Parcelable

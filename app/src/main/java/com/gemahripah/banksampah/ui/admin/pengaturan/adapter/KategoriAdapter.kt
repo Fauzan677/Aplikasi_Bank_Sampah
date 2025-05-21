@@ -2,6 +2,8 @@ package com.gemahripah.banksampah.ui.admin.pengaturan.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.GridLayout
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gemahripah.banksampah.data.model.sampah.Kategori
@@ -42,13 +44,19 @@ class KategoriAdapter(
                         }
                         .decodeList<Sampah>()
 
-                    // Buat list gabungan
                     val jenisWithKategori = jenisList.map {
                         KategoridanSampah(it, kategori.ktgNama)
                     }
 
                     val adapter = SampahAdapter(jenisWithKategori, onSampahClick)
-                    binding.kartuSampah.layoutManager = LinearLayoutManager(binding.root.context, LinearLayoutManager.HORIZONTAL, false)
+
+                    binding.kartuSampah.apply {
+                        layoutManager = GridLayoutManager(binding.root.context, 2)
+                        isNestedScrollingEnabled = false
+                        setHasFixedSize(true)
+                    }
+
+                    binding.kartuSampah.layoutManager = GridLayoutManager(binding.root.context, 2)
                     binding.kartuSampah.adapter = adapter
                 } catch (e: Exception) {
                     println("Gagal memuat jenis: ${e.message}")

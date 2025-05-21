@@ -8,230 +8,234 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:layout_marginBottom="10dp"
         >
 
-        <TextView
-            android:id="@+id/judul"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Beranda"
-            android:fontFamily="@font/nunito_bold"
-            android:textColor="@color/black"
-            android:textSize="16sp"
-            android:gravity="center"
-            android:layout_marginTop="20dp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            />
-
-        <View
-            android:id="@+id/garis_judul"
-            android:layout_width="match_parent"
-            android:layout_height="2dp"
-            android:background="@color/black"
-            android:layout_marginTop="10dp"
-            app:layout_constraintTop_toBottomOf="@+id/judul"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            />
-
         <androidx.cardview.widget.CardView
-            android:id="@+id/card_saldo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
-            android:layout_marginHorizontal="20dp"
-            app:cardCornerRadius="15dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/primary"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/garis_judul"
+            android:layout_marginHorizontal="10dp"
+            android:layout_marginTop="20dp"
+            app:cardCornerRadius="10dp"
             >
 
-            <LinearLayout
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
+                android:layout_height="wrap_content"
+                android:background="@drawable/gradient_kuning_biru"
+                android:padding="10dp"
                 >
 
                 <TextView
                     android:id="@+id/tv_saldo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Total Saldo"
-                    android:fontFamily="@font/nunito_semibold"
-                    android:textSize="20sp"
-                    android:textColor="@color/black"
-                    android:layout_marginTop="15dp"
-                    android:layout_marginStart="15dp"
-                    app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    android:text="Total Saldo"
+                    android:textColor="@color/white"
+                    android:fontFamily="@font/nunito_bold"
+                    android:textSize="20dp"
+                    android:layout_marginStart="10sp"
+                    android:layout_marginTop="10dp"
                     />
 
                 <TextView
                     android:id="@+id/nominal"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0000"
+                    android:text="000"
+                    android:fontFamily="@font/nunito_extrabold"
+                    android:textColor="@color/black"
+                    android:textSize="40dp"
                     app:layout_constraintTop_toBottomOf="@+id/tv_saldo"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    android:fontFamily="@font/nunito_extrabold"
-                    android:textColor="@color/black"
-                    android:layout_marginStart="30dp"
-                    android:layout_marginTop="10dp"
-                    android:layout_marginBottom="20dp"
-                    android:textSize="30sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintBottom_toTopOf="@id/tv_nasabah"
+                    android:layout_marginEnd="10dp"
+                    android:layout_marginBottom="10dp"
                     />
-
-
-            </LinearLayout>
-
-        </androidx.cardview.widget.CardView>
-
-        <androidx.cardview.widget.CardView
-            android:id="@+id/card_transaksi"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
-            android:layout_marginHorizontal="20dp"
-            app:cardCornerRadius="15dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/primary"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/garis_judul"
-            >
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                >
-
-                <TextView
-                    android:id="@+id/tv_transaksi"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Total Transaksi"
-                    android:fontFamily="@font/nunito_semibold"
-                    android:textSize="20sp"
-                    android:textColor="@color/black"
-                    android:layout_marginTop="15dp"
-                    android:layout_marginStart="15dp"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    />
-
-                <TextView
-                    android:id="@+id/setoran"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:layout_constraintTop_toBottomOf="@+id/tv_transaksi"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    android:fontFamily="@font/nunito_extrabold"
-                    android:textColor="@color/black"
-                    android:layout_marginStart="30dp"
-                    android:layout_marginTop="10dp"
-                    android:layout_marginBottom="20dp"
-                    android:textSize="30sp"
-                    />
-
-                <TextView
-                    android:id="@+id/transaksi"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:layout_constraintTop_toBottomOf="@+id/tv_transaksi"
-                    app:layout_constraintStart_toEndOf="@id/setoran"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    android:fontFamily="@font/nunito_extrabold"
-                    android:textColor="@color/black"
-                    android:layout_marginStart="30dp"
-                    android:layout_marginTop="10dp"
-                    android:layout_marginBottom="20dp"
-                    android:textSize="30sp"
-                    />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-        </androidx.cardview.widget.CardView>
-
-        <androidx.cardview.widget.CardView
-            android:id="@+id/card_setoran"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
-            android:layout_marginHorizontal="20dp"
-            app:cardCornerRadius="15dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/primary"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/garis_judul"
-            >
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                >
 
                 <TextView
                     android:id="@+id/tv_nasabah"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Total Nasabah"
-                    android:fontFamily="@font/nunito_semibold"
-                    android:textSize="20sp"
-                    android:textColor="@color/black"
-                    android:layout_marginTop="15dp"
-                    android:layout_marginStart="15dp"
-                    app:layout_constraintTop_toTopOf="parent"
+                    android:text="Nasabah"
+                    android:fontFamily="@font/nunito_bold"
+                    android:textColor="@color/white"
+                    android:textSize="20dp"
+                    app:layout_constraintTop_toBottomOf="@+id/nominal"
                     app:layout_constraintStart_toStartOf="parent"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginTop="10dp"
                     />
 
                 <TextView
                     android:id="@+id/nasabah"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:layout_constraintTop_toBottomOf="@+id/tv_saldo"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"
+                    android:text="0"
                     android:fontFamily="@font/nunito_extrabold"
                     android:textColor="@color/black"
-                    android:layout_marginStart="30dp"
-                    android:layout_marginTop="10dp"
-                    android:layout_marginBottom="20dp"
-                    android:textSize="30sp"
+                    android:textSize="24dp"
+                    android:layout_marginTop="5dp"
+                    app:layout_constraintTop_toBottomOf="@+id/tv_nasabah"
+                    app:layout_constraintStart_toStartOf="@id/tv_nasabah"
+                    app:layout_constraintEnd_toEndOf="@+id/tv_nasabah"
                     />
 
-            </LinearLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
         </androidx.cardview.widget.CardView>
+
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginHorizontal="10dp"
+            android:columnCount="2"
+            android:orientation="horizontal"
+            android:columnOrderPreserved="false"
+            android:useDefaultMargins="true"
+            >
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card_transaksi"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_rowWeight="1"
+                android:layout_margin="5dp"
+                app:cardCornerRadius="10dp"
+                >
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/border_kuning"
+                    android:paddingBottom="20dp"
+                    >
+
+                    <TextView
+                        android:id="@+id/tv_transaksi"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Total Transaksi"
+                        android:fontFamily="@font/nunito_semibold"
+                        android:textSize="15sp"
+                        android:textColor="@color/black"
+                        android:layout_marginTop="15dp"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        />
+
+                    <TextView
+                        android:id="@+id/transaksi"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintTop_toBottomOf="@+id/tv_transaksi"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        android:fontFamily="@font/nunito_extrabold"
+                        android:textColor="@color/black"
+                        android:layout_marginTop="10dp"
+                        android:textSize="20sp"
+                        />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card_setoran"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_rowWeight="1"
+                android:layout_margin="5dp"
+                app:cardCornerRadius="10dp"
+                >
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/border_biru"
+                    android:paddingBottom="20dp"
+                    >
+
+                    <TextView
+                        android:id="@+id/tv_setoran"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Total Setoran"
+                        android:fontFamily="@font/nunito_semibold"
+                        android:textSize="15sp"
+                        android:textColor="@color/black"
+                        android:layout_marginTop="15dp"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        />
+
+                    <TextView
+                        android:id="@+id/setoran"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintTop_toBottomOf="@+id/tv_setoran"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        android:fontFamily="@font/nunito_extrabold"
+                        android:textColor="@color/black"
+                        android:layout_marginTop="10dp"
+                        android:textSize="20sp"
+                        />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </androidx.cardview.widget.CardView>
+
+        </GridLayout>
 
         <TextView
             android:id="@+id/list_Nasabah"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="List Nasabah"
-            android:layout_marginTop="30dp"
+            android:layout_marginTop="20dp"
             android:fontFamily="@font/nunito_bold"
             android:textColor="@color/black"
             android:textSize="24sp"
             android:layout_marginStart="20dp"
-            app:layout_constraintTop_toBottomOf="@+id/card_saldo"
-            app:layout_constraintStart_toStartOf="parent"
             />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:hint="Cari nama nasabah"
+            app:boxStrokeColor="@color/secondary"
+            app:hintTextColor="@color/secondary"
+            app:boxBackgroundMode="outline">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/search_nasabah"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:imeOptions="actionSearch"
+                />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_list_nasabah"
             android:layout_width="match_parent"
             android:layout_height="200dp"
-            android:layout_marginVertical="20dp"
+            android:layout_marginVertical="5dp"
+            android:layout_marginHorizontal="5dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/list_Nasabah"

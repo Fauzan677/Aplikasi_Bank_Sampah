@@ -52,10 +52,6 @@ class JenisSampahFragment : Fragment() {
         // Memuat data kategori
         viewModel.loadKategori()  // Panggil setelah adapter terpasang
 
-        binding.back.setOnClickListener {
-            findNavController().navigate(R.id.action_jenisSampahFragment_to_navigation_pengaturan)
-        }
-
         // Navigasi untuk tombol tambah kategori dan jenis transaksi
         binding.tambahJenis.setOnClickListener {
             findNavController().navigate(R.id.action_jenisSampahFragment_to_tambahJenisSampahFragment)

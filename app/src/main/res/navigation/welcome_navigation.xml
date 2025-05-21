@@ -20,7 +20,7 @@
 
     <fragment
         android:id="@+id/daftarFragment"
-        android:name="com.gemahripah.banksampah.ui.welcome.DaftarFragment"
+        android:name="com.gemahripah.banksampah.ui.welcome.daftar.DaftarFragment"
         android:label="fragment_daftar"
         tools:layout="@layout/fragment_daftar" >
         <action
@@ -30,7 +30,7 @@
 
     <fragment
         android:id="@+id/masukFragment"
-        android:name="com.gemahripah.banksampah.ui.welcome.MasukFragment"
+        android:name="com.gemahripah.banksampah.ui.welcome.masuk.MasukFragment"
         android:label="fragment_masuk"
         tools:layout="@layout/fragment_masuk" >
         <action

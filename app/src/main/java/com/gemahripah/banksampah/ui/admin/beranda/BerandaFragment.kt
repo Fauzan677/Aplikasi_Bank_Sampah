@@ -1,9 +1,13 @@
 package com.gemahripah.banksampah.ui.admin.beranda
 
+import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
@@ -20,6 +24,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.*
+import android.widget.SearchView
+import androidx.core.widget.addTextChangedListener
 
 class BerandaFragment : Fragment() {
 
@@ -32,6 +38,7 @@ class BerandaFragment : Fragment() {
     private var nasabahList = listOf<Pengguna>()
     private lateinit var nasabahAdapter: NasabahAdapter
 
+    @SuppressLint("ServiceCast")
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -39,6 +46,25 @@ class BerandaFragment : Fragment() {
     ): View {
         _binding = FragmentBerandaAdminBinding.inflate(inflater, container, false)
         val root: View = binding.root
+
+        binding.searchNasabah.addTextChangedListener { text ->
+            nasabahAdapter.filterList(text.toString())
+        }
+        binding.searchNasabah.setOnEditorActionListener { v, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                val query = binding.searchNasabah.text.toString()
+                nasabahAdapter.filterList(query)
+
+                // Sembunyikan keyboard
+                val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(v.windowToken, 0)
+
+                true
+            } else {
+                false
+            }
+        }
+
 
         nasabahAdapter = NasabahAdapter(nasabahList) { pengguna ->
             val action = BerandaFragmentDirections.actionNavigationBerandaToDetailPenggunaFragment(pengguna)
@@ -73,11 +99,7 @@ class BerandaFragment : Fragment() {
                     .decodeList<Pengguna>()
 
                 launch(Dispatchers.Main) {
-                    val adapter = NasabahAdapter(penggunaList) { pengguna ->
-                        val action = BerandaFragmentDirections.actionNavigationBerandaToDetailPenggunaFragment(pengguna)
-                        findNavController().navigate(action)
-                    }
-                    binding.rvListNasabah.adapter = adapter
+                    nasabahAdapter.updateData(penggunaList)
                 }
             } catch (e: Exception) {
                 launch(Dispatchers.Main) {
@@ -182,6 +204,11 @@ class BerandaFragment : Fragment() {
     private fun formatRupiah(number: Double): String {
         val format = NumberFormat.getCurrencyInstance(Locale("in", "ID"))
         return format.format(number)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binding.searchNasabah.setText("")
     }
 
     override fun onDestroyView() {

@@ -1,6 +1,5 @@
 package com.gemahripah.banksampah.ui.admin.pengumuman
 
-import androidx.fragment.app.viewModels
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -8,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengumuman.Pengumuman
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
@@ -61,7 +60,7 @@ class PengumumanFragment : Fragment() {
             }
 
             // Set adapter ke RecyclerView
-            binding.rvPengumuman.layoutManager = LinearLayoutManager(requireContext())
+            binding.rvPengumuman.layoutManager = GridLayoutManager(requireContext(), 2)
             binding.rvPengumuman.adapter = PengumumanAdapter(pengumumanList) { pengumuman ->
                 val action = PengumumanFragmentDirections
                     .actionNavigationPengumumanToDetailPengumumanFragment(pengumuman)

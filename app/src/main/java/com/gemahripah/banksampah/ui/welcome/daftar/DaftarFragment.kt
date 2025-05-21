@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.welcome
+package com.gemahripah.banksampah.ui.welcome.daftar
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
