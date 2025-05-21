@@ -22,8 +22,11 @@ import android.os.Environment
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
+import com.gemahripah.banksampah.data.model.sampah.gabungan.SampahRelasi
 import com.gemahripah.banksampah.databinding.FragmentLaporanBinding
 import org.apache.poi.ss.usermodel.CellStyle
+import org.apache.poi.ss.usermodel.HorizontalAlignment
+import org.apache.poi.ss.usermodel.VerticalAlignment
 import org.apache.poi.xssf.usermodel.XSSFCellStyle
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
@@ -81,6 +84,105 @@ class LaporanFragment : Fragment() {
                 .show()
         }
 
+        binding.jenis.setOnClickListener {
+            AlertDialog.Builder(requireContext())
+                .setTitle("Konfirmasi")
+                .setMessage("Apakah Anda ingin menyimpan data nasabah?")
+                .setPositiveButton("Ya") { _, _ -> ambilDataSampah() }
+                .setNegativeButton("Batal", null)
+                .show()
+        }
+
+    }
+
+    private fun ambilDataSampah() {
+        lifecycleScope.launch {
+            showLoading()
+            try {
+                val columns = Columns.raw(
+                    """
+                created_at,
+                sphJenis,
+                sphSatuan,
+                sphHarga,
+                sphKeterangan,
+                sphKtgId (
+                    ktgNama
+                )
+                """.trimIndent()
+                )
+
+                val hasil = SupabaseProvider.client
+                    .from("sampah")
+                    .select(columns = columns)
+                    .decodeList<SampahRelasi>()
+
+                val formatterOutput = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale("id", "ID"))
+
+                val workbook = XSSFWorkbook()
+                val sheet = workbook.createSheet("Data Sampah")
+
+                // Font dan style header bold
+                val headerFont = workbook.createFont().apply { bold = true }
+                val headerStyle = workbook.createCellStyle().apply {
+                    setFont(headerFont)
+                    alignment = HorizontalAlignment.CENTER
+                    verticalAlignment = VerticalAlignment.CENTER
+                }
+
+                // Header
+                val headers = listOf("Nomor", "Tanggal Dibuat", "Jenis", "Kategori", "Satuan", "Harga", "Keterangan")
+                val headerRow = sheet.createRow(0)
+                headers.forEachIndexed { index, title ->
+                    val cell = headerRow.createCell(index)
+                    cell.setCellValue(title)
+                    cell.cellStyle = headerStyle
+
+                    // Set column width sesuai index, 20 karakter (20 * 256)
+                    sheet.setColumnWidth(index, 20 * 256)
+                }
+
+                // Isi data
+                hasil.forEachIndexed { i, sampah ->
+                    val row = sheet.createRow(i + 1)
+                    row.createCell(0).setCellValue((i + 1).toDouble())
+
+                    val tanggalFormatted = try {
+                        sampah.created_at?.let {
+                            val zonedDate = ZonedDateTime.parse(it)
+                            formatterOutput.format(zonedDate)
+                        } ?: "-"
+                    } catch (e: Exception) {
+                        "-"
+                    }
+                    row.createCell(1).setCellValue(tanggalFormatted)
+                    row.createCell(2).setCellValue(sampah.sphJenis ?: "")
+                    row.createCell(3).setCellValue(sampah.sphKtgId?.ktgNama ?: "")
+                    row.createCell(4).setCellValue(sampah.sphSatuan ?: "")
+                    row.createCell(5).setCellValue(sampah.sphHarga?.toDouble() ?: 0.0)
+                    row.createCell(6).setCellValue(sampah.sphKeterangan ?: "")
+                }
+
+                val fileName = "Data_Sampah_${System.currentTimeMillis()}.xlsx"
+                val filePath = File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                    fileName
+                )
+
+                FileOutputStream(filePath).use { output ->
+                    workbook.write(output)
+                }
+                workbook.close()
+
+                Toast.makeText(requireContext(), "Data sampah berhasil disimpan ke Excel di folder Download", Toast.LENGTH_LONG).show()
+
+            } catch (e: Exception) {
+                Log.e("SUPABASE_ERROR", "Gagal ambil data sampah: ${e.message}", e)
+                Toast.makeText(requireContext(), "Gagal ambil data sampah", Toast.LENGTH_SHORT).show()
+            } finally {
+                hideLoading()
+            }
+        }
     }
 
     private fun ambilDataNasabah() {
@@ -103,6 +205,8 @@ class LaporanFragment : Fragment() {
                     val font = workbook.createFont()
                     font.bold = true
                     setFont(font)
+                    alignment = HorizontalAlignment.CENTER
+                    verticalAlignment = VerticalAlignment.CENTER
                 }
 
                 val headers = listOf(
@@ -225,6 +329,8 @@ class LaporanFragment : Fragment() {
                     val font = workbook.createFont()
                     font.bold = true
                     setFont(font)
+                    alignment = HorizontalAlignment.CENTER
+                    verticalAlignment = VerticalAlignment.CENTER
                 }
 
                 val headers = listOf("Nomor", "Tanggal", "Nama", "Email", "Kategori", "Jenis Sampah", "Satuan", "Jumlah")
@@ -314,6 +420,8 @@ class LaporanFragment : Fragment() {
                     val font = workbook.createFont()
                     font.bold = true
                     setFont(font)
+                    alignment = HorizontalAlignment.CENTER
+                    verticalAlignment = VerticalAlignment.CENTER
                 }
 
                 // Buat header row
