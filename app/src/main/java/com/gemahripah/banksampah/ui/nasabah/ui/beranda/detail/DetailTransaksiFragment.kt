@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
@@ -99,7 +100,7 @@ class DetailTransaksiFragment : Fragment() {
                 }
 
                 withContext(Dispatchers.Main) {
-                    binding.rvDetail.layoutManager = LinearLayoutManager(requireContext())
+                    binding.rvDetail.layoutManager = GridLayoutManager(requireContext(), 2)
                     binding.rvDetail.adapter = DetailTransaksiAdapter(enrichedList)
                 }
 

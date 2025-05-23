@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical">
 
     <TextView
@@ -21,8 +22,10 @@
         android:id="@+id/transaksi"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="50dp"
         android:layout_marginHorizontal="10dp"
+        android:backgroundTint="@color/primary"
+        app:cardCornerRadius="10dp"
         >
 
         <LinearLayout
@@ -33,10 +36,21 @@
             android:padding="20dp"
             >
 
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/money"
+                app:tint="@color/white"
+                />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Laporan Transaksi"
+                android:fontFamily="@font/nunito_bold"
+                android:textColor="@color/white"
+                android:textSize="18dp"
+                android:layout_marginTop="10dp"
                 />
 
         </LinearLayout>
@@ -49,6 +63,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:layout_marginHorizontal="10dp"
+        android:backgroundTint="@color/hijau"
+        app:cardCornerRadius="10dp"
         >
 
         <LinearLayout
@@ -59,10 +75,21 @@
             android:padding="20dp"
             >
 
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/sampah"
+                app:tint="@color/white"
+                />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Laporan Setoran"
+                android:fontFamily="@font/nunito_bold"
+                android:textColor="@color/white"
+                android:textSize="18dp"
+                android:layout_marginTop="10dp"
                 />
 
         </LinearLayout>
@@ -75,6 +102,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:layout_marginHorizontal="10dp"
+        app:cardCornerRadius="10dp"
         >
 
         <LinearLayout
@@ -82,13 +110,25 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="center_horizontal"
+            android:background="@drawable/gradient_kuning_biru"
             android:padding="20dp"
             >
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/profil"
+                app:tint="@color/white"
+                />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Laporan Nasabah"
+                android:fontFamily="@font/nunito_bold"
+                android:textColor="@color/white"
+                android:textSize="18dp"
+                android:layout_marginTop="10dp"
                 />
 
         </LinearLayout>
@@ -101,6 +141,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:layout_marginHorizontal="10dp"
+        android:backgroundTint="@color/merah"
+        app:cardCornerRadius="10dp"
         >
 
         <LinearLayout
@@ -111,10 +153,21 @@
             android:padding="20dp"
             >
 
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/jenis"
+                app:tint="@color/white"
+                />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Laporan Jenis Sampah"
+                android:fontFamily="@font/nunito_bold"
+                android:textColor="@color/white"
+                android:textSize="18dp"
+                android:layout_marginTop="10dp"
                 />
 
         </LinearLayout>

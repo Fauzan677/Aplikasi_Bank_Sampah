@@ -3,7 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@color/light_gray">
 
     <LinearLayout
         android:id="@+id/container_input"
@@ -45,7 +46,7 @@
             android:text="Nama Nasabah"
             android:textSize="20sp"
             android:textColor="@color/black"
-            android:layout_marginStart="30dp"
+            android:layout_marginStart="20dp"
             android:layout_marginTop="20dp"
             />
 
@@ -53,7 +54,7 @@
             android:id="@+id/nama"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="30dp"
+            android:layout_marginHorizontal="20dp"
             android:hint="Masukkan Nama Nasabah"
             android:background="@drawable/et_border"
             android:padding="20dp"
@@ -73,7 +74,7 @@
             android:text="Jenis Sampah"
             android:textSize="20sp"
             android:textColor="@color/black"
-            android:layout_marginStart="30dp"
+            android:layout_marginStart="20dp"
             android:layout_marginTop="10dp"
             />
 
@@ -81,7 +82,7 @@
             android:id="@+id/jenis1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="30dp"
+            android:layout_marginHorizontal="20dp"
             android:hint="Pilih Jenis Sampah"
             android:background="@drawable/et_border"
             android:padding="20dp"
@@ -102,7 +103,7 @@
             android:text="Jumlah Setor ()"
             android:textSize="20sp"
             android:textColor="@color/black"
-            android:layout_marginStart="30dp"
+            android:layout_marginStart="20dp"
             android:layout_marginTop="10dp"
             />
 
@@ -110,7 +111,7 @@
             android:id="@+id/jumlah1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="30dp"
+            android:layout_marginHorizontal="20dp"
             android:hint="Masukkan Jumlah Setor"
             android:inputType="number"
             android:background="@drawable/et_border"
@@ -123,8 +124,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Tambah"
+            android:backgroundTint="@color/secondary"
             android:layout_marginTop="10dp"
-            android:layout_marginHorizontal="30dp"
+            android:layout_marginHorizontal="20dp"
             />
 
         <TextView
@@ -134,7 +136,7 @@
             android:text="Keterangan"
             android:textSize="20sp"
             android:textColor="@color/black"
-            android:layout_marginStart="30dp"
+            android:layout_marginStart="20dp"
             android:layout_marginTop="20dp"
             />
 
@@ -150,7 +152,7 @@
             android:padding="10dp"
             android:background="@drawable/et_border"
             android:gravity="top"
-            android:layout_marginHorizontal="30dp"
+            android:layout_marginHorizontal="20dp"
             android:layout_marginTop="10dp"
             />
 
@@ -159,6 +161,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Konfirmasi"
+            android:textColor="@color/white"
             android:layout_marginVertical="50dp"
             android:layout_marginHorizontal="30dp"
             />

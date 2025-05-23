@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".admin.ui.pengaturan.jenis.DetailJenisSampahFragment">
+    android:background="@color/light_gray">
 
     <TextView
         android:id="@+id/judul"
@@ -24,7 +24,7 @@
         android:id="@+id/sampah"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Kertas"
+        android:text="Sampah"
         android:fontFamily="@font/nunito_bold"
         android:textColor="@color/black"
         android:textSize="30sp"
@@ -39,7 +39,7 @@
         android:text="Jenis Sampah"
         android:textSize="20sp"
         android:textColor="@color/black"
-        android:layout_marginStart="30dp"
+        android:layout_marginStart="20dp"
         android:layout_marginTop="30dp"
         />
 
@@ -47,7 +47,7 @@
         android:id="@+id/nama"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="30dp"
+        android:layout_marginHorizontal="20dp"
         android:hint="Masukkan Jenis Sampah"
         android:inputType="text"
         android:background="@drawable/et_border"
@@ -62,7 +62,7 @@
         android:text="Harga"
         android:textSize="20sp"
         android:textColor="@color/black"
-        android:layout_marginStart="30dp"
+        android:layout_marginStart="20dp"
         android:layout_marginTop="10dp"
         />
 
@@ -70,7 +70,7 @@
         android:id="@+id/email"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="30dp"
+        android:layout_marginHorizontal="20dp"
         android:hint="Masukkan Harga Sampah"
         android:inputType="text"
         android:background="@drawable/et_border"
@@ -84,7 +84,7 @@
         android:layout_height="wrap_content"
         android:text="Konfirmasi"
         android:textColor="@color/white"
-        android:backgroundTint="@color/secondary"
+        android:backgroundTint="@color/primary"
         android:layout_marginVertical="50dp"
         android:layout_marginHorizontal="30dp"
         />

@@ -29,7 +29,6 @@ class MainActivity : AppCompatActivity() {
 
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
 
-
         val supabase = SupabaseProvider.client
 
         lifecycleScope.launch {
@@ -37,9 +36,6 @@ class MainActivity : AppCompatActivity() {
 
             val session = supabase.auth.currentSessionOrNull()
             val user = session?.user
-
-            Log.d("SupabaseSession", "Session setelah load: $session")
-            Log.d("SupabaseSession", "User setelah load: $user")
 
             if (user != null) {
                 val userId = user.id

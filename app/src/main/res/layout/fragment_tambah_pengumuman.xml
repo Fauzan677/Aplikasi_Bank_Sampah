@@ -3,7 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@color/light_gray"
+    >
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -43,7 +45,7 @@
             android:text="Judul Pengumuman"
             android:textSize="20sp"
             android:textColor="@color/black"
-            android:layout_marginStart="30dp"
+            android:layout_marginStart="20dp"
             android:layout_marginTop="20dp"
             />
 
@@ -51,7 +53,7 @@
             android:id="@+id/nama"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="30dp"
+            android:layout_marginHorizontal="20dp"
             android:hint="Masukkan Judul Pengumuman"
             android:inputType="text"
             android:background="@drawable/et_border"
@@ -66,7 +68,7 @@
             android:text="Isi Pengumuman"
             android:textSize="20sp"
             android:textColor="@color/black"
-            android:layout_marginStart="30dp"
+            android:layout_marginStart="20dp"
             android:layout_marginTop="10dp"
             />
 
@@ -82,7 +84,7 @@
             android:padding="10dp"
             android:background="@drawable/et_border"
             android:gravity="top"
-            android:layout_marginHorizontal="30dp"
+            android:layout_marginHorizontal="20dp"
             android:layout_marginTop="10dp"
             />
 
@@ -93,7 +95,7 @@
             android:fontFamily="@font/nunito_semibold"
             android:textColor="@color/black"
             android:textSize="20sp"
-            android:layout_marginStart="30dp"
+            android:layout_marginStart="20dp"
             android:layout_marginTop="10dp"
             />
 
@@ -101,7 +103,7 @@
             android:id="@+id/gambar_file"
             android:layout_width="match_parent"
             android:layout_height="150dp"
-            android:layout_marginHorizontal="30dp"
+            android:layout_marginHorizontal="20dp"
             android:background="@drawable/dotted_border"
             android:clickable="true"
             android:focusable="true"
@@ -132,6 +134,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Konfirmasi"
+            android:textColor="@color/white"
             android:layout_marginVertical="50dp"
             android:layout_marginHorizontal="30dp"
             />

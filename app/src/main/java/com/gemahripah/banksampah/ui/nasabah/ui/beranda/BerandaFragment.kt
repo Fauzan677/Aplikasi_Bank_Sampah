@@ -45,11 +45,8 @@ class BerandaFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var nasabahViewModel: NasabahViewModel
 
-    private lateinit var riwayatAdapter: RiwayatAdapter
-
     private val client = SupabaseProvider.client
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -73,7 +70,6 @@ class BerandaFragment : Fragment() {
         return root
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun fetchRiwayatTransaksi(pgnId: String) {
         lifecycleScope.launch(Dispatchers.IO) {
             try {

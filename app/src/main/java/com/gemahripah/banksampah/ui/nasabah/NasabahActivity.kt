@@ -22,7 +22,12 @@ class NasabahActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        pengguna = intent.getParcelableExtra<Pengguna>("EXTRA_PENGGUNA")
+        @Suppress("DEPRECATION")
+        pengguna = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra("EXTRA_PENGGUNA", Pengguna::class.java)
+        } else {
+            intent.getParcelableExtra("EXTRA_PENGGUNA")
+        }
 
         // Inisialisasi ViewModel
         viewModel = ViewModelProvider(this)[NasabahViewModel::class.java]

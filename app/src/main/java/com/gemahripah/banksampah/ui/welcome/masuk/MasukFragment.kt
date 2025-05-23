@@ -14,7 +14,7 @@ import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.data.datastore.SessionPreference
-import com.gemahripah.banksampah.data.remote.Pengguna
+import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.remote.SessionData
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentMasukBinding
@@ -95,7 +95,9 @@ class MasukFragment : Fragment() {
                             val intent = if (isAdmin) {
                                 Intent(requireContext(), AdminActivity::class.java)
                             } else {
-                                Intent(requireContext(), NasabahActivity::class.java)
+                                Intent(requireContext(), NasabahActivity::class.java).apply {
+                                    putExtra("EXTRA_PENGGUNA", response) // pastikan 'response' adalah objek dari class Pengguna
+                                }
                             }
 
                             try {
