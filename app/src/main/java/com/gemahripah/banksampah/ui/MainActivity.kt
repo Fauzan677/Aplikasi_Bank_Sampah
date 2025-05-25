@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
         val supabase = SupabaseProvider.client
 
         lifecycleScope.launch {
-            supabase.auth.loadFromStorage() // tunggu session dimuat dulu secara eksplisit
+            supabase.auth.loadFromStorage()
 
             val session = supabase.auth.currentSessionOrNull()
             val user = session?.user

@@ -301,13 +301,13 @@
         android:name="com.gemahripah.banksampah.ui.admin.pengumuman.detail.DetailPengumumanFragment"
         android:label="fragment_detail_pengumuman"
         tools:layout="@layout/fragment_detail_pengumuman_nasabah" >
-        <action
-            android:id="@+id/action_detailPengumumanFragment_to_tambahPengumumanFragment"
-            app:destination="@id/tambahPengumumanFragment" />
 
         <argument
             android:name="pengumuman"
             app:argType="com.gemahripah.banksampah.data.model.pengumuman.Pengumuman"/>
+        <action
+            android:id="@+id/action_detailPengumumanFragment_to_editPengumumanFragment"
+            app:destination="@id/editPengumumanFragment" />
 
     </fragment>
     <fragment
@@ -315,5 +315,20 @@
         android:name="com.gemahripah.banksampah.ui.admin.pengaturan.laporan.LaporanFragment"
         android:label="fragment_laporan"
         tools:layout="@layout/fragment_laporan" />
+
+    <fragment
+        android:id="@+id/editPengumumanFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengumuman.edit.EditPengumumanFragment"
+        android:label="EditPengumumanFragment"
+        tools:layout="@layout/fragment_tambah_pengumuman">
+        <action
+            android:id="@+id/action_editPengumumanFragment_to_navigation_pengumuman"
+            app:destination="@id/navigation_pengumuman" />
+
+        <argument
+            android:name="pengumuman"
+            app:argType="com.gemahripah.banksampah.data.model.pengumuman.Pengumuman"/>
+
+    </fragment>
 
 </navigation>

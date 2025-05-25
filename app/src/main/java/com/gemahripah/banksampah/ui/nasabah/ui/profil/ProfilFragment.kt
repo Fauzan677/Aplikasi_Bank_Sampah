@@ -31,6 +31,15 @@ class ProfilFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentProfilBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        binding.nasabah.visibility = View.GONE
+        binding.jenis.visibility = View.GONE
+        binding.btCetak.visibility = View.GONE
 
         viewModel.pengguna.observe(viewLifecycleOwner) { pengguna ->
             if (pengguna != null) {
@@ -43,27 +52,19 @@ class ProfilFragment : Fragment() {
             findNavController().navigate(R.id.action_navigation_notifications_to_editProfilFragment2)
         }
 
-        // Set up logout action
         binding.logout.setOnClickListener {
             lifecycleScope.launch {
                 try {
-                    // Log out the user
                     SupabaseProvider.client.auth.signOut()
-
-                    // Arahkan kembali ke halaman login (atau WelcomeActivity)
                     val intent = Intent(requireContext(), MainActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
-
                     Toast.makeText(requireContext(), "Logout berhasil", Toast.LENGTH_SHORT).show()
-
                 } catch (e: RestException) {
                     Toast.makeText(requireContext(), "Terjadi kesalahan: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
-
-        return binding.root
     }
 
     override fun onDestroyView() {

@@ -72,6 +72,7 @@ dependencies {
     implementation("org.apache.poi:poi:3.17")
     implementation("com.fasterxml:aalto-xml:1.0.0")
 
+    implementation ("com.github.chrisbanes:PhotoView:2.3.0")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

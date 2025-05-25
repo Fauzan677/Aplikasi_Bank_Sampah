@@ -39,6 +39,12 @@ class PengumumanFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        binding.tambah.visibility = View.GONE
+
+        val layoutParams = binding.rvPengumuman.layoutParams as ViewGroup.MarginLayoutParams
+        layoutParams.topMargin = (40 * resources.displayMetrics.density).toInt()
+        binding.rvPengumuman.layoutParams = layoutParams
+
         loadPengumuman()
     }
 

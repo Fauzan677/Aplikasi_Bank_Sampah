@@ -17,7 +17,9 @@ import com.gemahripah.banksampah.ui.admin.pengaturan.profil.EditProfilFragmentAr
 import com.gemahripah.banksampah.ui.nasabah.NasabahViewModel
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class EditProfilFragment : Fragment() {
 
@@ -37,17 +39,20 @@ class EditProfilFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        var userId: String? = null // Dideklarasikan di sini agar bisa diakses di seluruh fungsi
+        var userId: String? = null
+        var emailLama: String? = null
+
+        binding.judul.text = "Edit Pengguna"
+        binding.hapus.visibility = View.GONE
 
         viewModel.pengguna.observe(viewLifecycleOwner) { pengguna ->
             if (pengguna != null) {
                 binding.nama.setText(pengguna.pgnNama ?: "")
                 binding.email.setText(pengguna.pgnEmail ?: "")
-                userId = pengguna.pgnId // Diinisialisasi saat observer terpanggil
+                userId = pengguna.pgnId
+                emailLama = pengguna.pgnEmail
             }
         }
-
-
 
         binding.konfirmasi.setOnClickListener {
             val namaBaru = binding.nama.text.toString().trim()
@@ -59,39 +64,58 @@ class EditProfilFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            // Jalankan pembaruan data dengan Supabase
             lifecycleScope.launch {
-                try {
-                    SupabaseProvider.client.from("pengguna").update(
-                        {
-                            set("pgnNama", namaBaru)
-                            set("pgnEmail", emailBaru)
-                        }
-                    ) {
-                        filter {
-                            if (userId != null) {
-                                eq("pgnId", userId!!)
+                withContext(Dispatchers.IO) {
+                    try {
+                        // Update di tabel pengguna
+                        SupabaseProvider.client.from("pengguna").update(
+                            {
+                                set("pgnNama", namaBaru)
+                                set("pgnEmail", emailBaru)
+                            }
+                        ) {
+                            filter {
+                                userId?.let { eq("pgnId", it) }
                             }
                         }
-                    }
 
-                    if (passwordBaru.isNotEmpty()) {
-                        try {
-                            SupabaseProvider.client.auth.updateUser {
-                                password = passwordBaru
+                        if (emailBaru != emailLama) {
+                            try {
+                                SupabaseProvider.client.auth.updateUser {
+                                    email = emailBaru
+                                }
+                            } catch (e: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(requireContext(), "Gagal update email auth: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
                             }
-                            Toast.makeText(requireContext(), "Password berhasil diperbarui", Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) {
-                            Toast.makeText(requireContext(), "Gagal update password: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+
+                        if (passwordBaru.isNotEmpty()) {
+                            try {
+                                SupabaseProvider.client.auth.updateUser {
+                                    password = passwordBaru
+                                }
+                            } catch (e: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(requireContext(), "Gagal update password: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(requireContext(), "Data pengguna berhasil diperbarui", Toast.LENGTH_SHORT).show()
+                            findNavController().navigate(R.id.action_editProfilFragment_to_navigation_pengaturan)
+                        }
+
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(requireContext(), "Terjadi kesalahan: ${e.message}", Toast.LENGTH_SHORT).show()
                         }
                     }
-
-                    Toast.makeText(requireContext(), "Data pengguna berhasil diperbarui", Toast.LENGTH_SHORT).show()
-                    findNavController().navigate(R.id.action_editProfilFragment_to_navigation_pengaturan)
-                } catch (e: Exception) {
-                    Toast.makeText(requireContext(), "Terjadi kesalahan: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
+
         }
     }
 
