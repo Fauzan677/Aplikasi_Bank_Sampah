@@ -1,14 +1,20 @@
 package com.gemahripah.banksampah.ui.admin.pengumuman.detail
 
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.gemahripah.banksampah.R
+import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentDetailPengumumanNasabahBinding
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.storage.storage
+import kotlinx.coroutines.launch
 
 class DetailPengumumanFragment : Fragment() {
 
@@ -51,6 +57,13 @@ class DetailPengumumanFragment : Fragment() {
             }
         }
 
+        binding.hapus.setOnClickListener {
+            pengumuman?.let { pengumuman ->
+                pengumuman.pmnId?.let { it1 -> hapusPengumuman(it1, pengumuman.pmnGambar) }
+            }
+        }
+
+
     }
 
     private fun showZoomDialog(imageUrl: String) {
@@ -69,6 +82,37 @@ class DetailPengumumanFragment : Fragment() {
 
         dialog.show()
 
+    }
+
+    private fun hapusPengumuman(pengumumanId: Long, gambarUrl: String?) {
+        val supabase = SupabaseProvider.client
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                supabase.from("pengumuman").delete {
+                    filter {
+                        eq("pmnId", pengumumanId)
+                    }
+                }
+
+                gambarUrl?.let { url ->
+                    val fileName = url.substringAfterLast("/")
+                    val path = "images/$fileName"
+                    val bucket = supabase.storage.from("pengumuman")
+
+                    try {
+                        bucket.delete(path)
+                    } catch (e: Exception) {
+                        Log.e("HapusGambar", "Gagal hapus gambar: ${e.message}")
+                    }
+                }
+
+                findNavController().popBackStack()
+
+            } catch (e: Exception) {
+                Log.e("HapusPengumuman", "Terjadi error saat menghapus pengumuman: ${e.message}")
+            }
+        }
     }
 
     override fun onDestroyView() {

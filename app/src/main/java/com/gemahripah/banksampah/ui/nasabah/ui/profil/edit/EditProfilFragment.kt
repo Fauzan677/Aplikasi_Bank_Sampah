@@ -1,6 +1,7 @@
 package com.gemahripah.banksampah.ui.nasabah.ui.profil.edit
 
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -67,7 +68,7 @@ class EditProfilFragment : Fragment() {
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     try {
-                        // Update di tabel pengguna
+
                         SupabaseProvider.client.from("pengguna").update(
                             {
                                 set("pgnNama", namaBaru)
@@ -84,9 +85,11 @@ class EditProfilFragment : Fragment() {
                                 SupabaseProvider.client.auth.updateUser {
                                     email = emailBaru
                                 }
+
                             } catch (e: Exception) {
                                 withContext(Dispatchers.Main) {
                                     Toast.makeText(requireContext(), "Gagal update email auth: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    Log.e("EditProfilFragment", "Error update email: ${e.message}", e)
                                 }
                             }
                         }
@@ -105,7 +108,7 @@ class EditProfilFragment : Fragment() {
 
                         withContext(Dispatchers.Main) {
                             Toast.makeText(requireContext(), "Data pengguna berhasil diperbarui", Toast.LENGTH_SHORT).show()
-                            findNavController().navigate(R.id.action_editProfilFragment_to_navigation_pengaturan)
+                            findNavController().navigate(R.id.action_editProfilFragment_to_navigation_notifications)
                         }
 
                     } catch (e: Exception) {

@@ -53,34 +53,46 @@ class EditProfilFragment : Fragment() {
                 return@setOnClickListener
             }
 
+            val isNamaBerubah = namaBaru != pengguna.pgnNama
+            val isEmailBerubah = emailBaru != pengguna.pgnEmail
+            val isPasswordBerubah = passwordBaru.isNotEmpty()
+
+            if (!isNamaBerubah && !isEmailBerubah && !isPasswordBerubah) {
+                Toast.makeText(requireContext(), "Tidak ada perubahan data", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             lifecycleScope.launch {
                 try {
-                    SupabaseProvider.client.from("pengguna").update(
-                        {
-                            set("pgnNama", namaBaru)
-                            set("pgnEmail", emailBaru)
-                        }
-                    ) {
-                        filter {
-                            if (userId != null) {
-                                eq("pgnId", userId)
+
+                    if (isNamaBerubah || isEmailBerubah) {
+                        SupabaseProvider.client.from("pengguna").update({
+                            if (isNamaBerubah) set("pgnNama", namaBaru)
+                            if (isEmailBerubah) set("pgnEmail", emailBaru)
+                        }) {
+                            filter {
+                                if (userId != null) {
+                                    eq("pgnId", userId)
+                                }
                             }
                         }
                     }
 
-                    if (passwordBaru.isNotEmpty()) {
+                    if (isEmailBerubah || isPasswordBerubah) {
                         try {
                             SupabaseProvider.client.auth.updateUser {
-                                password = passwordBaru
+                                if (isEmailBerubah) email = emailBaru
+                                if (isPasswordBerubah) password = passwordBaru
                             }
-                            Toast.makeText(requireContext(), "Password berhasil diperbarui", Toast.LENGTH_SHORT).show()
+
                         } catch (e: Exception) {
-                            Toast.makeText(requireContext(), "Gagal update password: ${e.message}", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), "Gagal update Auth: ${e.message}", Toast.LENGTH_SHORT).show()
                         }
                     }
 
                     Toast.makeText(requireContext(), "Data pengguna berhasil diperbarui", Toast.LENGTH_SHORT).show()
                     findNavController().navigate(R.id.action_editProfilFragment_to_navigation_pengaturan)
+
                 } catch (e: Exception) {
                     Toast.makeText(requireContext(), "Terjadi kesalahan: ${e.message}", Toast.LENGTH_SHORT).show()
                 }

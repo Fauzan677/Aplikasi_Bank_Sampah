@@ -112,47 +112,6 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Gambar"
-            android:fontFamily="@font/nunito_semibold"
-            android:textColor="@color/black"
-            android:textSize="20sp"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="10dp"
-            />
-
-        <FrameLayout
-            android:id="@+id/gambar_file"
-            android:layout_width="match_parent"
-            android:layout_height="150dp"
-            android:layout_marginHorizontal="20dp"
-            android:background="@drawable/dotted_border"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center">
-
-            <TextView
-                android:id="@+id/upload_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Pilih File atau Kamera"
-                android:textColor="@color/black"
-                android:textSize="14sp"
-                android:fontFamily="@font/nunito_regular"
-                android:layout_gravity="center"
-                android:visibility="visible"/>
-
-            <ImageView
-                android:id="@+id/selected_image_view"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:visibility="gone" />
-
-        </FrameLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
             android:fontFamily="@font/nunito_semibold"
             android:text="Keterangan"
             android:textSize="20sp"

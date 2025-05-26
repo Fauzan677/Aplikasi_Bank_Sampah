@@ -49,8 +49,8 @@ class PenarikanSaldoFragment : Fragment() {
         val pengguna = arguments?.let { PenarikanSaldoFragmentArgs.fromBundle(it).pengguna }
 
         pengguna?.let {
-            binding.nama.setText(it.pgnNama, false) // false agar tidak trigger item click listener
-            selectedPgnId = it.pgnId // set juga userId jika penggunanya sudah diketahui
+            binding.nama.setText(it.pgnNama, false)
+            selectedPgnId = it.pgnId
         }
 
         fetchNamaPengguna()
@@ -65,7 +65,6 @@ class PenarikanSaldoFragment : Fragment() {
                     .select()
                     .decodeList<Pengguna>()
 
-                // Buat map nama -> Pengguna
                 namaToPenggunaMap.clear()
                 penggunaList.forEach { pengguna ->
                     pengguna.pgnNama?.let {
@@ -84,7 +83,6 @@ class PenarikanSaldoFragment : Fragment() {
                 binding.nama.setAdapter(adapter)
                 binding.nama.threshold = 1
 
-                // Set listener saat nama dipilih
                 binding.nama.setOnItemClickListener { _: AdapterView<*>, _, position, _ ->
                     val selectedNama = adapter.getItem(position)
                     val penggunaTerpilih = namaToPenggunaMap[selectedNama]
@@ -94,7 +92,6 @@ class PenarikanSaldoFragment : Fragment() {
                         tampilkanSaldoPengguna(selectedPgnId!!)
                     }
                 }
-
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -119,7 +116,7 @@ class PenarikanSaldoFragment : Fragment() {
 
             lifecycleScope.launch {
                 try {
-                    // Panggil function hitung_saldo_pengguna di Supabase
+
                     val rpcParams = buildJsonObject {
                         put("pgn_id_input", selectedPgnId!!)
                     }
@@ -129,21 +126,14 @@ class PenarikanSaldoFragment : Fragment() {
                         rpcParams
                     )
 
-                    Log.d("PenarikanSaldo", "Mengambil saldo untuk: $selectedPgnId")
-                    Log.d("PenarikanSaldo", "Param terkirim ke RPC: $rpcParams")
-                    Log.d("PenarikanSaldo", "Response JSON: ${response.data}")
-
-
                     val saldo: Double = response.decodeAs<Double>()
-
-                    Log.d("PenarikanSaldo", "Saldo: $saldo")
 
                     if (saldo < jumlahInput) {
                         binding.jumlah.requestFocus()
                         binding.jumlah.error = "Saldo tidak mencukupi. Sisa saldo: Rp %.2f".format(saldo)
                     } else {
                         try {
-                            // Upload transaksi (Keluar)
+
                             val transaksiResponse = SupabaseProvider.client.postgrest["transaksi"]
                                 .insert(
                                     buildJsonObject {
@@ -157,7 +147,7 @@ class PenarikanSaldoFragment : Fragment() {
 
                             val transaksiId = transaksiResponse.tskId
                             if (transaksiId != null) {
-                                // Masukkan detail transaksi
+
                                 SupabaseProvider.client.postgrest["detail_transaksi"]
                                     .insert(
                                         buildJsonObject {
@@ -166,19 +156,15 @@ class PenarikanSaldoFragment : Fragment() {
                                         }
                                     )
 
-                                // Berhasil melakukan penarikan
                                 Toast.makeText(requireContext(), "Penarikan saldo berhasil", Toast.LENGTH_SHORT).show()
 
-                                // Navigasi kembali ke daftar transaksi (ubah ID sesuai NavGraph kamu)
                                 findNavController().navigate(R.id.action_penarikanSaldoFragment_to_navigation_transaksi)
 
                             } else {
-                                println("Gagal mendapatkan ID transaksi")
                             }
 
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            // Tampilkan error UI jika perlu
                         }
                     }
 
@@ -200,16 +186,11 @@ class PenarikanSaldoFragment : Fragment() {
                     }
                 )
 
-                // Cek apakah response.data berisi nilai yang valid
                 val saldo = response.data.toDoubleOrNull()
 
                 if (saldo != null) {
-                    Log.d("PenarikanSaldo", "Saldo: $saldo")
-                    // Tampilkan saldo di UI
                     binding.saldo.text = "Rp %.2f".format(saldo)
                 } else {
-                    Log.d("PenarikanSaldo", "Saldo tidak valid: ${response.data}")
-                    // Tampilkan pesan error jika saldo tidak valid
                     binding.saldo.text = "0"
                 }
 

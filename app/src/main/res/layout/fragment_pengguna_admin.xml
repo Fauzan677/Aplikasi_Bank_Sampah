@@ -98,14 +98,39 @@
         android:layout_marginEnd="50dp"
         />
 
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/searchBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/pengguna"
+        android:layout_marginHorizontal="20dp"
+        android:hint="Cari nama nasabah"
+        app:boxStrokeColor="@color/primary"
+        app:hintTextColor="@color/primary"
+        app:boxBackgroundMode="outline"
+        android:layout_marginVertical="5dp"
+        >
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/search_nasabah"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:imeOptions="actionSearch"
+            />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_list_Nasabah"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="10dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/pengguna"
+        app:layout_constraintTop_toBottomOf="@id/searchBar"
         />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

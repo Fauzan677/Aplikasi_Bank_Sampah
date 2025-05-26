@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginBottom="10dp"
+        android:layout_marginBottom="20dp"
         >
 
         <androidx.cardview.widget.CardView
@@ -114,7 +114,7 @@
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="@drawable/border_kuning"
+                    android:background="@drawable/border_biru"
                     android:paddingBottom="20dp"
                     >
 
@@ -162,7 +162,7 @@
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="@drawable/border_biru"
+                    android:background="@drawable/border_kuning"
                     android:paddingBottom="20dp"
                     >
 
@@ -216,8 +216,8 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="20dp"
             android:hint="Cari nama nasabah"
-            app:boxStrokeColor="@color/secondary"
-            app:hintTextColor="@color/secondary"
+            app:boxStrokeColor="@color/primary"
+            app:hintTextColor="@color/primary"
             app:boxBackgroundMode="outline"
             android:layout_marginVertical="5dp"
             >
@@ -232,16 +232,25 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_list_nasabah"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="300dp"
             android:layout_marginVertical="5dp"
-            android:layout_marginHorizontal="5dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/list_Nasabah"
-            />
+            android:layout_marginHorizontal="5dp">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_list_nasabah"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <ProgressBar
+                android:id="@+id/progress_nasabah"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:layout_gravity="center" />
+
+        </FrameLayout>
 
     </LinearLayout>
 

@@ -91,8 +91,6 @@ class BerandaFragment : Fragment() {
                         }
                         .decodeSingle<Pengguna>()
 
-                    Log.d("TransaksiFragment", "ID Transaksi: ${transaksi.tskId}")
-
                     val totalBerat = if (transaksi.tskTipe == "Masuk") {
                         val response = client.postgrest.rpc(
                             "hitung_total_jumlah",
@@ -100,7 +98,6 @@ class BerandaFragment : Fragment() {
                                 put("tsk_id_input", transaksi.tskId)
                             }
                         )
-                        Log.d("TransaksiFragment", "totalBerat response: ${response.data}")
                         response.data?.toDoubleOrNull()
                     } else null
 
@@ -149,38 +146,12 @@ class BerandaFragment : Fragment() {
                             val action = BerandaFragmentDirections
                                 .actionNavigationHomeToDetailTransaksiFragment(riwayat)
                             findNavController().navigate(action)
-                            Log.d("TransaksiFragment", "Navigating to DetailTransaksi with Riwayat: $riwayat")
                         }
                     }
                 }
 
             } catch (e: Exception) {
                 Log.e("BerandaFragment", "Error saat fetch riwayat transaksi", e)
-            }
-        }
-    }
-
-    private fun getRiwayatTransaksi(pgnId: String) {
-        lifecycleScope.launch {
-            try {
-                val response = withContext(Dispatchers.IO) {
-                    SupabaseProvider.client
-                        .postgrest
-                        .from("transaksi")
-                        .select() {
-                            filter {
-                                eq("tskIdPengguna", pgnId)
-                            }
-                        }
-                }
-
-                val data = response.data
-                if (data != null) {
-                    val transaksiList = kotlinx.serialization.json.Json.decodeFromString<List<Transaksi>>(data.toString())
-                } else {
-                }
-            } catch (e: Exception) {
-                Log.e("BerandaFragment", "Gagal fetch riwayat transaksi", e)
             }
         }
     }

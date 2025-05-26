@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
+import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -36,6 +37,9 @@ class TransaksiFragment : Fragment() {
     private var _binding: FragmentTransaksiBinding? = null
     private val binding get() = _binding!!
 
+    private var fullRiwayatList: List<RiwayatTransaksi> = emptyList()
+    private lateinit var adapter: RiwayatTransaksiAdapter
+
     private val client = SupabaseProvider.client
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -56,6 +60,25 @@ class TransaksiFragment : Fragment() {
             findNavController().navigate(R.id.action_navigation_transaksi_to_penarikanSaldoFragment)
         }
 
+        binding.searchRiwayat.addTextChangedListener { text ->
+            val query = text.toString().lowercase(Locale.getDefault())
+            val filteredList = fullRiwayatList.filter {
+                it.nama.lowercase(Locale.getDefault()).contains(query)
+            }
+            adapter = RiwayatTransaksiAdapter(filteredList) { riwayat ->
+                val action = TransaksiFragmentDirections
+                    .actionNavigationTransaksiToDetailTransaksiFragment(riwayat)
+                findNavController().navigate(action)
+            }
+            binding.rvRiwayat.adapter = adapter
+        }
+
+        binding.searchRiwayat.setOnEditorActionListener { v, actionId, event ->
+            val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            imm.hideSoftInputFromWindow(v.windowToken, 0)
+            true
+        }
+
         fetchRiwayatTransaksi()
 
         return root
@@ -63,6 +86,8 @@ class TransaksiFragment : Fragment() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun fetchRiwayatTransaksi() {
+        binding.progressRiwayat.visibility = View.VISIBLE
+
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val transaksiList = client.postgrest.from("transaksi")
@@ -80,9 +105,6 @@ class TransaksiFragment : Fragment() {
                         }
                         .decodeSingle<Pengguna>()
 
-                    Log.d("TransaksiFragment", "ID Transaksi: ${transaksi.tskId}")
-
-                    // Cek apakah tipe transaksi "masuk" atau "keluar"
                     val totalBerat = if (transaksi.tskTipe == "Masuk") {
                         val response = client.postgrest.rpc(
                             "hitung_total_jumlah",
@@ -90,11 +112,10 @@ class TransaksiFragment : Fragment() {
                                 put("tsk_id_input", transaksi.tskId)
                             }
                         )
-                        Log.d("TransaksiFragment", "totalBerat response: ${response.data}")
                         response.data?.toDoubleOrNull()
+
                     } else null
 
-                    // Jika tipe transaksi adalah "keluar", gunakan dtlJumlah
                     val totalHarga = if (transaksi.tskTipe == "Keluar") {
                         val detailList = client.postgrest.from("detail_transaksi")
                             .select {
@@ -137,19 +158,24 @@ class TransaksiFragment : Fragment() {
                 }
 
                 withContext(Dispatchers.Main) {
-                    binding.rvRiwayat.apply {
-                        layoutManager = LinearLayoutManager(requireContext())
-                        adapter = RiwayatTransaksiAdapter(hasil) { riwayat ->
-                            val action = TransaksiFragmentDirections
-                                .actionNavigationTransaksiToDetailTransaksiFragment(riwayat)
-                            findNavController().navigate(action)
-                            Log.d("TransaksiFragment", "Navigating to DetailTransaksi with Riwayat: $riwayat")
-                        }
+                    fullRiwayatList = hasil
+                    adapter = RiwayatTransaksiAdapter(fullRiwayatList) { riwayat ->
+                        val action = TransaksiFragmentDirections
+                            .actionNavigationTransaksiToDetailTransaksiFragment(riwayat)
+                        findNavController().navigate(action)
                     }
+                    binding.rvRiwayat.layoutManager = LinearLayoutManager(requireContext())
+                    binding.rvRiwayat.adapter = adapter
+
+                    binding.progressRiwayat.visibility = View.GONE
                 }
 
             } catch (e: Exception) {
                 e.printStackTrace()
+
+                withContext(Dispatchers.Main) {
+                    binding.progressRiwayat.visibility = View.GONE
+                }
             }
         }
     }

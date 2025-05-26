@@ -10,6 +10,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentDetailTransaksiBinding
@@ -44,6 +45,21 @@ class DetailTransaksiFragment : Fragment() {
 
         binding.nominal.text = riwayat.totalHarga.toString()
         binding.keterangan.text = riwayat.tskKeterangan
+
+        when (riwayat.tipe.lowercase()) {
+            "masuk" -> {
+                binding.jenis.setCardBackgroundColor(resources.getColor(R.color.hijau, null))
+                binding.transaksi.text = "Transaksi Masuk"
+            }
+            "keluar" -> {
+                binding.detail.visibility = View.GONE
+                binding.rvDetail.visibility = View.GONE
+
+                binding.jenis.setCardBackgroundColor(resources.getColor(R.color.merah, null))
+                binding.transaksi.text = "Transaksi Keluar"
+            }
+        }
+
 
         getDetailTransaksi(idTransaksi)
 

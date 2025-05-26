@@ -62,5 +62,9 @@
         android:id="@+id/editProfilFragment"
         android:name="com.gemahripah.banksampah.ui.nasabah.ui.profil.edit.EditProfilFragment"
         android:label="fragment_edit_profil"
-        tools:layout="@layout/fragment_tambah_pengguna" />
+        tools:layout="@layout/fragment_tambah_pengguna" >
+        <action
+            android:id="@+id/action_editProfilFragment_to_navigation_notifications"
+            app:destination="@id/navigation_notifications" />
+    </fragment>
 </navigation>

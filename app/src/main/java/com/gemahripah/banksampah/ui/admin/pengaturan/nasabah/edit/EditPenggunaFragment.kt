@@ -31,6 +31,8 @@ class EditPenggunaFragment : Fragment() {
     ): View {
         _binding = FragmentTambahPenggunaBinding.inflate(inflater, container, false)
 
+        binding.judul.text = "Edit Pengguna"
+
         pengguna = arguments?.let {
             EditPenggunaFragmentArgs.fromBundle(it).pengguna
         }

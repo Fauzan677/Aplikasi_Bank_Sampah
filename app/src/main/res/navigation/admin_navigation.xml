@@ -81,6 +81,9 @@
         <action
             android:id="@+id/action_jenisSampahFragment_to_navigation_pengaturan"
             app:destination="@id/navigation_pengaturan" />
+        <action
+            android:id="@+id/action_jenisSampahFragment_to_editKategoriFragment"
+            app:destination="@id/editKategoriFragment" />
     </fragment>
 
     <fragment
@@ -328,6 +331,21 @@
         <argument
             android:name="pengumuman"
             app:argType="com.gemahripah.banksampah.data.model.pengumuman.Pengumuman"/>
+
+    </fragment>
+    <fragment
+        android:id="@+id/editKategoriFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.jenis.edit.EditKategoriFragment"
+        android:label="EditKategoriFragment"
+        tools:layout="@layout/fragment_tambah_kategori">
+
+        <action
+            android:id="@+id/action_editKategoriFragment_to_jenisSampahFragment"
+            app:destination="@id/jenisSampahFragment" />
+
+        <argument
+            android:name="kategori"
+            app:argType="com.gemahripah.banksampah.data.model.sampah.Kategori" />
 
     </fragment>
 

@@ -20,7 +20,7 @@ class NasabahAdapter(
     private val onItemClick: (Pengguna) -> Unit
 ) : RecyclerView.Adapter<NasabahAdapter.ViewHolder>() {
 
-    private var listFull: List<Pengguna> = ArrayList(list) // Salin data asli
+    private var listFull: List<Pengguna> = ArrayList(list)
 
     inner class ViewHolder(val binding: ItemListNasabahBinding) : RecyclerView.ViewHolder(binding.root) {
         init {

@@ -24,8 +24,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.*
-import android.widget.SearchView
 import androidx.core.widget.addTextChangedListener
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.withContext
 
 class BerandaFragment : Fragment() {
 
@@ -50,6 +51,7 @@ class BerandaFragment : Fragment() {
         binding.searchNasabah.addTextChangedListener { text ->
             nasabahAdapter.filterList(text.toString())
         }
+
         binding.searchNasabah.setOnEditorActionListener { v, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                 val query = binding.searchNasabah.text.toString()
@@ -64,7 +66,6 @@ class BerandaFragment : Fragment() {
                 false
             }
         }
-
 
         nasabahAdapter = NasabahAdapter(nasabahList) { pengguna ->
             val action = BerandaFragmentDirections.actionNavigationBerandaToDetailPenggunaFragment(pengguna)
@@ -86,25 +87,26 @@ class BerandaFragment : Fragment() {
     }
 
     private fun ambilPengguna() {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                // ambil list pengguna dari tabel "pengguna"
-                val penggunaList = SupabaseProvider.client
-                    .from("pengguna")
-                    .select(){
-                        filter {
-                            eq("pgnIsAdmin", "False")
-                        }
-                    }
-                    .decodeList<Pengguna>()
+        binding.progressNasabah.visibility = View.VISIBLE
 
-                launch(Dispatchers.Main) {
-                    nasabahAdapter.updateData(penggunaList)
+        lifecycleScope.launch {
+
+            try {
+                val penggunaList = withContext(Dispatchers.IO) {
+                    SupabaseProvider.client
+                        .from("pengguna")
+                        .select {
+                            filter { eq("pgnIsAdmin", "False") }
+                        }
+                        .decodeList<Pengguna>()
                 }
+
+                nasabahAdapter.updateData(penggunaList)
+
             } catch (e: Exception) {
-                launch(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "Gagal memuat data pengguna", Toast.LENGTH_SHORT).show()
-                }
+                Toast.makeText(requireContext(), "Gagal memuat data pengguna", Toast.LENGTH_SHORT).show()
+            } finally {
+                binding.progressNasabah.visibility = View.GONE
             }
         }
     }
@@ -209,6 +211,7 @@ class BerandaFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         binding.searchNasabah.setText("")
+        ambilPengguna()
     }
 
     override fun onDestroyView() {

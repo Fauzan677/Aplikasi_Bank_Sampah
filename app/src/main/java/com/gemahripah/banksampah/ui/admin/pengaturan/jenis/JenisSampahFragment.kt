@@ -10,7 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
-import com.gemahripah.banksampah.ui.admin.pengaturan.adapter.KategoriAdapter
+import com.gemahripah.banksampah.ui.admin.pengaturan.jenis.adapter.KategoriAdapter
 import com.gemahripah.banksampah.databinding.FragmentJenisSampahBinding
 
 class JenisSampahFragment : Fragment() {

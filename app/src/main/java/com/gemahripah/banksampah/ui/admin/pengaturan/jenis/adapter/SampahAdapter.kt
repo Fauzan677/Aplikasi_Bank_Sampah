@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.admin.pengaturan.adapter
+package com.gemahripah.banksampah.ui.admin.pengaturan.jenis.adapter
 
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView

@@ -1,8 +1,9 @@
-package com.gemahripah.banksampah.ui.admin.pengaturan.adapter
+package com.gemahripah.banksampah.ui.admin.pengaturan.jenis.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.GridLayout
+import androidx.navigation.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -11,6 +12,7 @@ import com.gemahripah.banksampah.data.model.sampah.KategoridanSampah
 import com.gemahripah.banksampah.data.model.sampah.Sampah
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.ItemJenisSampahBinding
+import com.gemahripah.banksampah.ui.admin.pengaturan.jenis.JenisSampahFragmentDirections
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +34,12 @@ class KategoriAdapter(
 
         fun bind(kategori: Kategori) {
             binding.kategori.text = kategori.ktgNama
+
+            binding.kategori.setOnClickListener {
+                val action = JenisSampahFragmentDirections
+                    .actionJenisSampahFragmentToEditKategoriFragment(kategori)
+                itemView.findNavController().navigate(action)
+            }
 
             CoroutineScope(Dispatchers.Main).launch {
                 try {

@@ -1,11 +1,15 @@
 package com.gemahripah.banksampah.ui.admin.pengaturan.nasabah
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -54,29 +58,70 @@ class PenggunaFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        ambilTotalNasabah()
+        binding.searchNasabah.doAfterTextChanged { text ->
+            val keyword = text.toString().trim()
+            if (keyword.isEmpty()) {
+                nasabahAdapter = NasabahAdapter(nasabahList) { pengguna ->
+                    val action = PenggunaFragmentDirections.actionPenggunaFragmentToEditPenggunaFragment(pengguna)
+                    findNavController().navigate(action)
+                }
+                binding.rvListNasabah.adapter = nasabahAdapter
+            } else {
+                cariPengguna(keyword)
+            }
+        }
+
+        binding.searchNasabah.setOnEditorActionListener { v, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                hideKeyboard(v)
+                true
+            } else {
+                false
+            }
+        }
+
         ambilPengguna()
+        ambilTotalNasabah()
     }
+
+    private fun hideKeyboard(view: View) {
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(view.windowToken, 0)
+    }
+
+    private fun cariPengguna(keyword: String) {
+        val hasilFilter = nasabahList.filter {
+            it.pgnNama?.contains(keyword, ignoreCase = true) == true
+        }
+
+        nasabahAdapter = NasabahAdapter(hasilFilter) { pengguna ->
+            val action = PenggunaFragmentDirections.actionPenggunaFragmentToEditPenggunaFragment(pengguna)
+            findNavController().navigate(action)
+        }
+        binding.rvListNasabah.adapter = nasabahAdapter
+    }
+
 
     private fun ambilPengguna() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // ambil list pengguna dari tabel "pengguna"
                 val penggunaList = SupabaseProvider.client
                     .from("pengguna")
-                    .select(){
+                    .select {
                         filter {
                             eq("pgnIsAdmin", "False")
                         }
                     }
                     .decodeList<Pengguna>()
 
+                nasabahList = penggunaList
+
                 launch(Dispatchers.Main) {
-                    val adapter = NasabahAdapter(penggunaList) { pengguna ->
+                    nasabahAdapter = NasabahAdapter(nasabahList) { pengguna ->
                         val action = PenggunaFragmentDirections.actionPenggunaFragmentToEditPenggunaFragment(pengguna)
                         findNavController().navigate(action)
                     }
-                    binding.rvListNasabah.adapter = adapter
+                    binding.rvListNasabah.adapter = nasabahAdapter
                 }
             } catch (e: Exception) {
                 launch(Dispatchers.Main) {
@@ -102,6 +147,12 @@ class PenggunaFragment : Fragment() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binding.searchNasabah.setText("")
+        ambilPengguna()
     }
 
     override fun onDestroyView() {

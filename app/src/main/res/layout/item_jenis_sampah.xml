@@ -6,7 +6,6 @@
 
     <TextView
         android:id="@+id/kategori"
-        android:text="Kategori"
         style="@style/TextSubJudul"
         android:layout_marginStart="30dp"
         app:layout_constraintStart_toStartOf="parent"
