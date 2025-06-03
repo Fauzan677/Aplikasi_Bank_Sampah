@@ -38,7 +38,6 @@ class EditPenggunaFragment : Fragment() {
         }
         val userId = pengguna?.pgnId
 
-        // Isi field dengan data pengguna
         binding.nama.setText(pengguna?.pgnNama)
         binding.email.setText(pengguna?.pgnEmail)
 
@@ -52,31 +51,53 @@ class EditPenggunaFragment : Fragment() {
                 return@setOnClickListener
             }
 
+            val namaLama = pengguna?.pgnNama ?: ""
+            val emailLama = pengguna?.pgnEmail ?: ""
+
+            val isNamaBerubah = namaBaru != namaLama
+            val isEmailBerubah = emailBaru != emailLama
+            val isPasswordBerubah = passwordBaru.isNotEmpty()
+
+            if (!isNamaBerubah && !isEmailBerubah && !isPasswordBerubah) {
+                Toast.makeText(requireContext(), "Tidak ada perubahan data", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             lifecycleScope.launch {
                 try {
                     val client = SupabaseProvider.client
                     val adminClient = SupabaseAdminProvider.client
 
-                    // 1. Update nama dan email di tabel pengguna
-                    client.from("pengguna").update(
-                        {
-                            set("pgnNama", namaBaru)
-                            set("pgnEmail", emailBaru)
-                        }
-                    ) {
-                        filter {
-                            eq("pgnId", userId)
+                    if (isNamaBerubah || isEmailBerubah) {
+                        client.from("pengguna").update(
+                            {
+                                if (isNamaBerubah) set("pgnNama", namaBaru)
+                                if (isEmailBerubah) set("pgnEmail", emailBaru)
+                            }
+                        ) {
+                            filter {
+                                eq("pgnId", userId)
+                            }
                         }
                     }
 
-                    // 2. Jika password tidak kosong, update pakai admin API
-                    if (passwordBaru.isNotEmpty()) {
+                    if (isEmailBerubah || isPasswordBerubah) {
                         adminClient.auth.admin.updateUserById(uid = userId) {
-                            password = passwordBaru
+                            if (isEmailBerubah) email = emailBaru
+                            if (isPasswordBerubah) password = passwordBaru
                         }
                     }
 
-                    findNavController().navigate(R.id.action_editPenggunaFragment_to_penggunaFragment)
+                    findNavController().navigate(
+                        R.id.action_editPenggunaFragment_to_penggunaFragment,
+                        null,
+                        androidx.navigation.navOptions {
+                            popUpTo(R.id.editPenggunaFragment) {
+                                inclusive = true
+                            }
+                        }
+                    )
+
                     Toast.makeText(requireContext(), "Pengguna berhasil diperbarui", Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -97,18 +118,24 @@ class EditPenggunaFragment : Fragment() {
                     val client = SupabaseProvider.client
                     val adminClient = SupabaseAdminProvider.client
 
-                    // 1. Hapus data dari tabel pengguna (opsional, tergantung kebutuhan)
                     client.from("pengguna").delete {
                         filter {
                             eq("pgnId", userId)
                         }
                     }
 
-                    // 2. Hapus user dari auth Supabase
                     adminClient.auth.admin.deleteUser(uid = userId)
 
-                    // Navigasi balik dan tampilkan pesan
-                    findNavController().navigate(R.id.action_editPenggunaFragment_to_penggunaFragment)
+                    findNavController().navigate(
+                        R.id.action_editPenggunaFragment_to_penggunaFragment,
+                        null,
+                        androidx.navigation.navOptions {
+                            popUpTo(R.id.editPenggunaFragment) {
+                                inclusive = true
+                            }
+                        }
+                    )
+
                     Toast.makeText(requireContext(), "Pengguna berhasil dihapus", Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
                     e.printStackTrace()

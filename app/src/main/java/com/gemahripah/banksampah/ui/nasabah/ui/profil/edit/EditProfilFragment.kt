@@ -86,6 +86,14 @@ class EditProfilFragment : Fragment() {
                                     email = emailBaru
                                 }
 
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        requireContext(),
+                                        "Kami telah mengirimkan tautan verifikasi ke email baru Anda",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+
                             } catch (e: Exception) {
                                 withContext(Dispatchers.Main) {
                                     Toast.makeText(requireContext(), "Gagal update email auth: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -107,6 +115,13 @@ class EditProfilFragment : Fragment() {
                         }
 
                         withContext(Dispatchers.Main) {
+                            viewModel.setPengguna(
+                                viewModel.pengguna.value?.copy(
+                                    pgnNama = namaBaru,
+                                    pgnEmail = emailBaru
+                                )
+                            )
+
                             Toast.makeText(requireContext(), "Data pengguna berhasil diperbarui", Toast.LENGTH_SHORT).show()
                             findNavController().navigate(R.id.action_editProfilFragment_to_navigation_notifications)
                         }

@@ -42,6 +42,9 @@ class DetailTransaksiFragment : Fragment() {
     ): View {
         _binding = FragmentDetailTransaksiBinding.inflate(inflater, container, false)
 
+        binding.edit.visibility = View.GONE
+        binding.hapus.visibility = View.GONE
+
         val riwayat = args.riwayat
         val idTransaksi = riwayat.tskId
 
@@ -49,6 +52,20 @@ class DetailTransaksiFragment : Fragment() {
 
         binding.nominal.text = riwayat.totalHarga.toString()
         binding.keterangan.text = riwayat.tskKeterangan
+
+        when (riwayat.tipe.lowercase()) {
+            "masuk" -> {
+                binding.jenis.setCardBackgroundColor(resources.getColor(R.color.hijau, null))
+                binding.transaksi.text = "Transaksi Masuk"
+            }
+            "keluar" -> {
+                binding.detail.visibility = View.GONE
+                binding.rvDetail.visibility = View.GONE
+
+                binding.jenis.setCardBackgroundColor(resources.getColor(R.color.merah, null))
+                binding.transaksi.text = "Transaksi Keluar"
+            }
+        }
 
         getDetailTransaksi(idTransaksi)
 

@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider

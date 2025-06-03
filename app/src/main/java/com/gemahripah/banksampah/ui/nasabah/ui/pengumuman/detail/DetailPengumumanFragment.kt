@@ -27,6 +27,9 @@ class DetailPengumumanFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        binding.edit.visibility = View.GONE
+        binding.hapus.visibility = View.GONE
+
         val pengumuman = arguments?.let {
             DetailPengumumanFragmentArgs.fromBundle(it).pengumuman
         }
