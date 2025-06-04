@@ -29,7 +29,9 @@
         <activity
             android:name=".ui.admin.AdminActivity"
             android:exported="false"
-            android:label="@string/title_activity_admin" />
+            android:label="@string/title_activity_admin"
+            android:windowSoftInputMode="adjustResize"
+            />
         <activity
             android:name=".ui.nasabah.NasabahActivity"
             android:exported="false"
