@@ -12,14 +12,14 @@
         android:textColor="@color/black"
         android:textSize="20sp"
         android:fontFamily="@font/nunito_semibold"
-        android:layout_marginStart="30dp"
+        android:layout_marginStart="20dp"
         android:layout_marginTop="10dp" />
 
     <AutoCompleteTextView
         android:id="@+id/autoCompleteJenis"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="30dp"
+        android:layout_marginHorizontal="20dp"
         android:hint="Pilih Jenis Sampah"
         android:background="@drawable/et_border"
         android:padding="20dp"
@@ -34,18 +34,18 @@
         android:id="@+id/jumlahSetorLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Jumlah Setor (Kilogram)"
+        android:text="Jumlah Setor ()"
         android:textColor="@color/black"
         android:textSize="20sp"
         android:fontFamily="@font/nunito_semibold"
-        android:layout_marginStart="30dp"
+        android:layout_marginStart="20dp"
         android:layout_marginTop="10dp" />
 
     <EditText
         android:id="@+id/editTextJumlah"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="30dp"
+        android:layout_marginHorizontal="20dp"
         android:hint="Masukkan Jumlah Setor"
         android:inputType="number"
         android:background="@drawable/et_border"

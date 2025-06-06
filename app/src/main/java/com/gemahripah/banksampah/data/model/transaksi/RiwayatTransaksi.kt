@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class RiwayatTransaksi(
     val tskId: Long,
+    val createdAt: String,
     val tskIdPengguna: String?,
     val nama: String,
     val tanggal: String,

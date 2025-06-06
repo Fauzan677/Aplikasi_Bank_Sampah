@@ -51,7 +51,6 @@ class EditTransaksiMasukFragment : Fragment() {
 
         loadNamaNasabah()
 
-
         val riwayat = args.riwayat
         val enrichedList = args.enrichedList
 

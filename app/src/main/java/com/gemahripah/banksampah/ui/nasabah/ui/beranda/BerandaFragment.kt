@@ -262,7 +262,8 @@ class BerandaFragment : Fragment() {
                         tskKeterangan = transaksi.tskKeterangan,
                         totalBerat = totalBerat,
                         totalHarga = totalHarga,
-                        hari = hariFormatted
+                        hari = hariFormatted,
+                        createdAt = transaksi.created_at ?: ""
                     )
                 }
 

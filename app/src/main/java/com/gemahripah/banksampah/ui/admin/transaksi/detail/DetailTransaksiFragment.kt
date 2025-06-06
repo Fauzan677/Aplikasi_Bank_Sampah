@@ -1,201 +1,122 @@
 package com.gemahripah.banksampah.ui.admin.transaksi.detail
 
 import android.os.Bundle
-import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
 import com.gemahripah.banksampah.R
-import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
-import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentDetailTransaksiBinding
 import com.gemahripah.banksampah.ui.admin.transaksi.adapter.DetailTransaksiAdapter
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Columns
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 class DetailTransaksiFragment : Fragment() {
 
-    private val args: DetailTransaksiFragmentArgs by navArgs()
     private var _binding: FragmentDetailTransaksiBinding? = null
     private val binding get() = _binding!!
 
-    private var enrichedList: List<DetailTransaksiRelasi> = emptyList()
+    private val args: DetailTransaksiFragmentArgs by navArgs()
+    private val viewModel: DetailTransaksiViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentDetailTransaksiBinding.inflate(inflater, container, false)
+        return binding.root
+    }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        setupUI()
+        observeUiState()
+        setupClickListeners()
+        viewModel.getDetailTransaksi(args.riwayat.tskId)
+    }
+
+    private fun setupUI() {
         val riwayat = args.riwayat
-        val idTransaksi = riwayat.tskId
 
         binding.nominal.text = riwayat.totalHarga.toString()
         binding.keterangan.text = riwayat.tskKeterangan
 
-        when (riwayat.tipe.lowercase()) {
-            "masuk" -> {
-                binding.jenis.setCardBackgroundColor(resources.getColor(R.color.hijau, null))
-                binding.transaksi.text = "Transaksi Masuk"
-            }
-            "keluar" -> {
-                binding.detail.visibility = View.GONE
-                binding.rvDetail.visibility = View.GONE
-
-                binding.jenis.setCardBackgroundColor(resources.getColor(R.color.merah, null))
-                binding.transaksi.text = "Transaksi Keluar"
-            }
-        }
-
-
-        getDetailTransaksi(idTransaksi)
-
-        binding.edit.setOnClickListener {
-            when (riwayat.tipe.lowercase()) {
-                "masuk" -> {
-                    if (enrichedList.isNotEmpty()) {
-                        val action = DetailTransaksiFragmentDirections
-                            .actionDetailTransaksiFragmentToEditTransaksiMasukFragment(
-                                riwayat = riwayat,
-                                enrichedList = enrichedList.toTypedArray()
-                            )
-                        findNavController().navigate(action)
-                    }
-                }
-                "keluar" -> {
-                    val action = DetailTransaksiFragmentDirections
-                        .actionDetailTransaksiFragmentToEditTransaksiKeluarFragment(
-                            riwayat = riwayat,
-                            enrichedList = enrichedList.toTypedArray()
-                        )
-                    findNavController().navigate(action)
-                }
-                else -> {
-                    Log.w("DetailTransaksi", "Tipe transaksi tidak diketahui: ${riwayat.tipe}")
-                }
-            }
-        }
-
-        binding.hapus.setOnClickListener {
-            showDeleteConfirmationDialog()
-        }
-
-        return binding.root
-    }
-
-    private fun showDeleteConfirmationDialog() {
-        val builder = android.app.AlertDialog.Builder(requireContext())
-        builder.setTitle("Hapus Transaksi")
-        builder.setMessage("Apakah Anda yakin ingin menghapus transaksi ini? Semua data terkait akan hilang.")
-
-        builder.setPositiveButton("Hapus") { _, _ ->
-            deleteTransaksi()
-        }
-
-        builder.setNegativeButton("Batal", null)
-        builder.show()
-    }
-
-    private fun deleteTransaksi() {
-        CoroutineScope(Dispatchers.IO).launch {
-            val tskId = args.riwayat.tskId
-
-            try {
-                SupabaseProvider.client
-                    .from("detail_transaksi")
-                    .delete {
-                        filter {
-                            eq("dtlTskId", tskId)
-                        }
-                    }
-
-                // Hapus transaksi utama
-                SupabaseProvider.client
-                    .from("transaksi")
-                    .delete {
-                        filter {
-                            eq("tskId", tskId)
-                        }
-                    }
-
-                withContext(Dispatchers.Main) {
-                    // Navigasi kembali setelah penghapusan
-                    findNavController().popBackStack()
-                }
-
-            } catch (e: Exception) {
-                Log.e("DetailTransaksi", "Gagal hapus data: ${e.message}", e)
-                withContext(Dispatchers.Main) {
-                    android.widget.Toast.makeText(requireContext(), "Gagal menghapus transaksi", android.widget.Toast.LENGTH_SHORT).show()
-                }
-            }
+        if (riwayat.tipe.lowercase() == "keluar") {
+            binding.detail.visibility = View.GONE
+            binding.rvDetail.visibility = View.GONE
+            binding.jenis.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color
+                .merah))
+            binding.transaksi.text = "Transaksi Keluar"
+        } else {
+            binding.jenis.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.hijau))
+            binding.transaksi.text = "Transaksi Masuk"
         }
     }
 
-    private fun getDetailTransaksi(idTransaksi: Long) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val columns = Columns.raw(
-                    """
-                    dtlId,
-                    dtlJumlah,
-                    dtlSphId (
-                        sphJenis
-                    )
-                    """.trimIndent()
-                )
-
-                val response = SupabaseProvider.client
-                    .from("detail_transaksi")
-                    .select(columns) {
-                        filter {
-                            eq("dtlTskId", idTransaksi)
+    private fun observeUiState() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state ->
+                    when (state) {
+                        is DetailTransaksiUiState.Loading -> {
+                            // Optional: tampilkan progress bar
                         }
-                    }
 
-                val detailList = Json.decodeFromString<List<DetailTransaksiRelasi>>(response.data.toString())
+                        is DetailTransaksiUiState.Success -> {
+                            binding.rvDetail.apply {
+                                layoutManager = GridLayoutManager(requireContext(), 2)
+                                adapter = DetailTransaksiAdapter(state.data)
+                            }
 
-                enrichedList = detailList.mapNotNull { detail ->
-                    val dtlId = detail.dtlId
-                    if (dtlId != null) {
-                        try {
-                            val hargaDetailResponse = SupabaseProvider.client.postgrest.rpc(
-                                "hitung_harga_detail",
-                                buildJsonObject {
-                                    put("dtl_id_input", dtlId)
+                            binding.edit.setOnClickListener {
+                                val action = if (args.riwayat.tipe.lowercase() == "masuk") {
+                                    DetailTransaksiFragmentDirections
+                                        .actionDetailTransaksiFragmentToEditTransaksiMasukFragment(
+                                            riwayat = args.riwayat,
+                                            enrichedList = state.data.toTypedArray()
+                                        )
+                                } else {
+                                    DetailTransaksiFragmentDirections
+                                        .actionDetailTransaksiFragmentToEditTransaksiKeluarFragment(
+                                            riwayat = args.riwayat,
+                                            enrichedList = state.data.toTypedArray()
+                                        )
                                 }
-                            )
-
-                            val hargaDetail = hargaDetailResponse.data.toDoubleOrNull()
-                            detail.copy(hargaDetail = hargaDetail ?: 0.0)
-
-                        } catch (e: Exception) {
-                            Log.e("DetailTransaksi", "Gagal hitung harga detail: ${e.message}", e)
-                            null
+                                findNavController().navigate(action)
+                            }
                         }
-                    } else null
-                }
 
-                withContext(Dispatchers.Main) {
-                    binding.rvDetail.layoutManager = GridLayoutManager(requireContext(), 2)
-                    binding.rvDetail.adapter = DetailTransaksiAdapter(enrichedList)
-                }
+                        is DetailTransaksiUiState.Deleted -> {
+                            findNavController().popBackStack()
+                        }
 
-            } catch (e: Exception) {
-                Log.e("DetailTransaksi", "Gagal ambil data: ${e.message}", e)
+                        is DetailTransaksiUiState.Error -> {
+                            Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
             }
+        }
+    }
+
+    private fun setupClickListeners() {
+        binding.hapus.setOnClickListener {
+            AlertDialog.Builder(requireContext())
+                .setTitle("Hapus Transaksi")
+                .setMessage("Yakin ingin menghapus transaksi ini?")
+                .setPositiveButton("Hapus") { _, _ ->
+                    viewModel.deleteTransaksi(args.riwayat.tskId)
+                }
+                .setNegativeButton("Batal", null)
+                .show()
         }
     }
 

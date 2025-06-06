@@ -29,10 +29,8 @@ class PenarikanSaldoFragment : Fragment() {
     private var _binding: FragmentPenarikanSaldoBinding? = null
     private val binding get() = _binding!!
 
-    // Menyimpan id pengguna yang dipilih
     private var selectedPgnId: String? = null
 
-    // Map nama -> pengguna
     private val namaToPenggunaMap = mutableMapOf<String, Pengguna>()
 
     override fun onCreateView(
@@ -51,6 +49,7 @@ class PenarikanSaldoFragment : Fragment() {
         pengguna?.let {
             binding.nama.setText(it.pgnNama, false)
             selectedPgnId = it.pgnId
+            tampilkanSaldoPengguna(it.pgnId)
         }
 
         fetchNamaPengguna()
@@ -176,7 +175,7 @@ class PenarikanSaldoFragment : Fragment() {
     }
 
     @SuppressLint("SetTextI18n")
-    private fun tampilkanSaldoPengguna(pgnId: String) {
+    private fun tampilkanSaldoPengguna(pgnId: String?) {
         lifecycleScope.launch {
             try {
                 val response = SupabaseProvider.client.postgrest.rpc(

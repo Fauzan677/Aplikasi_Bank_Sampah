@@ -1,34 +1,24 @@
 package com.gemahripah.banksampah.ui.admin.transaksi
 
-import android.os.Build
+import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
+import android.view.inputmethod.InputMethodManager
+import androidx.activity.addCallback
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
-import com.gemahripah.banksampah.data.model.pengguna.Pengguna
-import com.gemahripah.banksampah.data.model.transaksi.DetailTransaksi
-import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
-import com.gemahripah.banksampah.data.model.transaksi.Transaksi
-import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentTransaksiBinding
 import com.gemahripah.banksampah.ui.admin.transaksi.adapter.RiwayatTransaksiAdapter
-import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Order
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.google.android.material.datepicker.MaterialDatePicker
 import java.util.Locale
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
@@ -37,21 +27,29 @@ class TransaksiFragment : Fragment() {
     private var _binding: FragmentTransaksiBinding? = null
     private val binding get() = _binding!!
 
-    private var fullRiwayatList: List<RiwayatTransaksi> = emptyList()
     private lateinit var adapter: RiwayatTransaksiAdapter
+    private val viewModel: TransaksiViewModel by viewModels()
 
-    private val client = SupabaseProvider.client
-
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-
         _binding = FragmentTransaksiBinding.inflate(inflater, container, false)
-        val root: View = binding.root
+        return binding.root
+    }
 
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        setupNavigation()
+        setupRecyclerView()
+        setupObservers()
+        setupSearchFilter()
+        setupDatePickers()
+        handleBackButton()
+    }
+
+    private fun setupNavigation() {
         binding.menabung.setOnClickListener {
             findNavController().navigate(R.id.action_navigation_sampah_to_setorSampahFragment)
         }
@@ -59,124 +57,124 @@ class TransaksiFragment : Fragment() {
         binding.menarik.setOnClickListener {
             findNavController().navigate(R.id.action_navigation_transaksi_to_penarikanSaldoFragment)
         }
+    }
 
-        binding.searchRiwayat.addTextChangedListener { text ->
-            val query = text.toString().lowercase(Locale.getDefault())
-            val filteredList = fullRiwayatList.filter {
-                it.nama.lowercase(Locale.getDefault()).contains(query)
-            }
-            adapter = RiwayatTransaksiAdapter(filteredList) { riwayat ->
-                val action = TransaksiFragmentDirections
-                    .actionNavigationTransaksiToDetailTransaksiFragment(riwayat)
-                findNavController().navigate(action)
-            }
-            binding.rvRiwayat.adapter = adapter
+    private fun setupRecyclerView() {
+        viewModel.fetchRiwayat()
+
+        binding.rvRiwayat.layoutManager = LinearLayoutManager(requireContext())
+        adapter = RiwayatTransaksiAdapter(emptyList()) { riwayat ->
+            val action = TransaksiFragmentDirections
+                .actionNavigationTransaksiToDetailTransaksiFragment(riwayat)
+            findNavController().navigate(action)
+        }
+        binding.rvRiwayat.adapter = adapter
+    }
+
+    private fun setupObservers() {
+        viewModel.filteredRiwayat.observe(viewLifecycleOwner) { list ->
+            adapter.updateData(list)
         }
 
-        binding.searchRiwayat.setOnEditorActionListener { v, actionId, event ->
-            val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            binding.progressRiwayat.visibility = if (isLoading) View.VISIBLE else View.GONE
+            binding.loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupSearchFilter() {
+        binding.searchRiwayat.addTextChangedListener { text ->
+            viewModel.setSearchQuery(text?.toString() ?: "")
+        }
+
+        binding.searchRiwayat.setOnEditorActionListener { v, _, _ ->
+            val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.hideSoftInputFromWindow(v.windowToken, 0)
             true
         }
 
-        fetchRiwayatTransaksi()
-
-        return root
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun fetchRiwayatTransaksi() {
-        binding.progressRiwayat.visibility = View.VISIBLE
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val transaksiList = client.postgrest.from("transaksi")
-                    .select {
-                        order("created_at", order = Order.DESCENDING)
-                    }
-                    .decodeList<Transaksi>()
-
-                val hasil = transaksiList.map { transaksi ->
-                    val pengguna = client.postgrest.from("pengguna")
-                        .select {
-                            filter {
-                                eq("pgnId", transaksi.tskIdPengguna!!)
-                            }
-                        }
-                        .decodeSingle<Pengguna>()
-
-                    val totalBerat = if (transaksi.tskTipe == "Masuk") {
-                        val response = client.postgrest.rpc(
-                            "hitung_total_jumlah",
-                            buildJsonObject {
-                                put("tsk_id_input", transaksi.tskId)
-                            }
-                        )
-                        response.data?.toDoubleOrNull()
-
-                    } else null
-
-                    val totalHarga = if (transaksi.tskTipe == "Keluar") {
-                        val detailList = client.postgrest.from("detail_transaksi")
-                            .select {
-                                filter {
-                                    transaksi.tskId?.let { eq("dtlTskId", it) }
-                                }
-                            }
-                            .decodeList<DetailTransaksi>()
-
-                        detailList.sumOf { it.dtlJumlah ?: 0.0 }
-
-                    } else {
-                        client.postgrest.rpc(
-                            "hitung_total_harga",
-                            buildJsonObject {
-                                put("tsk_id_input", transaksi.tskId)
-                            }
-                        ).data?.toDoubleOrNull()
-                    }
-
-                    val tanggalFormatted = try {
-                        val dateTime = OffsetDateTime.parse(transaksi.created_at)
-                        val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id"))
-                        dateTime.format(formatter)
-                    } catch (e: Exception) {
-                        "Tanggal tidak valid"
-                    }
-
-                    RiwayatTransaksi(
-                        tskId = transaksi.tskId!!,
-                        tskIdPengguna = transaksi.tskIdPengguna,
-                        nama = pengguna.pgnNama ?: "Tidak Diketahui",
-                        tanggal = tanggalFormatted,
-                        tipe = transaksi.tskTipe ?: "Masuk",
-                        tskKeterangan = transaksi.tskKeterangan,
-                        totalBerat = totalBerat,
-                        totalHarga = totalHarga,
-                        hari = null
-                    )
-                }
-
-                withContext(Dispatchers.Main) {
-                    fullRiwayatList = hasil
-                    adapter = RiwayatTransaksiAdapter(fullRiwayatList) { riwayat ->
-                        val action = TransaksiFragmentDirections
-                            .actionNavigationTransaksiToDetailTransaksiFragment(riwayat)
-                        findNavController().navigate(action)
-                    }
-                    binding.rvRiwayat.layoutManager = LinearLayoutManager(requireContext())
-                    binding.rvRiwayat.adapter = adapter
-
-                    binding.progressRiwayat.visibility = View.GONE
-                }
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-
-                withContext(Dispatchers.Main) {
-                    binding.progressRiwayat.visibility = View.GONE
+        binding.searchRiwayat.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                binding.scrollView.post {
+                    binding.scrollView.scrollTo(0, binding.riwayatTransaksi.top)
                 }
             }
+            false
+        }
+    }
+
+    private fun setupDatePickers() {
+        binding.startDateEditText.setOnClickListener {
+            showDatePicker { selectedDate ->
+                val iso = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                binding.startDateEditText.setText(
+                    selectedDate.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id")))
+                )
+                viewModel.setStartDate(iso)
+            }
+        }
+
+        binding.endDateEditText.setOnClickListener {
+            showDatePicker { selectedDate ->
+                val iso = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                binding.endDateEditText.setText(
+                    selectedDate.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id")))
+                )
+                viewModel.setEndDate(iso)
+            }
+        }
+
+        binding.startDateEditText.setOnLongClickListener {
+            binding.startDateEditText.text?.clear()
+            viewModel.setStartDate(null)
+            true
+        }
+
+        binding.endDateEditText.setOnLongClickListener {
+            binding.endDateEditText.text?.clear()
+            viewModel.setEndDate(null)
+            true
+        }
+    }
+
+    private fun showDatePicker(onDateSelected: (OffsetDateTime) -> Unit) {
+        val datePicker = MaterialDatePicker.Builder.datePicker()
+            .setTitleText("Pilih Tanggal")
+            .build()
+
+        datePicker.addOnPositiveButtonClickListener { selection ->
+            val date = OffsetDateTime.ofInstant(
+                java.time.Instant.ofEpochMilli(selection),
+                java.time.ZoneId.systemDefault()
+            )
+            onDateSelected(date)
+        }
+
+        datePicker.show(parentFragmentManager, "DATE_PICKER")
+    }
+
+    private fun handleBackButton() {
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
+            if (binding.searchRiwayat.hasFocus()) {
+                binding.searchRiwayat.clearFocus()
+                binding.scrollView.scrollTo(0, 0)
+
+                val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(binding.searchRiwayat.windowToken, 0)
+            } else {
+                isEnabled = false
+                requireActivity().onBackPressedDispatcher.onBackPressed()
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binding.searchRiwayat.setText("")
+        binding.searchRiwayat.clearFocus()
+        binding.scrollView.post {
+            binding.scrollView.scrollTo(0, 0)
         }
     }
 
