@@ -7,13 +7,15 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengumuman.Pengumuman
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentPengumumanBinding
 import com.gemahripah.banksampah.ui.admin.pengumuman.adapter.PengumumanAdapter
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,7 +53,9 @@ class PengumumanFragment : Fragment() {
                 try {
                     SupabaseProvider.client
                         .from("pengumuman")
-                        .select()
+                        .select(columns = Columns.list("*")) {
+                            order(column = "updated_at", order = Order.DESCENDING)
+                        }
                         .decodeList<Pengumuman>()
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -59,14 +63,12 @@ class PengumumanFragment : Fragment() {
                 }
             }
 
-            // Set adapter ke RecyclerView
-            binding.rvPengumuman.layoutManager = GridLayoutManager(requireContext(), 2)
+            binding.rvPengumuman.layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
             binding.rvPengumuman.adapter = PengumumanAdapter(pengumumanList) { pengumuman ->
                 val action = PengumumanFragmentDirections
                     .actionNavigationPengumumanToDetailPengumumanFragment(pengumuman)
                 findNavController().navigate(action)
             }
-
         }
     }
 

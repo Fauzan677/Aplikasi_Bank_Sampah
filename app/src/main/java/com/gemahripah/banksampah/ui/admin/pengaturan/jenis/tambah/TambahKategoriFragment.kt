@@ -32,6 +32,7 @@ class TambahKategoriFragment : Fragment() {
 
         binding.konfirmasi.setOnClickListener {
             val nama = binding.kategori.text.toString().trim()
+
             if (nama.isNotEmpty()) {
                 viewModel.tambahKategori(nama,
                     onSuccess = {

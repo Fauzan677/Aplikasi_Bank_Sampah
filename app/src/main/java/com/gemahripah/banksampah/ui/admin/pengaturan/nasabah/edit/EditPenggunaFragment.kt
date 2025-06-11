@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
@@ -16,30 +15,37 @@ import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentTambahPenggunaBinding
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
 class EditPenggunaFragment : Fragment() {
 
     private var _binding: FragmentTambahPenggunaBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: EditPenggunaViewModel by viewModels()
     private var pengguna: Pengguna? = null
+    private val userId: String? get() = pengguna?.pgnId
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentTambahPenggunaBinding.inflate(inflater, container, false)
+        return binding.root
+    }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        pengguna = arguments?.let { EditPenggunaFragmentArgs.fromBundle(it).pengguna }
+        setupUI()
+        isiForm()
+    }
+
+    private fun setupUI() {
         binding.judul.text = "Edit Pengguna"
-
-        pengguna = arguments?.let {
-            EditPenggunaFragmentArgs.fromBundle(it).pengguna
-        }
-        val userId = pengguna?.pgnId
-
-        binding.nama.setText(pengguna?.pgnNama)
-        binding.email.setText(pengguna?.pgnEmail)
+        binding.hapus.visibility = View.VISIBLE
 
         binding.konfirmasi.setOnClickListener {
             val namaBaru = binding.nama.text.toString().trim()
@@ -47,104 +53,130 @@ class EditPenggunaFragment : Fragment() {
             val passwordBaru = binding.password.text.toString().trim()
 
             if (userId.isNullOrEmpty()) {
-                Toast.makeText(requireContext(), "ID pengguna tidak ditemukan", Toast.LENGTH_SHORT).show()
+                showToast("ID pengguna tidak ditemukan")
                 return@setOnClickListener
             }
 
-            val namaLama = pengguna?.pgnNama ?: ""
-            val emailLama = pengguna?.pgnEmail ?: ""
-
-            val isNamaBerubah = namaBaru != namaLama
-            val isEmailBerubah = emailBaru != emailLama
-            val isPasswordBerubah = passwordBaru.isNotEmpty()
-
-            if (!isNamaBerubah && !isEmailBerubah && !isPasswordBerubah) {
-                Toast.makeText(requireContext(), "Tidak ada perubahan data", Toast.LENGTH_SHORT).show()
+            if (!isDataBerubah(namaBaru, emailBaru, passwordBaru)) {
+                showToast("Tidak ada perubahan data")
                 return@setOnClickListener
             }
 
-            lifecycleScope.launch {
-                try {
-                    val client = SupabaseProvider.client
-                    val adminClient = SupabaseAdminProvider.client
-
-                    if (isNamaBerubah || isEmailBerubah) {
-                        client.from("pengguna").update(
-                            {
-                                if (isNamaBerubah) set("pgnNama", namaBaru)
-                                if (isEmailBerubah) set("pgnEmail", emailBaru)
-                            }
-                        ) {
-                            filter {
-                                eq("pgnId", userId)
-                            }
-                        }
-                    }
-
-                    if (isEmailBerubah || isPasswordBerubah) {
-                        adminClient.auth.admin.updateUserById(uid = userId) {
-                            if (isEmailBerubah) email = emailBaru
-                            if (isPasswordBerubah) password = passwordBaru
-                        }
-                    }
-
-                    findNavController().navigate(
-                        R.id.action_editPenggunaFragment_to_penggunaFragment,
-                        null,
-                        androidx.navigation.navOptions {
-                            popUpTo(R.id.editPenggunaFragment) {
-                                inclusive = true
-                            }
-                        }
-                    )
-
-                    Toast.makeText(requireContext(), "Pengguna berhasil diperbarui", Toast.LENGTH_SHORT).show()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    Toast.makeText(requireContext(), "Gagal memperbarui pengguna", Toast.LENGTH_SHORT).show()
-                }
-            }
+            updatePengguna(namaBaru, emailBaru, passwordBaru)
         }
 
         binding.hapus.setOnClickListener {
-
             if (userId.isNullOrEmpty()) {
-                Toast.makeText(requireContext(), "ID pengguna tidak ditemukan", Toast.LENGTH_SHORT).show()
+                showToast("ID pengguna tidak ditemukan")
                 return@setOnClickListener
             }
+            hapusPengguna()
+        }
+    }
 
-            lifecycleScope.launch {
-                try {
-                    val client = SupabaseProvider.client
-                    val adminClient = SupabaseAdminProvider.client
+    private fun isiForm() {
+        binding.nama.setText(pengguna?.pgnNama)
+        binding.email.setText(pengguna?.pgnEmail)
+    }
 
-                    client.from("pengguna").delete {
-                        filter {
-                            eq("pgnId", userId)
-                        }
+    private fun isDataBerubah(nama: String, email: String, password: String): Boolean {
+        val namaLama = pengguna?.pgnNama ?: ""
+        val emailLama = pengguna?.pgnEmail ?: ""
+        return nama != namaLama || email != emailLama || password.isNotEmpty()
+    }
+
+    private fun updatePengguna(nama: String, email: String, password: String) {
+        showLoading(true)
+
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val client = SupabaseProvider.client
+                val adminClient = SupabaseAdminProvider.client
+
+                if (nama != pengguna?.pgnNama || email != pengguna?.pgnEmail) {
+                    client.from("pengguna").update({
+                        if (nama != pengguna?.pgnNama) set("pgnNama", nama)
+                        if (email != pengguna?.pgnEmail) set("pgnEmail", email)
+                    }) {
+                        filter { eq("pgnId", userId!!) }
                     }
+                }
 
-                    adminClient.auth.admin.deleteUser(uid = userId)
+                if (email != pengguna?.pgnEmail || password.isNotEmpty()) {
+                    adminClient.auth.admin.updateUserById(uid = userId!!) {
+                        if (email != pengguna?.pgnEmail) this.email = email
+                        if (password.isNotEmpty()) this.password = password
+                    }
+                }
 
-                    findNavController().navigate(
-                        R.id.action_editPenggunaFragment_to_penggunaFragment,
-                        null,
-                        androidx.navigation.navOptions {
-                            popUpTo(R.id.editPenggunaFragment) {
-                                inclusive = true
-                            }
-                        }
-                    )
+                withContext(Dispatchers.Main) {
+                    showToast("Pengguna berhasil diperbarui")
+                    navigateBack()
+                }
 
-                    Toast.makeText(requireContext(), "Pengguna berhasil dihapus", Toast.LENGTH_SHORT).show()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    Toast.makeText(requireContext(), "Gagal menghapus pengguna", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    showToast("Gagal memperbarui pengguna")
+                }
+            } finally {
+                withContext(Dispatchers.Main) {
+                    showLoading(false)
                 }
             }
         }
+    }
 
-        return binding.root
+    private fun hapusPengguna() {
+        showLoading(true)
+
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val client = SupabaseProvider.client
+                val adminClient = SupabaseAdminProvider.client
+
+                client.from("pengguna").delete {
+                    filter { eq("pgnId", userId!!) }
+                }
+
+                adminClient.auth.admin.deleteUser(uid = userId!!)
+
+                withContext(Dispatchers.Main) {
+                    showToast("Pengguna berhasil dihapus")
+                    navigateBack()
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    showToast("Gagal menghapus pengguna")
+                }
+            } finally {
+                withContext(Dispatchers.Main) {
+                    showLoading(false)
+                }
+            }
+        }
+    }
+
+    private fun navigateBack() {
+        findNavController().navigate(
+            R.id.action_editPenggunaFragment_to_penggunaFragment,
+            null,
+            androidx.navigation.navOptions {
+                popUpTo(R.id.editPenggunaFragment) { inclusive = true }
+            }
+        )
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+        binding.konfirmasi.isEnabled = !isLoading
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroyView() {

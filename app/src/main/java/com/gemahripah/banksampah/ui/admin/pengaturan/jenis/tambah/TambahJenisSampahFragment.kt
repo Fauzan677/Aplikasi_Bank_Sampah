@@ -9,11 +9,12 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
-import com.gemahripah.banksampah.data.model.sampah.InsertSampah
 import com.gemahripah.banksampah.data.model.sampah.Kategori
 import com.gemahripah.banksampah.data.model.sampah.Sampah
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentTambahJenisSampahBinding
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +24,8 @@ import kotlinx.coroutines.withContext
 class TambahJenisSampahFragment : Fragment(R.layout.fragment_tambah_jenis_sampah) {
 
     private lateinit var binding: FragmentTambahJenisSampahBinding
+    private val supabase: SupabaseClient by lazy { SupabaseProvider.client }
+
     private var listKategori: List<Kategori> = emptyList()
     private var selectedKategoriId: Long? = null
 
@@ -32,15 +35,15 @@ class TambahJenisSampahFragment : Fragment(R.layout.fragment_tambah_jenis_sampah
 
         binding.hapus.visibility = View.GONE
 
-        fetchKategoriSampah()
+        setupKategoriDropdown()
+        setupSatuanDropdown()
         setupKonfirmasiButton()
     }
 
-    private fun fetchKategoriSampah() {
-        val supabase = SupabaseProvider.client
-        val kategoriView = binding.kategori // AutoCompleteTextView
+    private fun setupKategoriDropdown() {
+        val kategoriView = binding.kategori
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
                     supabase.postgrest["kategori"]
@@ -49,8 +52,8 @@ class TambahJenisSampahFragment : Fragment(R.layout.fragment_tambah_jenis_sampah
                 }
 
                 listKategori = result
-
                 val namaList = result.map { it.ktgNama }
+
                 val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, namaList)
                 kategoriView.setAdapter(adapter)
 
@@ -61,16 +64,41 @@ class TambahJenisSampahFragment : Fragment(R.layout.fragment_tambah_jenis_sampah
                     Log.d("KategoriSelected", "ID: $selectedKategoriId")
                 }
 
+                kategoriView.setOnClickListener {
+                    kategoriView.clearFocus()
+                    kategoriView.showDropDown()
+                    hideKeyboard()
+                }
+
             } catch (e: Exception) {
                 e.printStackTrace()
-                Toast.makeText(requireContext(), "Gagal memuat kategori", Toast.LENGTH_SHORT).show()
+                showToast("Gagal memuat kategori")
             }
         }
+    }
 
-        kategoriView.setOnClickListener {
-            kategoriView.clearFocus()
-            kategoriView.showDropDown()
-            hideKeyboard()
+    private fun setupSatuanDropdown() {
+        val satuanView = binding.satuan
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    supabase
+                        .from("sampah")
+                        .select(columns = Columns.list("sphSatuan"))
+                        .decodeList<Sampah>()
+                }
+
+                val satuanList = result.mapNotNull { it.sphSatuan }.distinct()
+                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, satuanList)
+
+                satuanView.threshold = 1 // Tampilkan saat ketik 1 huruf
+                satuanView.setAdapter(adapter)
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                showToast("Gagal memuat data satuan")
+            }
         }
     }
 
@@ -99,32 +127,28 @@ class TambahJenisSampahFragment : Fragment(R.layout.fragment_tambah_jenis_sampah
                 sphKeterangan = if (keterangan.isNotEmpty()) keterangan else null
             )
 
-            lifecycleScope.launch {
-                try {
-                    val supabase = SupabaseProvider.client
 
-                    withContext(Dispatchers.IO) {
-                        supabase.postgrest["sampah"].insert(data)
-                    }
+            submitSampah(data)
+        }
+    }
 
-                    Toast.makeText(requireContext(), "Jenis sampah berhasil ditambahkan", Toast.LENGTH_SHORT).show()
-                    findNavController().navigate(R.id.action_tambahJenisSampahFragment_to_jenisSampahFragment)
-
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    Toast.makeText(requireContext(), "Gagal menambahkan data", Toast.LENGTH_SHORT).show()
+    private fun submitSampah(data: Sampah) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    supabase.postgrest["sampah"].insert(data)
                 }
+                showToast("Jenis sampah berhasil ditambahkan")
+                findNavController().navigate(R.id.action_tambahJenisSampahFragment_to_jenisSampahFragment)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                showToast("Gagal menambahkan data")
             }
         }
     }
 
-    private fun resetForm() {
-        binding.kategori.setText("")
-        binding.jenis.setText("")
-        binding.satuan.setText("")
-        binding.harga.setText("")
-        binding.keterangan.setText("")
-        selectedKategoriId = null
+    private fun showToast(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
 
     private fun hideKeyboard() {

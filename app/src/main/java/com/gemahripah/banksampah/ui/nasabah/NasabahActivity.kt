@@ -29,7 +29,6 @@ class NasabahActivity : AppCompatActivity() {
             intent.getParcelableExtra("EXTRA_PENGGUNA")
         }
 
-        // Inisialisasi ViewModel
         viewModel = ViewModelProvider(this)[NasabahViewModel::class.java]
         viewModel.setPengguna(pengguna)
 
@@ -44,10 +43,8 @@ class NasabahActivity : AppCompatActivity() {
         navView.setOnItemSelectedListener { item ->
             val destinationId = item.itemId
 
-            // Hapus seluruh back stack (kembali ke awal)
             navController.popBackStack(navController.graph.startDestinationId, false)
 
-            // Lalu langsung navigate ke tujuan
             if (navController.currentDestination?.id != destinationId) {
                 navController.navigate(destinationId)
             }

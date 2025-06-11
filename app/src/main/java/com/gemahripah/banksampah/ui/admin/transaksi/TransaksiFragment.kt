@@ -89,6 +89,8 @@ class TransaksiFragment : Fragment() {
         }
 
         binding.searchRiwayat.setOnEditorActionListener { v, _, _ ->
+            binding.searchRiwayat.clearFocus()
+
             val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.hideSoftInputFromWindow(v.windowToken, 0)
             true

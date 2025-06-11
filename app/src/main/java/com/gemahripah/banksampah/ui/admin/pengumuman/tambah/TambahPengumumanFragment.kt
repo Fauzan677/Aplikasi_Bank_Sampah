@@ -1,5 +1,7 @@
 package com.gemahripah.banksampah.ui.admin.pengumuman.tambah
 
+import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -8,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
@@ -19,8 +22,11 @@ import com.gemahripah.banksampah.utils.reduceFileImage
 import com.gemahripah.banksampah.utils.uriToFile
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.storage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileOutputStream
 
 class TambahPengumumanFragment : Fragment() {
 
@@ -28,7 +34,8 @@ class TambahPengumumanFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var cameraLauncher: ActivityResultLauncher<Uri>
-    private lateinit var galleryLauncher: ActivityResultLauncher<String>
+    private lateinit var galleryLauncher: ActivityResultLauncher<PickVisualMediaRequest>
+    private lateinit var requestCameraPermissionLauncher: ActivityResultLauncher<String>
     private var currentImageUri: Uri? = null
 
     override fun onCreateView(
@@ -42,49 +49,47 @@ class TambahPengumumanFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Inisialisasi launcher kamera
-        cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            val uri = currentImageUri
-            if (success && uri != null) {
-                binding.selectedImageView.setImageURI(uri)
-                binding.selectedImageView.visibility = View.VISIBLE
-                binding.uploadText.visibility = View.GONE
-            }
-        }
+        setupPermissionLauncher()
+        setupCameraLauncher()
+        setupGalleryLauncher()
+        setupViewListeners()
+    }
 
-        // Inisialisasi launcher galeri
-        galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            uri?.let {
-                currentImageUri = it
-                binding.selectedImageView.setImageURI(it)
-                binding.selectedImageView.visibility = View.VISIBLE
-                binding.uploadText.visibility = View.GONE
-            }
-        }
-
-        // Tombol klik gambar
-        binding.gambarFile.setOnClickListener {
-            showImagePickerDialog()
-        }
-
-        // Tombol konfirmasi
-        binding.konfirmasi.setOnClickListener {
-            uploadPengumuman()
+    private fun setupPermissionLauncher() {
+        requestCameraPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) launchCamera()
+            else showToast("Izin kamera dibutuhkan")
         }
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 101 && grantResults.isNotEmpty() && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            openCamera()
-        } else {
-            Toast.makeText(requireContext(), "Izin kamera dibutuhkan", Toast.LENGTH_SHORT).show()
-        }
+    private fun setupCameraLauncher() {
+        cameraLauncher =
+            registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+                if (success && currentImageUri != null) {
+                    updateSelectedImage(currentImageUri!!)
+                }
+            }
+    }
+
+    private fun setupGalleryLauncher() {
+        galleryLauncher =
+            registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+                uri?.let { updateSelectedImage(it) }
+            }
+    }
+
+    private fun updateSelectedImage(uri: Uri) {
+        currentImageUri = uri
+        binding.selectedImageView.setImageURI(uri)
+        binding.selectedImageView.visibility = View.VISIBLE
+        binding.uploadText.visibility = View.GONE
+    }
+
+    private fun setupViewListeners() {
+        binding.gambarFile.setOnClickListener { showImagePickerDialog() }
+        binding.konfirmasi.setOnClickListener { validateAndUploadPengumuman() }
     }
 
     private fun showImagePickerDialog() {
@@ -100,59 +105,53 @@ class TambahPengumumanFragment : Fragment() {
             .show()
     }
 
-
     private fun openCamera() {
-        val context = requireContext()
-        if (context.checkSelfPermission(android.Manifest.permission.CAMERA) ==
-            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (requireContext().checkSelfPermission(android.Manifest.permission.CAMERA) ==
+            PackageManager.PERMISSION_GRANTED
         ) {
-            val imageFile = File.createTempFile("IMG_", ".jpg", context.cacheDir).apply {
-                createNewFile()
-                deleteOnExit()
-            }
-            val uri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                imageFile
-            )
-            currentImageUri = uri
-            cameraLauncher.launch(uri)
+            launchCamera()
         } else {
-            requestPermissions(arrayOf(android.Manifest.permission.CAMERA), 101)
+            requestCameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
         }
     }
 
-    private fun openGallery() {
-        galleryLauncher.launch("image/*")
+    private fun launchCamera() {
+        val context = requireContext()
+        val imageFile = File.createTempFile("IMG_", ".jpg", context.cacheDir).apply {
+            createNewFile()
+            deleteOnExit()
+        }
+
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            imageFile
+        )
+        currentImageUri = uri
+        cameraLauncher.launch(uri)
     }
 
+    private fun openGallery() {
+        galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
 
-    private fun uploadPengumuman() {
+    private fun validateAndUploadPengumuman() {
         val judul = binding.nama.text.toString()
         val isi = binding.edtTextarea.text.toString()
 
         if (judul.isBlank() || isi.isBlank()) {
-            Toast.makeText(requireContext(), "Judul dan isi wajib diisi", Toast.LENGTH_SHORT).show()
+            showToast("Judul dan isi wajib diisi")
             return
         }
 
+        uploadPengumuman(judul, isi)
+    }
+
+    private fun uploadPengumuman(judul: String, isi: String) {
+        showLoading(true)
         lifecycleScope.launch {
             try {
-                var imageUrl: String? = null
-
-                currentImageUri?.let { uri ->
-                    val file = uriToFile(uri, requireContext()).reduceFileImage()
-                    val bucket = SupabaseProvider.client.storage.from("pengumuman")
-
-                    val byteArray = file.readBytes()
-
-                    bucket.upload("images/${file.name}", byteArray) {
-                        upsert = false
-                    }
-
-
-                    imageUrl = "https://gxqnvejigdthwlkeshks.supabase.co/storage/v1/object/public/pengumuman/images/${file.name}"
-                }
+                val imageUrl = currentImageUri?.let { uploadImage(it) }
 
                 val pengumuman = com.gemahripah.banksampah.data.model.pengumuman.Pengumuman(
                     pmnJudul = judul,
@@ -162,17 +161,63 @@ class TambahPengumumanFragment : Fragment() {
                     pmnPin = false
                 )
 
-                SupabaseProvider.client
-                    .from("pengumuman")
-                    .insert(pengumuman)
+                withContext(Dispatchers.IO) {
+                    SupabaseProvider.client
+                        .from("pengumuman")
+                        .insert(pengumuman)
+                }
 
-                Toast.makeText(requireContext(), "Pengumuman berhasil ditambahkan", Toast.LENGTH_SHORT).show()
+                showToast("Pengumuman berhasil ditambahkan")
                 findNavController().navigateUp()
-
             } catch (e: Exception) {
                 e.printStackTrace()
-                Toast.makeText(requireContext(), "Gagal menyimpan: ${e.message}", Toast.LENGTH_LONG).show()
+                showToast("Gagal menyimpan: ${e.message}")
+            } finally {
+                withContext(Dispatchers.Main) {
+                    showLoading(false)
+                }
             }
         }
+    }
+
+    private suspend fun uploadImage(uri: Uri): String {
+        return withContext(Dispatchers.IO) {
+            val file = copyUriToTempFile(uri, requireContext()).reduceFileImage()
+            val byteArray = file.readBytes()
+            file.delete()
+
+            SupabaseProvider.client.storage
+                .from("pengumuman")
+                .upload("images/${file.name}", byteArray) {
+                    upsert = false
+                }
+
+            "https://gxqnvejigdthwlkeshks.supabase.co/storage/v1/object/public/pengumuman/images/${file.name}"
+        }
+    }
+
+    private fun copyUriToTempFile(uri: Uri, context: Context): File {
+        val file = File.createTempFile("selected_image", ".jpg", context.cacheDir)
+        context.contentResolver.openInputStream(uri).use { input ->
+            FileOutputStream(file).use { output ->
+                input?.copyTo(output)
+            }
+        }
+        return file
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+        binding.konfirmasi.isEnabled = !isLoading
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

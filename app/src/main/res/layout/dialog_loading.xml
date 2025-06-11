@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
     android:padding="24dp"
-    android:background="@android:color/transparent"
+    android:background="@color/white"
     android:orientation="horizontal"
-    android:gravity="center">
+    android:gravity="center"
+    android:layout_gravity="center">
 
     <ProgressBar
         android:layout_width="wrap_content"
@@ -17,5 +18,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Sedang memproses..."
+        android:textColor="@color/black"
+        android:textSize="16sp"
         android:layout_marginStart="16dp"/>
+
 </LinearLayout>

@@ -11,6 +11,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
@@ -24,6 +25,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PenggunaFragment : Fragment() {
 
@@ -39,33 +41,32 @@ class PenggunaFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentPenggunaAdminBinding.inflate(inflater, container, false)
-
-        nasabahAdapter = NasabahAdapter(nasabahList) { pengguna ->
-            val action = PenggunaFragmentDirections.actionPenggunaFragmentToEditPenggunaFragment(pengguna)
-            findNavController().navigate(action)
-        }
-
-        binding.rvListNasabah.layoutManager = LinearLayoutManager(requireContext())
-        binding.rvListNasabah.adapter = nasabahAdapter
-
-        binding.tambah.setOnClickListener {
-            findNavController().navigate(R.id.action_penggunaFragment_to_tambahPenggunaFragment)
-        }
-
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        initRecyclerView()
+        initListeners()
+        ambilData()
+    }
+
+    private fun initRecyclerView() {
+        nasabahAdapter = createAdapter(nasabahList)
+        binding.rvListNasabah.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvListNasabah.adapter = nasabahAdapter
+    }
+
+    private fun initListeners() {
+        binding.tambah.setOnClickListener {
+            findNavController().navigate(R.id.action_penggunaFragment_to_tambahPenggunaFragment)
+        }
+
         binding.searchNasabah.doAfterTextChanged { text ->
             val keyword = text.toString().trim()
             if (keyword.isEmpty()) {
-                nasabahAdapter = NasabahAdapter(nasabahList) { pengguna ->
-                    val action = PenggunaFragmentDirections.actionPenggunaFragmentToEditPenggunaFragment(pengguna)
-                    findNavController().navigate(action)
-                }
-                binding.rvListNasabah.adapter = nasabahAdapter
+                updateRecyclerView(nasabahList)
             } else {
                 cariPengguna(keyword)
             }
@@ -74,14 +75,10 @@ class PenggunaFragment : Fragment() {
         binding.searchNasabah.setOnEditorActionListener { v, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                 hideKeyboard(v)
+                binding.searchNasabah.clearFocus()
                 true
-            } else {
-                false
-            }
+            } else false
         }
-
-        ambilPengguna()
-        ambilTotalNasabah()
     }
 
     private fun hideKeyboard(view: View) {
@@ -89,21 +86,25 @@ class PenggunaFragment : Fragment() {
         imm.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
-    private fun cariPengguna(keyword: String) {
-        val hasilFilter = nasabahList.filter {
-            it.pgnNama?.contains(keyword, ignoreCase = true) == true
-        }
-
-        nasabahAdapter = NasabahAdapter(hasilFilter) { pengguna ->
+    private fun createAdapter(data: List<Pengguna>): NasabahAdapter {
+        return NasabahAdapter(data) { pengguna ->
             val action = PenggunaFragmentDirections.actionPenggunaFragmentToEditPenggunaFragment(pengguna)
             findNavController().navigate(action)
         }
+    }
+
+    private fun updateRecyclerView(data: List<Pengguna>) {
+        nasabahAdapter = createAdapter(data)
         binding.rvListNasabah.adapter = nasabahAdapter
     }
 
+    private fun ambilData() {
+        ambilPengguna()
+        ambilTotalNasabah()
+    }
 
     private fun ambilPengguna() {
-        CoroutineScope(Dispatchers.IO).launch {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val penggunaList = SupabaseProvider.client
                     .from("pengguna")
@@ -116,15 +117,11 @@ class PenggunaFragment : Fragment() {
 
                 nasabahList = penggunaList
 
-                launch(Dispatchers.Main) {
-                    nasabahAdapter = NasabahAdapter(nasabahList) { pengguna ->
-                        val action = PenggunaFragmentDirections.actionPenggunaFragmentToEditPenggunaFragment(pengguna)
-                        findNavController().navigate(action)
-                    }
-                    binding.rvListNasabah.adapter = nasabahAdapter
+                withContext(Dispatchers.Main) {
+                    updateRecyclerView(nasabahList)
                 }
             } catch (e: Exception) {
-                launch(Dispatchers.Main) {
+                withContext(Dispatchers.Main) {
                     Toast.makeText(requireContext(), "Gagal memuat data pengguna", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -133,20 +130,27 @@ class PenggunaFragment : Fragment() {
 
     @SuppressLint("SetTextI18n")
     private fun ambilTotalNasabah() {
-        CoroutineScope(Dispatchers.IO).launch {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val result = SupabaseProvider.client.postgrest.rpc("hitung_total_nasabah")
-                val jumlah = result.data.toString().toIntOrNull() ?: 0
+                val jumlah = result.data.toIntOrNull() ?: 0
 
-                launch(Dispatchers.Main) {
+                withContext(Dispatchers.Main) {
                     binding.jumlah.text = jumlah.toString()
                 }
             } catch (e: Exception) {
-                launch(Dispatchers.Main) {
+                withContext(Dispatchers.Main) {
                     binding.jumlah.text = "Gagal memuat"
                 }
             }
         }
+    }
+
+    private fun cariPengguna(keyword: String) {
+        val hasilFilter = nasabahList.filter {
+            it.pgnNama?.contains(keyword, ignoreCase = true) == true
+        }
+        updateRecyclerView(hasilFilter)
     }
 
     override fun onResume() {

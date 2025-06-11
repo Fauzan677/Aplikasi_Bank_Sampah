@@ -66,7 +66,7 @@ class TransaksiViewModel : ViewModel() {
                     } else {
                         client.postgrest.rpc("hitung_total_harga", buildJsonObject {
                             put("tsk_id_input", transaksi.tskId)
-                        }).data?.toDoubleOrNull()
+                        }).data.toDoubleOrNull()
                     }
 
                     val tanggalFormatted = try {

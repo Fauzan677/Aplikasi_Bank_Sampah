@@ -3,7 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/light_gray">
+    android:background="@color/light_gray"
+    android:focusableInTouchMode="true"
+    android:descendantFocusability="afterDescendants"
+    >
 
     <LinearLayout
         android:id="@+id/container_input"
@@ -89,7 +92,7 @@
             android:dropDownHeight="wrap_content"
             android:dropDownVerticalOffset="10dp"
             android:inputType="text"
-            android:focusable="true"
+            android:focusable="false"
             android:focusableInTouchMode="true"
             android:clickable="true"
             />
@@ -112,7 +115,7 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="20dp"
             android:hint="Masukkan Jumlah Setor"
-            android:inputType="number"
+            android:inputType="numberDecimal"
             android:background="@drawable/et_border"
             android:padding="20dp"
             android:layout_marginTop="10dp"

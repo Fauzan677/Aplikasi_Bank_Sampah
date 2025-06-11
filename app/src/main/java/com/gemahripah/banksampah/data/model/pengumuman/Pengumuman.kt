@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
 data class Pengumuman(
     val pmnId: Long? = null,
     val created_at: String? = null,
+    val updated_at: String? = null,
     val pmnIsPublic: Boolean? = null,
     val pmnJudul: String? = null,
     val pmnIsi: String? = null,

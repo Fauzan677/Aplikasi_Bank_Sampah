@@ -1,10 +1,12 @@
 package com.gemahripah.banksampah.ui.admin.pengaturan.jenis
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
@@ -15,9 +17,11 @@ import com.gemahripah.banksampah.databinding.FragmentJenisSampahBinding
 
 class JenisSampahFragment : Fragment() {
 
-    private lateinit var viewModel: JenisSampahViewModel
     private var _binding: FragmentJenisSampahBinding? = null
     private val binding get() = _binding!!
+
+    private val viewModel: JenisSampahViewModel by viewModels()
+    private lateinit var kategoriAdapter: KategoriAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -30,35 +34,44 @@ class JenisSampahFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Inisialisasi Adapter
-        val kategoriAdapter = KategoriAdapter(emptyList()) { selected ->
+        setupRecyclerView()
+        observeKategoriList()
+        setupClickListeners()
+
+        viewModel.loadKategori()
+    }
+
+    private fun setupRecyclerView() {
+        kategoriAdapter = KategoriAdapter(emptyList()) { selected ->
             val action = JenisSampahFragmentDirections
                 .actionJenisSampahFragmentToEditJenisSampahFragment(selected)
             findNavController().navigate(action)
         }
 
-        binding.rvJenisSampah.layoutManager = LinearLayoutManager(context)
-        binding.rvJenisSampah.adapter = kategoriAdapter  // Pasang adapter terlebih dahulu
+        binding.rvJenisSampah.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = kategoriAdapter
+        }
+    }
 
-        // Inisialisasi ViewModel
-        viewModel = ViewModelProvider(this).get(JenisSampahViewModel::class.java)
+    private fun observeKategoriList() {
+        viewModel.kategoriList.observe(viewLifecycleOwner) { list ->
+            Log.d("JenisSampahFragment", "Kategori diterima: ${list.size}")
+            kategoriAdapter.updateKategoriList(list)
+        }
+    }
 
-        // Mengobservasi data kategori dari ViewModel
-        viewModel.kategoriList.observe(viewLifecycleOwner, Observer { kategoriList ->
-            println("Jumlah kategori yang diterima: ${kategoriList.size}")
-            kategoriAdapter.updateKategoriList(kategoriList)  // Perbarui daftar kategori
-        })
-
-        // Memuat data kategori
-        viewModel.loadKategori()  // Panggil setelah adapter terpasang
-
-        // Navigasi untuk tombol tambah kategori dan jenis transaksi
+    private fun setupClickListeners() {
         binding.tambahJenis.setOnClickListener {
-            findNavController().navigate(R.id.action_jenisSampahFragment_to_tambahJenisSampahFragment)
+            findNavController().navigate(
+                R.id.action_jenisSampahFragment_to_tambahJenisSampahFragment
+            )
         }
 
         binding.tambahKategori.setOnClickListener {
-            findNavController().navigate(R.id.action_jenisSampahFragment_to_tambahKategoriFragment)
+            findNavController().navigate(
+                R.id.action_jenisSampahFragment_to_tambahKategoriFragment
+            )
         }
     }
 

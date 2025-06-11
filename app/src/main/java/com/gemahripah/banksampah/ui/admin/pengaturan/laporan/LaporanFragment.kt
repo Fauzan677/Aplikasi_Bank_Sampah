@@ -23,9 +23,12 @@ import androidx.appcompat.app.AlertDialog
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.model.sampah.gabungan.SampahRelasi
 import com.gemahripah.banksampah.databinding.FragmentLaporanBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.apache.poi.ss.usermodel.CellStyle
 import org.apache.poi.ss.usermodel.HorizontalAlignment
 import org.apache.poi.ss.usermodel.VerticalAlignment
+import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFCellStyle
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
@@ -36,147 +39,112 @@ import java.util.*
 
 class LaporanFragment : Fragment() {
 
-    private var loadingDialog: AlertDialog? = null
     private var _binding: FragmentLaporanBinding? = null
     private val binding get() = _binding!!
+    private var loadingDialog: AlertDialog? = null
+    private val supabase = SupabaseProvider.client
+    private val formatterOutput = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale("id", "ID"))
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         _binding = FragmentLaporanBinding.inflate(inflater, container, false)
         return binding.root
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         binding.transaksi.setOnClickListener {
-            AlertDialog.Builder(requireContext())
-                .setTitle("Konfirmasi")
-                .setMessage("Apakah Anda ingin menyimpan laporan ini?")
-                .setPositiveButton("Ya") { _, _ -> ambilDataTransaksiLengkap() }
-                .setNegativeButton("Batal", null)
-                .show()
+            tampilkanDialogKonfirmasi("Konfirmasi", "Apakah Anda ingin menyimpan laporan ini?") {
+                ambilDataTransaksiLengkap()
+            }
         }
 
         binding.setoran.setOnClickListener {
-            AlertDialog.Builder(requireContext())
-                .setTitle("Konfirmasi")
-                .setMessage("Apakah Anda ingin menyimpan laporan ini?")
-                .setPositiveButton("Ya") { _, _ -> ambilDataSetoran() }
-                .setNegativeButton("Batal", null)
-                .show()
+            tampilkanDialogKonfirmasi("Konfirmasi", "Apakah Anda ingin menyimpan laporan ini?") {
+                ambilDataSetoran()
+            }
         }
 
         binding.nasabah.setOnClickListener {
-            AlertDialog.Builder(requireContext())
-                .setTitle("Konfirmasi")
-                .setMessage("Apakah Anda ingin menyimpan data nasabah?")
-                .setPositiveButton("Ya") { _, _ -> ambilDataNasabah() }
-                .setNegativeButton("Batal", null)
-                .show()
+            tampilkanDialogKonfirmasi("Konfirmasi", "Apakah Anda ingin menyimpan data nasabah?") {
+                ambilDataNasabah()
+            }
         }
 
-        binding.jenis.setOnClickListener {
-            AlertDialog.Builder(requireContext())
-                .setTitle("Konfirmasi")
-                .setMessage("Apakah Anda ingin menyimpan data nasabah?")
-                .setPositiveButton("Ya") { _, _ -> ambilDataSampah() }
-                .setNegativeButton("Batal", null)
-                .show()
+        binding.sampah.setOnClickListener {
+            tampilkanDialogKonfirmasi("Konfirmasi", "Apakah Anda ingin menyimpan data sampah?") {
+                ambilDataSampah()
+            }
         }
+    }
 
+    private fun tampilkanDialogKonfirmasi(
+        title: String,
+        message: String,
+        onConfirm: () -> Unit
+    ) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("Ya") { _, _ -> onConfirm() }
+            .setNegativeButton("Batal", null)
+            .show()
     }
 
     private fun ambilDataSampah() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             showLoading()
+
             try {
-                val columns = Columns.raw(
-                    """
-                created_at,
-                sphJenis,
-                sphSatuan,
-                sphHarga,
-                sphKeterangan,
-                sphKtgId (
-                    ktgNama
-                )
-                """.trimIndent()
-                )
 
-                val hasil = SupabaseProvider.client
-                    .from("sampah")
-                    .select(columns = columns)
-                    .decodeList<SampahRelasi>()
+                val hasil = withContext(Dispatchers.IO) {
+                    val columns = Columns.raw(
+                        """
+                        created_at,
+                        sphJenis,
+                        sphSatuan,
+                        sphHarga,
+                        sphKeterangan,
+                        sphKtgId (
+                            ktgNama
+                        )
+                        """.trimIndent())
 
-                val formatterOutput = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale("id", "ID"))
-
-                val workbook = XSSFWorkbook()
-                val sheet = workbook.createSheet("Data Sampah")
-
-                // Font dan style header bold
-                val headerFont = workbook.createFont().apply { bold = true }
-                val headerStyle = workbook.createCellStyle().apply {
-                    setFont(headerFont)
-                    alignment = HorizontalAlignment.CENTER
-                    verticalAlignment = VerticalAlignment.CENTER
+                    supabase.from("sampah")
+                        .select(columns = columns)
+                        .decodeList<SampahRelasi>()
                 }
 
-                // Header
                 val headers = listOf("Nomor", "Tanggal Dibuat", "Jenis", "Kategori", "Satuan", "Harga", "Keterangan")
-                val headerRow = sheet.createRow(0)
-                headers.forEachIndexed { index, title ->
-                    val cell = headerRow.createCell(index)
-                    cell.setCellValue(title)
-                    cell.cellStyle = headerStyle
-
-                    // Set column width sesuai index, 20 karakter (20 * 256)
-                    sheet.setColumnWidth(index, 20 * 256)
+                val dataRows = hasil.mapIndexed { index, item ->
+                    listOf(
+                        (index + 1),
+                        try { ZonedDateTime.parse(item.created_at).format(formatterOutput) } catch (e: Exception) { "-" },
+                        item.sphJenis ?: "",
+                        item.sphKtgId?.ktgNama ?: "",
+                        item.sphSatuan ?: "",
+                        item.sphHarga ?: 0,
+                        item.sphKeterangan ?: ""
+                    )
                 }
 
-                // Isi data
-                hasil.forEachIndexed { i, sampah ->
-                    val row = sheet.createRow(i + 1)
-                    row.createCell(0).setCellValue((i + 1).toDouble())
+                val workbook = generateWorkbook("Data Sampah", headers, dataRows)
+                withContext(Dispatchers.IO) {
+                    val fileName = "Data_Sampah_${System.currentTimeMillis()}.xlsx"
+                    val filePath = File(
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                        fileName
+                    )
 
-                    val tanggalFormatted = try {
-                        sampah.created_at?.let {
-                            val zonedDate = ZonedDateTime.parse(it)
-                            formatterOutput.format(zonedDate)
-                        } ?: "-"
-                    } catch (e: Exception) {
-                        "-"
-                    }
-                    row.createCell(1).setCellValue(tanggalFormatted)
-                    row.createCell(2).setCellValue(sampah.sphJenis ?: "")
-                    row.createCell(3).setCellValue(sampah.sphKtgId?.ktgNama ?: "")
-                    row.createCell(4).setCellValue(sampah.sphSatuan ?: "")
-                    row.createCell(5).setCellValue(sampah.sphHarga?.toDouble() ?: 0.0)
-                    row.createCell(6).setCellValue(sampah.sphKeterangan ?: "")
+                    FileOutputStream(filePath).use { workbook.write(it) }
+                    workbook.close()
                 }
-
-                val fileName = "Data_Sampah_${System.currentTimeMillis()}.xlsx"
-                val filePath = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                    fileName
-                )
-
-                FileOutputStream(filePath).use { output ->
-                    workbook.write(output)
-                }
-                workbook.close()
 
                 Toast.makeText(requireContext(), "Data sampah berhasil disimpan ke Excel di folder Download", Toast.LENGTH_LONG).show()
-
             } catch (e: Exception) {
-                Log.e("SUPABASE_ERROR", "Gagal ambil data sampah: ${e.message}", e)
                 Toast.makeText(requireContext(), "Gagal ambil data sampah", Toast.LENGTH_SHORT).show()
             } finally {
                 hideLoading()
@@ -185,102 +153,74 @@ class LaporanFragment : Fragment() {
     }
 
     private fun ambilDataNasabah() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             showLoading()
+
             try {
-                val penggunaList = SupabaseProvider.client
-                    .from("pengguna")
-                    .select {
-                        filter {
-                            eq("pgnIsAdmin", false)
+                val penggunaList = withContext(Dispatchers.IO) {
+                    supabase.from("pengguna")
+                        .select {
+                            filter {
+                                eq("pgnIsAdmin", false)
+                            }
                         }
-                    }
-                    .decodeList<Pengguna>()
-
-                val workbook = XSSFWorkbook()
-                val sheet = workbook.createSheet("Laporan Nasabah")
-
-                val headerStyle = workbook.createCellStyle().apply {
-                    val font = workbook.createFont()
-                    font.bold = true
-                    setFont(font)
-                    alignment = HorizontalAlignment.CENTER
-                    verticalAlignment = VerticalAlignment.CENTER
+                        .decodeList<Pengguna>()
                 }
 
                 val headers = listOf(
                     "Nomor", "Nama", "Email", "Tanggal Terdaftar", "Total Setoran", "Total Saldo"
                 )
-                val headerRow = sheet.createRow(0)
-                headers.forEachIndexed { index, title ->
-                    val cell = headerRow.createCell(index)
-                    cell.setCellValue(title)
-                    cell.cellStyle = headerStyle
-                }
 
-                penggunaList.forEachIndexed { index, pengguna ->
-                    val row = sheet.createRow(index + 1)
+                val dataRows = withContext(Dispatchers.IO) {
+                    penggunaList.mapIndexed { index, pengguna ->
+                        val tanggalFormatted = try {
+                            ZonedDateTime.parse(pengguna.created_at).format(formatterOutput)
+                        } catch (e: Exception) {
+                            "-"
+                        }
 
-                    // Nomor
-                    row.createCell(0).setCellValue((index + 1).toDouble())
+                        val totalSetoran = try {
+                            SupabaseProvider.client.postgrest.rpc(
+                                "hitung_total_jumlah_per_pengguna_masuk",
+                                buildJsonObject { put("pgn_id_input", pengguna.pgnId) }
+                            ).data.toDoubleOrNull() ?: 0.0
+                        } catch (e: Exception) {
+                            0.0
+                        }
 
-                    // Nama & Email
-                    row.createCell(1).setCellValue(pengguna.pgnNama ?: "-")
-                    row.createCell(2).setCellValue(pengguna.pgnEmail ?: "-")
+                        val totalSaldo = try {
+                            SupabaseProvider.client.postgrest.rpc(
+                                "hitung_saldo_pengguna",
+                                buildJsonObject { put("pgn_id_input", pengguna.pgnId) }
+                            ).data.toDoubleOrNull() ?: 0.0
+                        } catch (e: Exception) {
+                            0.0
+                        }
 
-                    // Tanggal Terdaftar
-                    val tanggalFormatted = try {
-                        val zonedDate = ZonedDateTime.parse(pengguna.created_at)
-                        DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale("id", "ID")).format(zonedDate)
-                    } catch (e: Exception) {
-                        "-"
-                    }
-                    row.createCell(3).setCellValue(tanggalFormatted)
-
-                    // Total Setoran
-                    val totalSetoranResult = try {
-                        SupabaseProvider.client.postgrest.rpc(
-                            "hitung_total_jumlah_per_pengguna_masuk",
-                            buildJsonObject {
-                                put("pgn_id_input", pengguna.pgnId)
-                            }
+                        listOf(
+                            (index + 1),
+                            pengguna.pgnNama ?: "-",
+                            pengguna.pgnEmail ?: "-",
+                            tanggalFormatted,
+                            totalSetoran,
+                            totalSaldo
                         )
-                    } catch (e: Exception) {
-                        null
                     }
-                    val totalSetoran = totalSetoranResult?.data?.toString()?.toDoubleOrNull() ?: 0.0
-                    row.createCell(4).setCellValue(totalSetoran)
-
-                    // Total Saldo
-                    val totalSaldoResult = try {
-                        SupabaseProvider.client.postgrest.rpc(
-                            "hitung_saldo_pengguna",
-                            buildJsonObject {
-                                put("pgn_id_input", pengguna.pgnId)
-                            }
-                        )
-                    } catch (e: Exception) {
-                        null
-                    }
-                    val totalSaldo = totalSaldoResult?.data?.toString()?.toDoubleOrNull() ?: 0.0
-                    row.createCell(5).setCellValue(totalSaldo)
                 }
 
-                (0 until headers.size).forEach {
-                    sheet.setColumnWidth(it, 20 * 256)
+                val workbook = generateWorkbook("Laporan Nasabah", headers, dataRows)
+
+                withContext(Dispatchers.IO) {
+                    val fileName = "Laporan_Nasabah_${System.currentTimeMillis()}.xlsx"
+                    val filePath = File(
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                        fileName
+                    )
+
+                    FileOutputStream(filePath).use { workbook.write(it) }
+                    workbook.close()
                 }
-
-                val fileName = "Laporan_Nasabah_${System.currentTimeMillis()}.xlsx"
-                val filePath = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                    fileName
-                )
-
-                FileOutputStream(filePath).use { workbook.write(it) }
-                workbook.close()
-
                 Toast.makeText(requireContext(), "Laporan Nasabah disimpan di Download", Toast.LENGTH_LONG).show()
-                Log.d("LaporanFragment", "File nasabah disimpan: ${filePath.absolutePath}")
             } catch (e: Exception) {
                 Log.e("SUPABASE_ERROR", "Gagal ambil data nasabah: ${e.message}", e)
             } finally {
@@ -290,96 +230,78 @@ class LaporanFragment : Fragment() {
     }
 
     private fun ambilDataSetoran() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             showLoading()
+
             try {
-                val columns = Columns.raw(
-                    """
-                dtlJumlah,
-                created_at,
-                dtlSphId (
-                    sphJenis,
-                    sphSatuan,
-                    sphKtgId (
-                        ktgNama
-                    )
-                ),
-                dtlTskId (
-                    tskTipe,
-                    tskIdPengguna (
-                        pgnNama,
-                        pgnEmail
-                    )
-                )
-                """.trimIndent()
-                )
 
-                val hasil = SupabaseProvider.client
-                    .from("detail_transaksi")
-                    .select(columns = columns)
-                    .decodeList<DetailTransaksiRelasi>()
+                val hasilMasuk = withContext(Dispatchers.IO) {
+                    val columns = Columns.raw(
+                        """
+                        dtlJumlah,
+                        created_at,
+                        dtlSphId (
+                            sphJenis,
+                            sphSatuan,
+                            sphKtgId (
+                                ktgNama
+                            )
+                        ),
+                        dtlTskId (
+                            tskTipe,
+                            tskIdPengguna (
+                                pgnNama,
+                                pgnEmail
+                            )
+                        )
+                        """.trimIndent())
 
-                val hasilMasuk = hasil.filter { it.dtlTskId?.tskTipe == "Masuk" }
+                    val hasil = supabase.from("detail_transaksi")
+                        .select(columns = columns)
+                        .decodeList<DetailTransaksiRelasi>()
 
-                val workbook = XSSFWorkbook()
-                val sheet = workbook.createSheet("Laporan Setoran")
-
-                val headerStyle = workbook.createCellStyle().apply {
-                    val font = workbook.createFont()
-                    font.bold = true
-                    setFont(font)
-                    alignment = HorizontalAlignment.CENTER
-                    verticalAlignment = VerticalAlignment.CENTER
+                    hasil.filter { it.dtlTskId?.tskTipe == "Masuk" }
                 }
 
                 val headers = listOf("Nomor", "Tanggal", "Nama", "Email", "Kategori", "Jenis Sampah", "Satuan", "Jumlah")
-                val headerRow = sheet.createRow(0)
-                headers.forEachIndexed { index, title ->
-                    val cell = headerRow.createCell(index)
-                    cell.setCellValue(title)
-                    cell.cellStyle = headerStyle
-                }
 
-                hasilMasuk.forEachIndexed { index, detail ->
-                    val row = sheet.createRow(index + 1)
-
+                val dataRows = hasilMasuk.mapIndexed { index, detail ->
                     val pengguna = detail.dtlTskId?.tskIdPengguna
                     val sampah = detail.dtlSphId
                     val kategori = sampah?.sphKtgId
 
-                    row.createCell(0).setCellValue((index + 1).toDouble())
-
                     val tanggalFormatted = try {
-                        val zonedDate = ZonedDateTime.parse(detail.created_at)
-                        DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale("id", "ID")).format(zonedDate)
+                        ZonedDateTime.parse(detail.created_at).format(formatterOutput)
                     } catch (e: Exception) {
                         "-"
                     }
-                    row.createCell(1).setCellValue(tanggalFormatted)
 
-                    row.createCell(2).setCellValue(pengguna?.pgnNama ?: "-")
-                    row.createCell(3).setCellValue(pengguna?.pgnEmail ?: "-")
-                    row.createCell(4).setCellValue(kategori?.ktgNama ?: "-")
-                    row.createCell(5).setCellValue(sampah?.sphJenis ?: "-")
-                    row.createCell(6).setCellValue(sampah?.sphSatuan ?: "-")
-                    row.createCell(7).setCellValue(detail.dtlJumlah ?: 0.0)
+                    listOf(
+                        index + 1,
+                        tanggalFormatted,
+                        pengguna?.pgnNama ?: "-",
+                        pengguna?.pgnEmail ?: "-",
+                        kategori?.ktgNama ?: "-",
+                        sampah?.sphJenis ?: "-",
+                        sampah?.sphSatuan ?: "-",
+                        detail.dtlJumlah ?: 0.0
+                    )
                 }
 
-                (0 until headers.size).forEach { sheet.setColumnWidth(it, 20 * 256) }
+                val workbook = generateWorkbook("Laporan Setoran", headers, dataRows)
 
-                val fileName = "Laporan_Setoran_${System.currentTimeMillis()}.xlsx"
-                val filePath = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                    fileName
-                )
+                withContext(Dispatchers.IO) {
+                    val fileName = "Laporan_Setoran_${System.currentTimeMillis()}.xlsx"
+                    val filePath = File(
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                        fileName
+                    )
 
-                FileOutputStream(filePath).use { outputStream ->
-                    workbook.write(outputStream)
+                    FileOutputStream(filePath).use { workbook.write(it) }
+                    workbook.close()
                 }
-                workbook.close()
 
                 Toast.makeText(requireContext(), "Laporan Setoran berhasil disimpan di Download", Toast.LENGTH_LONG).show()
-                Log.d("LaporanFragment", "File disimpan: ${filePath.absolutePath}")
             } catch (e: Exception) {
                 Log.e("SUPABASE_ERROR", "Gagal ambil data setoran: ${e.message}", e)
             } finally {
@@ -389,127 +311,81 @@ class LaporanFragment : Fragment() {
     }
 
     private fun ambilDataTransaksiLengkap() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             showLoading()
+
             try {
-                val columns = Columns.raw(
-                    """
-                tskId,
-                created_at,
-                tskKeterangan,
-                tskTipe,
-                tskIdPengguna (
-                    pgnNama,
-                    pgnEmail
-                )
-                """.trimIndent()
-                )
+                val transaksiList = withContext(Dispatchers.IO) {
+                    val columns = Columns.raw("""
+                    tskId,
+                    created_at,
+                    tskKeterangan,
+                    tskTipe,
+                    tskIdPengguna (
+                        pgnNama,
+                        pgnEmail
+                    )
+                """.trimIndent())
 
-                val hasil = SupabaseProvider.client
-                    .from("transaksi")
-                    .select(columns = columns)
-                    .decodeList<TransaksiRelasi>()
-
-                // Buat workbook dan sheet baru
-                val workbook = XSSFWorkbook()
-                val sheet = workbook.createSheet("Laporan Transaksi")
-
-                // Buat header style bold
-                val headerStyle: CellStyle = workbook.createCellStyle().apply {
-                    val font = workbook.createFont()
-                    font.bold = true
-                    setFont(font)
-                    alignment = HorizontalAlignment.CENTER
-                    verticalAlignment = VerticalAlignment.CENTER
+                    supabase.from("transaksi")
+                        .select(columns = columns)
+                        .decodeList<TransaksiRelasi>()
                 }
 
-                // Buat header row
-                val headerRow = sheet.createRow(0)
                 val headers = listOf("Nomor", "Tanggal", "Nama", "Email", "Tipe", "Total", "Keterangan")
-                headers.forEachIndexed { index, title ->
-                    val cell = headerRow.createCell(index)
-                    cell.setCellValue(title)
-                    cell.cellStyle = headerStyle as XSSFCellStyle?
-                }
 
-                // Isi data mulai dari baris 1
-                hasil.forEachIndexed { index, transaksi ->
-                    val row = sheet.createRow(index + 1)
+                val dataRows = withContext(Dispatchers.IO) {
+                    transaksiList.mapIndexed { index, transaksi ->
+                        val total = try {
+                            when (transaksi.tskTipe) {
+                                "Masuk" -> SupabaseProvider.client.postgrest.rpc(
+                                    "hitung_total_harga",
+                                    buildJsonObject { put("tsk_id_input", transaksi.tskId) }
+                                ).data.toDoubleOrNull() ?: 0.0
 
-                    // Hitung total
-                    val totalResult = when (transaksi.tskTipe) {
-                        "Masuk" -> SupabaseProvider.client
-                            .postgrest
-                            .rpc(
-                                "hitung_total_harga",
-                                buildJsonObject { put("tsk_id_input", transaksi.tskId) }
-                            )
-                        "Keluar" -> SupabaseProvider.client
-                            .postgrest
-                            .rpc(
-                                "hitung_total_jumlah",
-                                buildJsonObject { put("tsk_id_input", transaksi.tskId) }
-                            )
-                        else -> null
-                    }
-                    val totalDouble = totalResult?.data?.toString()?.toDoubleOrNull() ?: 0.0
+                                "Keluar" -> SupabaseProvider.client.postgrest.rpc(
+                                    "hitung_total_jumlah",
+                                    buildJsonObject { put("tsk_id_input", transaksi.tskId) }
+                                ).data.toDoubleOrNull() ?: 0.0
 
-                    // Nomor
-                    row.createCell(0).setCellValue((index + 1).toDouble())
+                                else -> 0.0
+                            }
+                        } catch (e: Exception) {
+                            0.0
+                        }
 
-                    // Tanggal
-                    val tanggalString = transaksi.created_at
-
-                    val formatterOutput = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale("id", "ID"))
-
-                    val tanggalFormatted = try {
-                        if (tanggalString != null) {
-                            val zonedDate = ZonedDateTime.parse(tanggalString) // Gunakan parser bawaan
-                            formatterOutput.format(zonedDate)
-                        } else {
+                        val tanggalFormatted = try {
+                            ZonedDateTime.parse(transaksi.created_at).format(formatterOutput)
+                        } catch (e: Exception) {
                             "-"
                         }
-                    } catch (e: Exception) {
-                        "-"
+
+                        listOf(
+                            index + 1,
+                            tanggalFormatted,
+                            transaksi.tskIdPengguna?.pgnNama ?: "-",
+                            transaksi.tskIdPengguna?.pgnEmail ?: "-",
+                            transaksi.tskTipe ?: "-",
+                            total,
+                            transaksi.tskKeterangan ?: "-"
+                        )
                     }
-
-
-                    row.createCell(1).setCellValue(tanggalFormatted)
-
-                    // Nama
-                    row.createCell(2).setCellValue(transaksi.tskIdPengguna?.pgnNama ?: "-")
-
-                    // Email
-                    row.createCell(3).setCellValue(transaksi.tskIdPengguna?.pgnEmail ?: "-")
-
-                    // Tipe
-                    row.createCell(4).setCellValue(transaksi.tskTipe ?: "-")
-
-                    // Total
-                    row.createCell(5).setCellValue(totalDouble)
-
-                    // Keterangan
-                    row.createCell(6).setCellValue(transaksi.tskKeterangan ?: "-")
                 }
 
-                // Autosize kolom supaya pas konten
-                (0..6).forEach { sheet.setColumnWidth(it, 20 * 256) }
+                val workbook = generateWorkbook("Laporan Transaksi", headers, dataRows)
 
-                // Simpan file Excel di folder Download (pastikan sudah permission storage)
-                val fileName = "Laporan_Transaksi_${System.currentTimeMillis()}.xlsx"
-                val filePath = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                    fileName
-                )
+                withContext(Dispatchers.IO) {
+                    val fileName = "Laporan_Transaksi_${System.currentTimeMillis()}.xlsx"
+                    val filePath = File(
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                        fileName
+                    )
 
-                FileOutputStream(filePath).use { outputStream ->
-                    workbook.write(outputStream)
+                    FileOutputStream(filePath).use { workbook.write(it) }
+                    workbook.close()
                 }
-                workbook.close()
 
                 Toast.makeText(requireContext(), "File Excel berhasil dibuat di Download", Toast.LENGTH_LONG).show()
-                Log.d("LaporanFragment", "File Excel disimpan: ${filePath.absolutePath}")
-
             } catch (e: Exception) {
                 Log.e("SUPABASE_ERROR", "Gagal mengambil data atau membuat file Excel: ${e.message}", e)
             } finally {
@@ -517,6 +393,45 @@ class LaporanFragment : Fragment() {
             }
         }
     }
+
+    private fun generateWorkbook(
+        sheetName: String,
+        headers: List<String>,
+        data: List<List<Any?>>
+    ): Workbook {
+        val workbook = XSSFWorkbook()
+        val sheet = workbook.createSheet(sheetName)
+
+        val headerFont = workbook.createFont().apply { bold = true }
+        val headerStyle = workbook.createCellStyle().apply {
+            setFont(headerFont)
+            alignment = HorizontalAlignment.CENTER
+            verticalAlignment = VerticalAlignment.CENTER
+        }
+
+        val headerRow = sheet.createRow(0)
+        headers.forEachIndexed { index, title ->
+            val cell = headerRow.createCell(index)
+            cell.setCellValue(title)
+            cell.cellStyle = headerStyle
+            sheet.setColumnWidth(index, 20 * 256)
+        }
+
+        data.forEachIndexed { rowIndex, rowData ->
+            val row = sheet.createRow(rowIndex + 1)
+            rowData.forEachIndexed { cellIndex, value ->
+                val cell = row.createCell(cellIndex)
+                when (value) {
+                    is Number -> cell.setCellValue(value.toDouble())
+                    is String -> cell.setCellValue(value)
+                    else -> cell.setCellValue(value?.toString() ?: "")
+                }
+            }
+        }
+
+        return workbook
+    }
+
 
     private fun showLoading() {
         if (loadingDialog?.isShowing == true) return
@@ -528,12 +443,16 @@ class LaporanFragment : Fragment() {
             .setCancelable(false)
             .create()
 
-        loadingDialog?.window?.setBackgroundDrawableResource(android.R.color.transparent)
         loadingDialog?.window?.setDimAmount(0.3f)
         loadingDialog?.show()
     }
 
     private fun hideLoading() {
         loadingDialog?.dismiss()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

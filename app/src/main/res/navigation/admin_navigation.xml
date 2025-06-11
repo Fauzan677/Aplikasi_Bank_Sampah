@@ -103,7 +103,8 @@
         tools:layout="@layout/fragment_tambah_jenis_sampah" >
         <action
             android:id="@+id/action_tambahJenisSampahFragment_to_jenisSampahFragment"
-            app:destination="@id/jenisSampahFragment" />
+            app:destination="@id/jenisSampahFragment"
+            app:popUpToInclusive="true"/>
     </fragment>
 
     <fragment
@@ -118,7 +119,8 @@
 
         <action
             android:id="@+id/action_editJenisSampahFragment_to_jenisSampahFragment"
-            app:destination="@id/jenisSampahFragment" />
+            app:destination="@id/jenisSampahFragment"
+            app:popUpToInclusive="true"/>
     </fragment>
 
     <fragment
@@ -259,7 +261,8 @@
 
         <action
             android:id="@+id/action_editPenggunaFragment_to_penggunaFragment"
-            app:destination="@id/penggunaFragment" />
+            app:destination="@id/penggunaFragment"
+            app:popUpToInclusive="true" />
 
     </fragment>
 
@@ -270,7 +273,8 @@
         tools:layout="@layout/fragment_tambah_pengguna">
         <action
             android:id="@+id/action_tambahPenggunaFragment_to_penggunaFragment"
-            app:destination="@id/penggunaFragment" />
+            app:destination="@id/penggunaFragment"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <fragment
@@ -281,7 +285,8 @@
 
         <action
             android:id="@+id/action_editProfilFragment_to_navigation_pengaturan"
-            app:destination="@id/navigation_pengaturan" />
+            app:destination="@id/navigation_pengaturan"
+            app:popUpToInclusive="true" />
 
         <argument
             android:name="pengguna"
@@ -341,7 +346,8 @@
 
         <action
             android:id="@+id/action_editKategoriFragment_to_jenisSampahFragment"
-            app:destination="@id/jenisSampahFragment" />
+            app:destination="@id/jenisSampahFragment"
+            app:popUpToInclusive="true" />
 
         <argument
             android:name="kategori"

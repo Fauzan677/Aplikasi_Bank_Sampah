@@ -1,9 +1,9 @@
 package com.gemahripah.banksampah.ui.admin.pengumuman.adapter
 
-import android.os.Build
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
+import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.gemahripah.banksampah.R
@@ -17,7 +17,7 @@ class PengumumanAdapter(
     private val onItemClick: (Pengumuman) -> Unit
 ) : RecyclerView.Adapter<PengumumanAdapter.ViewHolder>() {
 
-    class ViewHolder(val binding: ItemListPengumumanBinding) :
+    inner class ViewHolder(val binding: ItemListPengumumanBinding) :
         RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -29,7 +29,6 @@ class PengumumanAdapter(
 
     override fun getItemCount(): Int = list.size
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = list[position]
 
@@ -39,7 +38,6 @@ class PengumumanAdapter(
 
         holder.binding.judul.text = item.pmnJudul ?: "-"
 
-        // Format tanggal (jika ada)
         item.created_at?.let {
             try {
                 val parsedDate = OffsetDateTime.parse(it)
@@ -50,12 +48,14 @@ class PengumumanAdapter(
             }
         }
 
-        // Tampilkan gambar jika ada
         val url = item.pmnGambar
         if (!url.isNullOrEmpty()) {
+            holder.binding.gambar.visibility = View.VISIBLE
             Glide.with(holder.itemView.context)
-                .load(url)
-                .into(holder.binding.root.findViewById(R.id.gambar))
+                .load("${url}?v=${item.updated_at}")
+                .into(holder.binding.gambar)
+        } else {
+            holder.binding.gambar.visibility = View.GONE
         }
     }
 }

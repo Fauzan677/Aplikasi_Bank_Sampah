@@ -4,16 +4,36 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/jenisSampahLabel"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Jenis Sampah"
-        android:textColor="@color/black"
-        android:textSize="20sp"
-        android:fontFamily="@font/nunito_semibold"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="10dp" />
+        android:orientation="horizontal"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="10dp"
+        >
+
+        <TextView
+            android:id="@+id/jenisSampahLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Jenis Sampah"
+            android:textColor="@color/black"
+            android:textSize="20sp"
+            android:fontFamily="@font/nunito_semibold"
+             />
+
+        <Button
+            android:id="@+id/hapusTambahan"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hapus"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/merah"
+            android:layout_marginStart="10dp"
+            />
+
+
+    </LinearLayout>
 
     <AutoCompleteTextView
         android:id="@+id/autoCompleteJenis"
@@ -47,7 +67,7 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="20dp"
         android:hint="Masukkan Jumlah Setor"
-        android:inputType="number"
+        android:inputType="numberDecimal"
         android:background="@drawable/et_border"
         android:padding="20dp"
         android:layout_marginTop="10dp" />

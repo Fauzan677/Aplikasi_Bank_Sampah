@@ -1,7 +1,6 @@
 package com.gemahripah.banksampah.ui.nasabah.ui.beranda
 
 import android.annotation.SuppressLint
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -10,8 +9,6 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
-import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -24,10 +21,8 @@ import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
 import com.gemahripah.banksampah.data.model.transaksi.Transaksi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentBerandaNasabahBinding
-import com.gemahripah.banksampah.ui.admin.transaksi.TransaksiFragmentDirections
 import com.gemahripah.banksampah.ui.admin.transaksi.adapter.RiwayatTransaksiAdapter
 import com.gemahripah.banksampah.ui.nasabah.NasabahViewModel
-import com.gemahripah.banksampah.ui.nasabah.ui.beranda.adapter.RiwayatAdapter
 import com.google.android.material.datepicker.MaterialDatePicker
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
@@ -36,12 +31,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.math.BigDecimal
 import java.text.NumberFormat
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlin.math.log
 
 class BerandaFragment : Fragment() {
 

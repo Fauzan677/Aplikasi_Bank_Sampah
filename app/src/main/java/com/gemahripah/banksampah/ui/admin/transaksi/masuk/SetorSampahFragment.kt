@@ -1,9 +1,7 @@
 package com.gemahripah.banksampah.ui.admin.transaksi.masuk
 
 import android.annotation.SuppressLint
-import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -14,15 +12,8 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
-import com.gemahripah.banksampah.data.model.pengguna.Pengguna
-import com.gemahripah.banksampah.data.model.sampah.Sampah
-import com.gemahripah.banksampah.data.model.transaksi.DetailTransaksi
-import com.gemahripah.banksampah.data.model.transaksi.Transaksi
-import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentSetorSampahBinding
 import com.gemahripah.banksampah.databinding.ItemSetorSampahBinding
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.launch
 
 class SetorSampahFragment : Fragment() {
@@ -32,8 +23,8 @@ class SetorSampahFragment : Fragment() {
 
     private val viewModel: SetorSampahViewModel by viewModels()
 
-    private var jumlahInput = 1
     private val tambahanSampahList = mutableListOf<ItemSetorSampahBinding>()
+    private var jenisList: List<String> = emptyList()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -104,6 +95,7 @@ class SetorSampahFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.penggunaList.collect { penggunaList ->
                 val namaList = penggunaList.mapNotNull { it.pgnNama }.distinct()
+                jenisList = viewModel.sampahList.value.mapNotNull { it.sphJenis }
                 val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, namaList)
                 binding.nama.setAdapter(adapter)
 
@@ -138,17 +130,19 @@ class SetorSampahFragment : Fragment() {
                     val selectedJenis = jenisList[position]
                     val satuan = viewModel.jenisToSatuanMap[selectedJenis] ?: "Unit"
                     binding.jumlahLabel1.text = "Jumlah Setor ($satuan)"
+                    updateAllAdapters()
                 }
             }
+
         }
     }
 
     @SuppressLint("SetTextI18n", "ClickableViewAccessibility")
     private fun tambahInputSampah() {
-        jumlahInput++
+        val index = tambahanSampahList.size + 2
         val itemBinding = ItemSetorSampahBinding.inflate(layoutInflater)
-        itemBinding.jenisSampahLabel.text = "Jenis Sampah $jumlahInput"
-        itemBinding.jumlahSetorLabel.text = "Jumlah Setor $jumlahInput"
+        itemBinding.jenisSampahLabel.text = "Jenis Sampah $index"
+        itemBinding.jumlahSetorLabel.text = "Jumlah Setor $index"
 
         val adapter = ArrayAdapter(
             requireContext(),
@@ -166,12 +160,82 @@ class SetorSampahFragment : Fragment() {
             val jenis = adapter.getItem(position) ?: return@setOnItemClickListener
             val satuan = viewModel.jenisToSatuanMap[jenis] ?: "Unit"
             itemBinding.jumlahSetorLabel.text = "Jumlah Setor ($satuan)"
+            updateAllAdapters()
+        }
+
+        val dynamicId = View.generateViewId()
+        itemBinding.hapusTambahan.id = dynamicId
+
+        itemBinding.hapusTambahan.setOnClickListener {
+            binding.containerTambahan.removeView(itemBinding.root)
+            tambahanSampahList.remove(itemBinding)
+            perbaruiLabelInput()
+            updateAllAdapters()
         }
 
         binding.containerTambahan.addView(itemBinding.root)
         tambahanSampahList.add(itemBinding)
+        updateAllAdapters()
     }
 
+    private fun perbaruiLabelInput() {
+        tambahanSampahList.forEachIndexed { index, itemBinding ->
+            itemBinding.jenisSampahLabel.text = "Jenis Sampah ${index + 2}"
+            itemBinding.jumlahSetorLabel.text = "Jumlah Setor ${index + 2}"
+            itemBinding.hapusTambahan.id = View.generateViewId()
+        }
+    }
+
+
+    private fun getAvailableJenis(currentJenis: String?): List<String> {
+        val selectedJenisList = mutableSetOf<String>()
+
+        binding.jenis1.text?.toString()?.takeIf { it.isNotEmpty() }?.let {
+            selectedJenisList.add(it)
+        }
+
+        tambahanSampahList.forEach { item ->
+            val jenis = item.autoCompleteJenis.text?.toString()
+            if (!jenis.isNullOrEmpty()) {
+                selectedJenisList.add(jenis)
+            }
+        }
+
+        currentJenis?.let {
+            selectedJenisList.remove(it)
+        }
+
+        val allJenis = viewModel.sampahList.value.mapNotNull { it.sphJenis }.distinct()
+
+        return (allJenis
+            .filter { it.isNotBlank() && it !in selectedJenisList } +
+                listOfNotNull(currentJenis?.takeIf { it.isNotBlank() }))
+            .distinct()
+    }
+
+    private fun updateAllAdapters() {
+        val jenisUtama = binding.jenis1.text.toString()
+        val availableJenisUtama = getAvailableJenis(jenisUtama)
+
+        val adapterUtama = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, availableJenisUtama)
+        binding.jenis1.setAdapter(adapterUtama)
+
+        tambahanSampahList.forEach { item ->
+            val currentJenis = item.autoCompleteJenis.text.toString()
+            val availableJenis = getAvailableJenis(currentJenis)
+
+            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, availableJenis)
+            item.autoCompleteJenis.setAdapter(adapter)
+        }
+
+        val semuaJenisTerpakai = viewModel.sampahList.value.mapNotNull { it.sphJenis }.all { jenis ->
+            jenis == binding.jenis1.text.toString() ||
+                    tambahanSampahList.any { it.autoCompleteJenis.text.toString() == jenis }
+        }
+
+        binding.tambah.isEnabled = !semuaJenisTerpakai
+        binding.tambah.alpha = if (binding.tambah.isEnabled) 1f else 0.5f
+    }
 
     override fun onDestroyView() {
         super.onDestroyView()
