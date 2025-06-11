@@ -7,6 +7,7 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.sampah.Kategori
@@ -139,7 +140,13 @@ class TambahJenisSampahFragment : Fragment(R.layout.fragment_tambah_jenis_sampah
                     supabase.postgrest["sampah"].insert(data)
                 }
                 showToast("Jenis sampah berhasil ditambahkan")
-                findNavController().navigate(R.id.action_tambahJenisSampahFragment_to_jenisSampahFragment)
+                findNavController().navigate(
+                    R.id.action_tambahJenisSampahFragment_to_jenisSampahFragment,
+                    null,
+                    NavOptions.Builder()
+                        .setPopUpTo(R.id.tambahJenisSampahFragment, true)
+                        .build()
+                )
             } catch (e: Exception) {
                 e.printStackTrace()
                 showToast("Gagal menambahkan data")

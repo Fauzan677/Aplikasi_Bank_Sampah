@@ -22,6 +22,8 @@ import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.content.Context
+import com.gemahripah.banksampah.data.model.sampah.Kategori
+import io.github.jan.supabase.postgrest.postgrest
 
 class EditJenisSampahFragment : Fragment() {
 
@@ -30,6 +32,9 @@ class EditJenisSampahFragment : Fragment() {
 
     private val args: EditJenisSampahFragmentArgs by navArgs()
     private val supabase = SupabaseProvider.client
+
+    private var listKategori: List<Kategori> = emptyList()
+    private var selectedKategoriId: Long? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -43,6 +48,7 @@ class EditJenisSampahFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupUI()
+        setupKategoriDropdown()
         setupSatuanDropdown()
         setupButtonActions()
     }
@@ -59,6 +65,49 @@ class EditJenisSampahFragment : Fragment() {
         binding.satuan.setText(sampah.sphSatuan)
         binding.harga.setText(sampah.sphHarga.toString())
         binding.keterangan.setText(sampah.sphKeterangan ?: "")
+    }
+
+    private fun setupKategoriDropdown() {
+        val kategoriView = binding.kategori
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    supabase.postgrest["kategori"]
+                        .select()
+                        .decodeList<Kategori>()
+                }
+
+                listKategori = result
+                val namaList = result.map { it.ktgNama }
+
+                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, namaList)
+                kategoriView.setAdapter(adapter)
+                kategoriView.threshold = 0
+
+                val currentKategoriNama = args.kategoridanSampah.namaKategori
+                kategoriView.setText(currentKategoriNama, false)
+                selectedKategoriId = result.find { it.ktgNama == currentKategoriNama }?.ktgId
+
+                kategoriView.setOnItemClickListener { _, _, position, _ ->
+                    val selectedNama = adapter.getItem(position)
+                    val selectedKategori = listKategori.find { it.ktgNama == selectedNama }
+                    selectedKategoriId = selectedKategori?.ktgId
+                }
+
+                kategoriView.setOnClickListener {
+                    kategoriView.clearFocus()
+                    hideKeyboard()
+                    kategoriView.post {
+                        kategoriView.showDropDown()
+                    }
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                showToast("Gagal memuat kategori")
+            }
+        }
     }
 
     private fun setupSatuanDropdown() {
@@ -105,7 +154,7 @@ class EditJenisSampahFragment : Fragment() {
             return
         }
 
-        val kategoriId = args.kategoridanSampah.sampah.sphKtgId
+        val kategoriId = selectedKategoriId
         val jenis = binding.jenis.text.toString().trim()
         val satuan = binding.satuan.text.toString().trim()
         val harga = binding.harga.text.toString().toLongOrNull() ?: 0L
