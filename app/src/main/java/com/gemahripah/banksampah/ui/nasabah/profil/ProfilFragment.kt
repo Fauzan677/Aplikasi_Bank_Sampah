@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.nasabah.ui.profil
+package com.gemahripah.banksampah.ui.nasabah.profil
 
 import android.content.Intent
 import android.os.Bundle

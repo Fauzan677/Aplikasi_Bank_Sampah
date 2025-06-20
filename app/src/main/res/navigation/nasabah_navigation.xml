@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/navigation_home"
-        android:name="com.gemahripah.banksampah.ui.nasabah.ui.beranda.BerandaFragment"
+        android:name="com.gemahripah.banksampah.ui.nasabah.beranda.BerandaFragment"
         android:label="@string/title_home"
         tools:layout="@layout/fragment_beranda_nasabah" >
         <action
@@ -17,7 +17,7 @@
 
     <fragment
         android:id="@+id/navigation_dashboard"
-        android:name="com.gemahripah.banksampah.ui.nasabah.ui.pengumuman.PengumumanFragment"
+        android:name="com.gemahripah.banksampah.ui.nasabah.pengumuman.PengumumanFragment"
         android:label="@string/title_dashboard"
         tools:layout="@layout/fragment_pengumuman" >
         <action
@@ -27,7 +27,7 @@
 
     <fragment
         android:id="@+id/navigation_notifications"
-        android:name="com.gemahripah.banksampah.ui.nasabah.ui.profil.ProfilFragment"
+        android:name="com.gemahripah.banksampah.ui.nasabah.profil.ProfilFragment"
         android:label="@string/title_notifications"
         tools:layout="@layout/fragment_profil" >
         <action
@@ -37,7 +37,7 @@
 
     <fragment
         android:id="@+id/detailTransaksiFragment"
-        android:name="com.gemahripah.banksampah.ui.nasabah.ui.beranda.detail.DetailTransaksiFragment"
+        android:name="com.gemahripah.banksampah.ui.nasabah.beranda.detail.DetailTransaksiFragment"
         android:label="DetailTransaksiFragment"
         tools:layout="@layout/fragment_detail_transaksi">
 
@@ -48,7 +48,7 @@
     </fragment>
     <fragment
         android:id="@+id/detailPengumumanFragment"
-        android:name="com.gemahripah.banksampah.ui.nasabah.ui.pengumuman.detail.DetailPengumumanFragment"
+        android:name="com.gemahripah.banksampah.ui.nasabah.pengumuman.detail.DetailPengumumanFragment"
         android:label="fragment_detail_pengumuman"
         tools:layout="@layout/fragment_detail_pengumuman_nasabah" >
 
@@ -60,7 +60,7 @@
     </fragment>
     <fragment
         android:id="@+id/editProfilFragment"
-        android:name="com.gemahripah.banksampah.ui.nasabah.ui.profil.edit.EditProfilFragment"
+        android:name="com.gemahripah.banksampah.ui.nasabah.profil.edit.EditProfilFragment"
         android:label="fragment_edit_profil"
         tools:layout="@layout/fragment_tambah_pengguna" >
         <action

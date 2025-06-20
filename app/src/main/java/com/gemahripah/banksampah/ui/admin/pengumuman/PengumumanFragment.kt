@@ -5,9 +5,10 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isInvisible
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.StaggeredGridLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengumuman.Pengumuman
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
@@ -48,7 +49,9 @@ class PengumumanFragment : Fragment() {
     }
 
     private fun loadPengumuman() {
-        lifecycleScope.launch {
+        showLoading(true)
+
+        viewLifecycleOwner.lifecycleScope.launch {
             val pengumumanList = withContext(Dispatchers.IO) {
                 try {
                     SupabaseProvider.client
@@ -57,19 +60,26 @@ class PengumumanFragment : Fragment() {
                             order(column = "updated_at", order = Order.DESCENDING)
                         }
                         .decodeList<Pengumuman>()
+
                 } catch (e: Exception) {
                     e.printStackTrace()
                     emptyList()
                 }
             }
 
-            binding.rvPengumuman.layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
+            showLoading(false)
+
+            binding.rvPengumuman.layoutManager = GridLayoutManager(requireContext(), 2)
             binding.rvPengumuman.adapter = PengumumanAdapter(pengumumanList) { pengumuman ->
                 val action = PengumumanFragmentDirections
                     .actionNavigationPengumumanToDetailPengumumanFragment(pengumuman)
                 findNavController().navigate(action)
             }
         }
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
     }
 
     override fun onDestroyView() {

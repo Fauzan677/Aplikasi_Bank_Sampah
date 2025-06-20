@@ -1,5 +1,6 @@
 package com.gemahripah.banksampah.ui.admin.beranda
 
+import android.util.Log
 import androidx.lifecycle.*
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
@@ -8,6 +9,7 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.text.NumberFormat
 import java.util.*
 
@@ -83,43 +85,76 @@ class BerandaViewModel : ViewModel() {
         }
     }
 
-    fun getTotalTransaksiMasuk() {
+    fun getTotalTransaksiMasuk(start: LocalDate? = null, end: LocalDate? = null) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val result = SupabaseProvider.client.postgrest.rpc("hitung_total_transaksi_masuk")
+                val params = mutableMapOf<String, String>()
+
+                start?.let { params["start_date"] = it.toString() }
+                end?.let { params["end_date"] = it.toString() }
+
+                val result = SupabaseProvider.client.postgrest.rpc(
+                    "hitung_total_transaksi_masuk",
+                    params
+                )
+
                 val total = result.data.toDoubleOrNull() ?: 0.0
                 _totalTransaksi.postValue(formatter.format(total))
             } catch (e: Exception) {
+                Log.e("Supabase", "Gagal memuat total transaksi masuk", e)
                 _totalTransaksi.postValue("Gagal memuat")
             }
         }
     }
 
-    fun getTotalTransaksiKeluar() {
+    fun getTotalTransaksiKeluar(start: LocalDate? = null, end: LocalDate? = null) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                val params = mutableMapOf(
+                    "tipe_transaksi" to "Keluar"
+                )
+
+                start?.let { params["tanggal_awal"] = it.toString() }
+                end?.let { params["tanggal_akhir"] = it.toString() }
+
                 val result = SupabaseProvider.client.postgrest.rpc(
                     "hitung_total_jumlah_berdasarkan_tipe",
-                    mapOf("tipe_transaksi" to "Keluar")
+                    params
                 )
+
                 val total = result.data.toDoubleOrNull() ?: 0.0
                 _totalTransaksi.postValue(formatter.format(total))
             } catch (e: Exception) {
+                Log.e("Supabase", "Gagal memuat total transaksi keluar", e)
                 _totalTransaksi.postValue("Gagal memuat")
             }
         }
     }
 
-    fun getTotalSetoran(filter: String) {
+
+    fun getTotalSetoran(start: LocalDate? = null, end: LocalDate? = null) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                val params = mutableMapOf(
+                    "tipe_transaksi" to "Masuk"
+                )
+
+                start?.let { params["tanggal_awal"] = it.toString() }
+                end?.let { params["tanggal_akhir"] = it.toString() }
+
+                Log.d("Supabase", "Calling RPC with params: $params")
+
                 val result = SupabaseProvider.client.postgrest.rpc(
                     "hitung_total_jumlah_berdasarkan_tipe",
-                    mapOf("tipe_transaksi" to "Masuk", "filter_waktu" to filter)
+                    params
                 )
+
+                Log.d("Supabase", "RPC result: ${result.data}")
+
                 val total = result.data.toDoubleOrNull() ?: 0.0
                 _totalSetoran.postValue("$total Kg")
             } catch (e: Exception) {
+                Log.e("Supabase", "Gagal memuat total setoran", e)
                 _totalSetoran.postValue("Gagal memuat")
             }
         }

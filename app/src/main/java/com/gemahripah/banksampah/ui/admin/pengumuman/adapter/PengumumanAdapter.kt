@@ -1,12 +1,8 @@
 package com.gemahripah.banksampah.ui.admin.pengumuman.adapter
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengumuman.Pengumuman
 import com.gemahripah.banksampah.databinding.ItemListPengumumanBinding
 import java.time.OffsetDateTime
@@ -46,16 +42,6 @@ class PengumumanAdapter(
             } catch (e: Exception) {
                 holder.binding.tanggal.text = it
             }
-        }
-
-        val url = item.pmnGambar
-        if (!url.isNullOrEmpty()) {
-            holder.binding.gambar.visibility = View.VISIBLE
-            Glide.with(holder.itemView.context)
-                .load("${url}?v=${item.updated_at}")
-                .into(holder.binding.gambar)
-        } else {
-            holder.binding.gambar.visibility = View.GONE
         }
     }
 }

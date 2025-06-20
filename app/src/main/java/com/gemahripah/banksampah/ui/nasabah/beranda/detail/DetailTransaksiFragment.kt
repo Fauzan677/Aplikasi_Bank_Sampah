@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.nasabah.ui.beranda.detail
+package com.gemahripah.banksampah.ui.nasabah.beranda.detail
 
 import android.os.Bundle
 import android.util.Log

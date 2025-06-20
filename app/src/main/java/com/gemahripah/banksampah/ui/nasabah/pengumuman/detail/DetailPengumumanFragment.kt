@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.nasabah.ui.pengumuman.detail
+package com.gemahripah.banksampah.ui.nasabah.pengumuman.detail
 
 import androidx.fragment.app.viewModels
 import android.os.Bundle

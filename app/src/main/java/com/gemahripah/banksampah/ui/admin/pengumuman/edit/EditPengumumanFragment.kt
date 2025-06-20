@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +24,7 @@ import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentTambahPengumumanBinding
 import com.gemahripah.banksampah.utils.reduceFileImage
 import com.gemahripah.banksampah.utils.uriToFile
+import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.launch
@@ -40,6 +42,9 @@ class EditPengumumanFragment : Fragment() {
     private lateinit var galleryLauncher: ActivityResultLauncher<PickVisualMediaRequest>
     private lateinit var requestCameraPermissionLauncher: ActivityResultLauncher<String>
     private var currentImageUri: Uri? = null
+
+    private var existingImageUrl: String? = null
+    private var gambarDihapus: Boolean = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -79,6 +84,8 @@ class EditPengumumanFragment : Fragment() {
         binding.nama.setText(pengumuman.pmnJudul)
         binding.edtTextarea.setText(pengumuman.pmnIsi)
 
+        existingImageUrl = pengumuman.pmnGambar
+
         if (!pengumuman.pmnGambar.isNullOrEmpty()) {
             binding.selectedImageView.visibility = View.VISIBLE
             binding.uploadText.visibility = View.GONE
@@ -86,6 +93,36 @@ class EditPengumumanFragment : Fragment() {
                 .load("${pengumuman.pmnGambar}?v=${pengumuman.updated_at}")
                 .into(binding.selectedImageView)
         }
+
+        binding.selectedImageView.setOnLongClickListener {
+            showDeleteImageConfirmation()
+            true
+        }
+    }
+
+    private fun showDeleteImageConfirmation() {
+        if (currentImageUri == null) {
+            showToast("Belum ada gambar yang dipilih")
+            return
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Hapus Gambar")
+            .setMessage("Apakah Anda yakin ingin menghapus gambar yang dipilih?")
+            .setPositiveButton("Hapus") { _, _ ->
+                clearSelectedImage()
+            }
+            .setNegativeButton("Batal", null)
+            .show()
+    }
+
+    private fun clearSelectedImage() {
+        binding.selectedImageView.setImageDrawable(null)
+        binding.selectedImageView.visibility = View.GONE
+        binding.uploadText.visibility = View.VISIBLE
+        gambarDihapus = true
+        currentImageUri = null
+        showToast("Gambar dihapus")
     }
 
     private fun setupPermissionLauncher() {
@@ -172,8 +209,21 @@ class EditPengumumanFragment : Fragment() {
 
         showLoading(true)
         lifecycleScope.launch {
+            val supabase = SupabaseProvider.client
             try {
-                val (imageUrl, imageChanged) = handleImageUpload(currentImageUri, pengumuman.pmnGambar)
+                var imageUrl = existingImageUrl
+                var imageChanged = false
+
+                if (gambarDihapus) {
+                    hapusGambarDariStorage(supabase, existingImageUrl)
+                    imageUrl = null
+                    imageChanged = true
+                } else if (currentImageUri != null) {
+                    val result = handleImageUpload(currentImageUri, existingImageUrl)
+                    imageUrl = result.first
+                    imageChanged = result.second
+                }
+
                 val needsUpdate = shouldUpdatePengumuman(judul, isi, imageChanged, pengumuman)
 
                 if (needsUpdate) {
@@ -190,6 +240,20 @@ class EditPengumumanFragment : Fragment() {
                 showToast("Gagal menyimpan: ${e.message}")
                 showLoading(false)
             }
+        }
+    }
+
+    private suspend fun hapusGambarDariStorage(supabase: SupabaseClient, url: String?) {
+        if (url.isNullOrBlank()) return
+
+        val fileName = url.substringAfterLast("/")
+        val path = "images/$fileName"
+        val bucket = supabase.storage.from("pengumuman")
+
+        try {
+            bucket.delete(path)
+        } catch (e: Exception) {
+            Log.e("HapusGambar", "Gagal hapus gambar: ${e.message}")
         }
     }
 

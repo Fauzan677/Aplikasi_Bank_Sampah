@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.nasabah.ui.beranda.adapter
+package com.gemahripah.banksampah.ui.nasabah.beranda.adapter
 
 import android.annotation.SuppressLint
 import android.os.Build

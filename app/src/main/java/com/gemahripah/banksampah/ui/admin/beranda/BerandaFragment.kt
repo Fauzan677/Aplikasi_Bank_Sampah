@@ -3,10 +3,6 @@ package com.gemahripah.banksampah.ui.admin.beranda
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
-import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -22,6 +18,12 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.databinding.FragmentBerandaAdminBinding
 import com.gemahripah.banksampah.ui.admin.beranda.adapter.NasabahAdapter
+import com.google.android.material.datepicker.MaterialDatePicker
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class BerandaFragment : Fragment() {
 
@@ -44,11 +46,14 @@ class BerandaFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        viewModel.fetchDashboardData()
+
         setupRecyclerView()
         observeViewModel()
         setupSearchListener()
         setupSpinner()
-        viewModel.fetchDashboardData()
+        setupTransaksi()
+        setupSetoran()
 
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
             if (binding.searchNasabah.hasFocus()) {
@@ -64,7 +69,6 @@ class BerandaFragment : Fragment() {
                 requireActivity().onBackPressedDispatcher.onBackPressed()
             }
         }
-
     }
 
     private fun setupRecyclerView() {
@@ -72,6 +76,7 @@ class BerandaFragment : Fragment() {
             val action = BerandaFragmentDirections.actionNavigationBerandaToDetailPenggunaFragment(pengguna)
             findNavController().navigate(action)
         }
+
         binding.rvListNasabah.layoutManager = LinearLayoutManager(requireContext())
         binding.rvListNasabah.adapter = adapter
     }
@@ -115,7 +120,6 @@ class BerandaFragment : Fragment() {
             false
         }
 
-
         binding.searchNasabah.addTextChangedListener { text ->
             adapter.filterList(text.toString())
         }
@@ -138,6 +142,9 @@ class BerandaFragment : Fragment() {
     private fun setupSpinner() {
         binding.spinnerFilterTransaksi.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+
+                binding.tvTanggalTransaksi.visibility = View.GONE
+
                 when (parent.getItemAtPosition(position).toString()) {
                     "Transaksi Masuk" -> viewModel.getTotalTransaksiMasuk()
                     "Transaksi Keluar" -> viewModel.getTotalTransaksiKeluar()
@@ -146,20 +153,82 @@ class BerandaFragment : Fragment() {
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
+    }
 
-        binding.spinnerFilterSetoran.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                val filter = when (parent.getItemAtPosition(position).toString()) {
-                    "Hari Ini" -> "hari_ini"
-                    "Minggu Ini" -> "minggu_ini"
-                    "Bulan Ini" -> "bulan_ini"
-                    "3 Bulan Terakhir" -> "3_bulan"
-                    else -> "semua"
+    private fun setupTransaksi() {
+        binding.tanggalTransaksi.setOnClickListener {
+            val selectedItem = binding.spinnerFilterTransaksi.selectedItem?.toString()
+            showDateRangePicker { startDate, endDate ->
+                when (selectedItem) {
+                    "Transaksi Masuk" -> viewModel.getTotalTransaksiMasuk(startDate, endDate)
+                    "Transaksi Keluar" -> viewModel.getTotalTransaksiKeluar(startDate, endDate)
                 }
-                viewModel.getTotalSetoran(filter)
+
+                val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id", "ID"))
+                val startText = startDate.format(formatter)
+                val endText = endDate.format(formatter)
+
+                binding.tvTanggalTransaksi.apply {
+                    text = "($startText - $endText)"
+                    visibility = View.VISIBLE
+                }
+            }
+        }
+
+        binding.tanggalTransaksi.setOnLongClickListener {
+            val selectedItem = binding.spinnerFilterTransaksi.selectedItem?.toString()
+            when (selectedItem) {
+                "Transaksi Masuk" -> viewModel.getTotalTransaksiMasuk()
+                "Transaksi Keluar" -> viewModel.getTotalTransaksiKeluar()
             }
 
-            override fun onNothingSelected(parent: AdapterView<*>) {}
+            binding.tvTanggalTransaksi.visibility = View.GONE
+            true
+        }
+    }
+
+    private fun setupSetoran() {
+        viewModel.getTotalSetoran()
+
+        binding.tanggalSetoran.setOnClickListener {
+            showDateRangePicker { startDate, endDate ->
+                viewModel.getTotalSetoran(startDate, endDate)
+
+                val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id", "ID"))
+                val startText = startDate.format(formatter)
+                val endText = endDate.format(formatter)
+
+                binding.tvTanggalSetoran.apply {
+                    text = "($startText - $endText)"
+                    visibility = View.VISIBLE
+                }
+            }
+        }
+
+        binding.tanggalSetoran.setOnLongClickListener {
+            viewModel.getTotalSetoran()
+            binding.tvTanggalSetoran.visibility = View.GONE
+            true
+        }
+    }
+
+    private fun showDateRangePicker(onDateRangeSelected: (startDate: LocalDate, endDate: LocalDate) -> Unit) {
+        val dateRangePicker = MaterialDatePicker.Builder.dateRangePicker()
+            .setTitleText("Pilih Rentang Tanggal Setoran")
+            .build()
+
+        dateRangePicker.show(parentFragmentManager, "DATE_RANGE_PICKER")
+
+        dateRangePicker.addOnPositiveButtonClickListener { selection ->
+            val startMillis = selection.first
+            val endMillis = selection.second
+
+            if (startMillis != null && endMillis != null) {
+                val startDate = Instant.ofEpochMilli(startMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+                val endDate = Instant.ofEpochMilli(endMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+
+                onDateRangeSelected(startDate, endDate)
+            }
         }
     }
 

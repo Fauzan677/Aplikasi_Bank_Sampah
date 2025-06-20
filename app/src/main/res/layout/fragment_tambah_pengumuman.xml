@@ -151,11 +151,12 @@
             android:layout_height="60dp"
             android:layout_gravity="center"
             android:visibility="gone"
-            app:indicatorColor="@color/primary"
+            app:trackColor="@color/primary"
             app:indicatorSize="60dp"
-            app:trackThickness="4dp" />
+            app:trackThickness="4dp"
+            android:indeterminate="true"
+            />
 
     </FrameLayout>
-
 
 </ScrollView>

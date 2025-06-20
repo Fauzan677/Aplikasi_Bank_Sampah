@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.nasabah.ui.pengumuman
+package com.gemahripah.banksampah.ui.nasabah.pengumuman
 
 import android.os.Bundle
 import android.view.LayoutInflater

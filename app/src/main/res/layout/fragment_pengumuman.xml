@@ -34,12 +34,30 @@
         android:backgroundTint="@android:color/transparent"
         />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_pengumuman"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:layout_marginHorizontal="10dp"
-        />
+        >
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_pengumuman"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginHorizontal="10dp"
+            />
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/loading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            app:trackColor="@color/primary"
+            app:trackThickness="4dp"
+            android:indeterminate="true"
+            android:layout_marginVertical="20dp"
+            />
+
+    </FrameLayout>
 
 </LinearLayout>

@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.nasabah.ui.profil.edit
+package com.gemahripah.banksampah.ui.nasabah.profil.edit
 
 import androidx.lifecycle.ViewModel
 

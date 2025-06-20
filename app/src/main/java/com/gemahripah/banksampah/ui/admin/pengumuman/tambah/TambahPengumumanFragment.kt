@@ -89,7 +89,35 @@ class TambahPengumumanFragment : Fragment() {
 
     private fun setupViewListeners() {
         binding.gambarFile.setOnClickListener { showImagePickerDialog() }
+        binding.gambarFile.setOnLongClickListener {
+            showDeleteImageConfirmation()
+            true
+        }
         binding.konfirmasi.setOnClickListener { validateAndUploadPengumuman() }
+    }
+
+    private fun showDeleteImageConfirmation() {
+        if (currentImageUri == null) {
+            showToast("Belum ada gambar yang dipilih")
+            return
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Hapus Gambar")
+            .setMessage("Apakah Anda yakin ingin menghapus gambar yang dipilih?")
+            .setPositiveButton("Hapus") { _, _ ->
+                clearSelectedImage()
+            }
+            .setNegativeButton("Batal", null)
+            .show()
+    }
+
+    private fun clearSelectedImage() {
+        currentImageUri = null
+        binding.selectedImageView.setImageDrawable(null)
+        binding.selectedImageView.visibility = View.GONE
+        binding.uploadText.visibility = View.VISIBLE
+        showToast("Gambar dihapus")
     }
 
     private fun showImagePickerDialog() {
@@ -149,6 +177,7 @@ class TambahPengumumanFragment : Fragment() {
 
     private fun uploadPengumuman(judul: String, isi: String) {
         showLoading(true)
+
         lifecycleScope.launch {
             try {
                 val imageUrl = currentImageUri?.let { uploadImage(it) }

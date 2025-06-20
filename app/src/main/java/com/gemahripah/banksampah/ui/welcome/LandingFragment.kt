@@ -25,14 +25,12 @@ class LandingFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Saat tombol "Masuk" diklik, pindah ke MasukFragment
         binding.masuk.setOnClickListener {
             findNavController().navigate(
                 R.id.action_landingFragment_to_masukFragment
             )
         }
 
-        // Saat tombol "Daftar" diklik, pindah ke DaftarFragment (opsional)
         binding.daftar.setOnClickListener {
             findNavController().navigate(
                 R.id.action_landingFragment_to_daftarFragment
