@@ -63,10 +63,9 @@ class PengumumanFragment : Fragment() {
                 }
             }
 
-            // Set adapter ke RecyclerView
             binding.rvPengumuman.layoutManager = GridLayoutManager(requireContext(), 2)
             binding.rvPengumuman.adapter = PengumumanAdapter(pengumumanList) { pengumuman ->
-                val action = com.gemahripah.banksampah.ui.nasabah.ui.pengumuman.PengumumanFragmentDirections
+                val action = com.gemahripah.banksampah.ui.nasabah.pengumuman.PengumumanFragmentDirections
                     .actionNavigationDashboardToDetailPengumumanFragment2(pengumuman)
                 findNavController().navigate(action)
             }
