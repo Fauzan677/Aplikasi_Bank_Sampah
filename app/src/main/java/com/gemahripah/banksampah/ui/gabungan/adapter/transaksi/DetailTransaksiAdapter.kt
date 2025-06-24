@@ -1,11 +1,9 @@
-package com.gemahripah.banksampah.ui.admin.transaksi.adapter
+package com.gemahripah.banksampah.ui.gabungan.adapter.transaksi
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.gemahripah.banksampah.data.model.transaksi.DetailTransaksi
-import com.gemahripah.banksampah.data.model.transaksi.DetailTransaksiItem
 import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
 import com.gemahripah.banksampah.databinding.ItemDetailTransaksiBinding
 

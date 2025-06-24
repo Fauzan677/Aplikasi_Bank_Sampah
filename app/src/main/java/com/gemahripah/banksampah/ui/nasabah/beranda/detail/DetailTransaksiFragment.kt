@@ -6,17 +6,15 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.navigation.fragment.findNavController
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentDetailTransaksiBinding
-import com.gemahripah.banksampah.ui.admin.transaksi.adapter.DetailTransaksiAdapter
+import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.DetailTransaksiAdapter
 import com.gemahripah.banksampah.ui.admin.transaksi.detail.DetailTransaksiFragmentArgs
-import com.gemahripah.banksampah.ui.admin.transaksi.detail.DetailTransaksiFragmentDirections
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
@@ -34,22 +32,29 @@ class DetailTransaksiFragment : Fragment() {
     private var _binding: FragmentDetailTransaksiBinding? = null
     private val binding get() = _binding!!
 
-    private var enrichedList: List<DetailTransaksiRelasi> = emptyList()
+    private val viewModel: DetailTransaksiViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentDetailTransaksiBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        setupUI()
+        observeViewModel()
+        loadData()
+    }
+
+    private fun setupUI() {
+        val riwayat = args.riwayat
 
         binding.edit.visibility = View.GONE
         binding.hapus.visibility = View.GONE
-
-        val riwayat = args.riwayat
-        val idTransaksi = riwayat.tskId
-
-        Log.d("DetailTransaksi", "Data riwayat: $riwayat")
-
         binding.nominal.text = riwayat.totalHarga.toString()
         binding.keterangan.text = riwayat.tskKeterangan
 
@@ -61,70 +66,37 @@ class DetailTransaksiFragment : Fragment() {
             "keluar" -> {
                 binding.detail.visibility = View.GONE
                 binding.rvDetail.visibility = View.GONE
-
                 binding.jenis.setCardBackgroundColor(resources.getColor(R.color.merah, null))
                 binding.transaksi.text = "Transaksi Keluar"
             }
         }
-
-        getDetailTransaksi(idTransaksi)
-
-        return binding.root
     }
 
-    private fun getDetailTransaksi(idTransaksi: Long) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val columns = Columns.raw(
-                    """
-                    dtlId,
-                    dtlJumlah,
-                    dtlSphId (
-                        sphJenis
-                    )
-                    """.trimIndent()
-                )
-
-                val response = SupabaseProvider.client
-                    .from("detail_transaksi")
-                    .select(columns) {
-                        filter {
-                            eq("dtlTskId", idTransaksi)
-                        }
-                    }
-
-                val detailList = Json.decodeFromString<List<DetailTransaksiRelasi>>(response.data.toString())
-
-                enrichedList = detailList.mapNotNull { detail ->
-                    val dtlId = detail.dtlId
-                    if (dtlId != null) {
-                        try {
-                            val hargaDetailResponse = SupabaseProvider.client.postgrest.rpc(
-                                "hitung_harga_detail",
-                                buildJsonObject {
-                                    put("dtl_id_input", dtlId)
-                                }
-                            )
-
-                            val hargaDetail = hargaDetailResponse.data.toDoubleOrNull()
-                            detail.copy(hargaDetail = hargaDetail ?: 0.0)
-
-                        } catch (e: Exception) {
-                            Log.e("DetailTransaksi", "Gagal hitung harga detail: ${e.message}", e)
-                            null
-                        }
-                    } else null
-                }
-
-                withContext(Dispatchers.Main) {
-                    binding.rvDetail.layoutManager = GridLayoutManager(requireContext(), 2)
-                    binding.rvDetail.adapter = DetailTransaksiAdapter(enrichedList)
-                }
-
-            } catch (e: Exception) {
-                Log.e("DetailTransaksi", "Gagal ambil data: ${e.message}", e)
-            }
+    private fun observeViewModel() {
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            showLoading(isLoading)
         }
+
+        viewModel.detailList.observe(viewLifecycleOwner) { list ->
+            setupRecyclerView(list)
+        }
+    }
+
+    private fun loadData() {
+        val idTransaksi = args.riwayat.tskId
+        viewModel.loadDetailTransaksi(idTransaksi)
+    }
+
+    private fun setupRecyclerView(detailList: List<DetailTransaksiRelasi>) {
+        binding.rvDetail.apply {
+            layoutManager = GridLayoutManager(requireContext(), 2)
+            adapter = DetailTransaksiAdapter(detailList)
+        }
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
     }
 
     override fun onDestroyView() {

@@ -4,30 +4,19 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.gemahripah.banksampah.R
-import com.gemahripah.banksampah.data.model.pengumuman.Pengumuman
-import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentPengumumanBinding
-import com.gemahripah.banksampah.ui.admin.pengumuman.PengumumanFragmentDirections
-import com.gemahripah.banksampah.ui.admin.pengumuman.adapter.PengumumanAdapter
-import io.github.jan.supabase.postgrest.from
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.gemahripah.banksampah.ui.gabungan.adapter.pengumuman.PengumumanAdapter
 
 class PengumumanFragment : Fragment() {
 
     private var _binding: FragmentPengumumanBinding? = null
     private val binding get() = _binding!!
 
-    val client = SupabaseProvider.client
+    private val viewModel: PengumumanViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -40,36 +29,35 @@ class PengumumanFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setupUI()
+        observeViewModel()
+        viewModel.loadPengumuman()
+
+    }
+
+    private fun setupUI() {
         binding.tambah.visibility = View.GONE
 
         val layoutParams = binding.rvPengumuman.layoutParams as ViewGroup.MarginLayoutParams
         layoutParams.topMargin = (40 * resources.displayMetrics.density).toInt()
         binding.rvPengumuman.layoutParams = layoutParams
-
-        loadPengumuman()
     }
 
-    private fun loadPengumuman() {
-        lifecycleScope.launch {
-            val pengumumanList = withContext(Dispatchers.IO) {
-                try {
-                    SupabaseProvider.client
-                        .from("pengumuman")
-                        .select()
-                        .decodeList<Pengumuman>()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    emptyList()
+    private fun observeViewModel() {
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+            binding.rvPengumuman.visibility = if (isLoading) View.GONE else View.VISIBLE
+        }
+
+        viewModel.pengumumanList.observe(viewLifecycleOwner) { list ->
+            binding.rvPengumuman.apply {
+                layoutManager = GridLayoutManager(requireContext(), 2)
+                adapter = PengumumanAdapter(list) { pengumuman ->
+                    val action = PengumumanFragmentDirections
+                        .actionNavigationDashboardToDetailPengumumanFragment(pengumuman)
+                    findNavController().navigate(action)
                 }
             }
-
-            binding.rvPengumuman.layoutManager = GridLayoutManager(requireContext(), 2)
-            binding.rvPengumuman.adapter = PengumumanAdapter(pengumumanList) { pengumuman ->
-                val action = com.gemahripah.banksampah.ui.nasabah.pengumuman.PengumumanFragmentDirections
-                    .actionNavigationDashboardToDetailPengumumanFragment2(pengumuman)
-                findNavController().navigate(action)
-            }
-
         }
     }
 

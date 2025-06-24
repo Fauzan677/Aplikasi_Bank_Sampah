@@ -17,7 +17,7 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.databinding.FragmentDetailTransaksiBinding
-import com.gemahripah.banksampah.ui.admin.transaksi.adapter.DetailTransaksiAdapter
+import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.DetailTransaksiAdapter
 import kotlinx.coroutines.launch
 
 class DetailTransaksiFragment : Fragment() {

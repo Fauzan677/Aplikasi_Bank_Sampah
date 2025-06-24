@@ -88,6 +88,7 @@ class BerandaFragment : Fragment() {
 
         viewModel.isLoadingNasabah.observe(viewLifecycleOwner) { isLoading ->
             binding.progressNasabah.visibility = if (isLoading) View.VISIBLE else View.GONE
+            binding.rvListNasabah.visibility = if (isLoading) View.GONE else View.VISIBLE
         }
 
         viewModel.totalSaldo.observe(viewLifecycleOwner) {
@@ -142,13 +143,10 @@ class BerandaFragment : Fragment() {
     private fun setupSpinner() {
         binding.spinnerFilterTransaksi.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-
                 binding.tvTanggalTransaksi.visibility = View.GONE
 
-                when (parent.getItemAtPosition(position).toString()) {
-                    "Transaksi Masuk" -> viewModel.getTotalTransaksiMasuk()
-                    "Transaksi Keluar" -> viewModel.getTotalTransaksiKeluar()
-                }
+                val filter = parent.getItemAtPosition(position).toString()
+                viewModel.getTotalTransaksi(filter)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
@@ -159,10 +157,7 @@ class BerandaFragment : Fragment() {
         binding.tanggalTransaksi.setOnClickListener {
             val selectedItem = binding.spinnerFilterTransaksi.selectedItem?.toString()
             showDateRangePicker { startDate, endDate ->
-                when (selectedItem) {
-                    "Transaksi Masuk" -> viewModel.getTotalTransaksiMasuk(startDate, endDate)
-                    "Transaksi Keluar" -> viewModel.getTotalTransaksiKeluar(startDate, endDate)
-                }
+                viewModel.getTotalTransaksi(selectedItem ?: "", startDate, endDate)
 
                 val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id", "ID"))
                 val startText = startDate.format(formatter)
@@ -177,10 +172,7 @@ class BerandaFragment : Fragment() {
 
         binding.tanggalTransaksi.setOnLongClickListener {
             val selectedItem = binding.spinnerFilterTransaksi.selectedItem?.toString()
-            when (selectedItem) {
-                "Transaksi Masuk" -> viewModel.getTotalTransaksiMasuk()
-                "Transaksi Keluar" -> viewModel.getTotalTransaksiKeluar()
-            }
+            viewModel.getTotalTransaksi(selectedItem ?: "")
 
             binding.tvTanggalTransaksi.visibility = View.GONE
             true
@@ -188,8 +180,6 @@ class BerandaFragment : Fragment() {
     }
 
     private fun setupSetoran() {
-        viewModel.getTotalSetoran()
-
         binding.tanggalSetoran.setOnClickListener {
             showDateRangePicker { startDate, endDate ->
                 viewModel.getTotalSetoran(startDate, endDate)
@@ -239,6 +229,13 @@ class BerandaFragment : Fragment() {
         binding.scrollView.post {
             binding.scrollView.scrollTo(0, 0)
         }
+        binding.tvTanggalTransaksi.visibility = View.GONE
+        binding.tvTanggalSetoran.visibility = View.GONE
+
+        viewModel.fetchDashboardData()
+        val selectedItem = binding.spinnerFilterTransaksi.selectedItem?.toString()
+        viewModel.getTotalTransaksi(selectedItem ?: "")
+        viewModel.getTotalSetoran()
     }
 
     override fun onDestroyView() {

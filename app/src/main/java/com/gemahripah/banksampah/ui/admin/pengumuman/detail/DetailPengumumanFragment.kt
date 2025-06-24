@@ -1,5 +1,6 @@
 package com.gemahripah.banksampah.ui.admin.pengumuman.detail
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -7,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
@@ -14,7 +16,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengumuman.Pengumuman
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
-import com.gemahripah.banksampah.databinding.FragmentDetailPengumumanNasabahBinding
+import com.gemahripah.banksampah.databinding.FragmentDetailPengumumanBinding
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.storage
@@ -27,16 +29,16 @@ import java.util.Locale
 
 class DetailPengumumanFragment : Fragment() {
 
-    private var _binding: FragmentDetailPengumumanNasabahBinding? = null
+    private var _binding: FragmentDetailPengumumanBinding? = null
     private val binding get() = _binding!!
 
-    private var imageUrlWithUpdatedAt: String? = null
+    private val viewModel: DetailPengumumanViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentDetailPengumumanNasabahBinding.inflate(inflater, container, false)
+        _binding = FragmentDetailPengumumanBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -48,8 +50,20 @@ class DetailPengumumanFragment : Fragment() {
         }
 
         pengumuman?.let {
-            tampilkanDetailPengumuman(it)
-            aturAksiKlik(it)
+            viewModel.setPengumuman(it)
+        }
+
+        observeViewModel()
+    }
+
+    private fun observeViewModel() {
+        viewModel.pengumuman.observe(viewLifecycleOwner) { pengumuman ->
+            tampilkanDetailPengumuman(pengumuman)
+            aturAksiKlik(pengumuman)
+        }
+
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            showLoading(isLoading)
         }
     }
 
@@ -66,7 +80,7 @@ class DetailPengumumanFragment : Fragment() {
 
         if (!pengumuman.pmnGambar.isNullOrBlank()) {
             binding.gambar.visibility = View.VISIBLE
-            imageUrlWithUpdatedAt = "${pengumuman.pmnGambar}?v=${pengumuman.updated_at}"
+            val imageUrlWithUpdatedAt = "${pengumuman.pmnGambar}?v=${pengumuman.updated_at}"
 
             Glide.with(requireContext())
                 .load(imageUrlWithUpdatedAt)
@@ -81,7 +95,7 @@ class DetailPengumumanFragment : Fragment() {
     private fun aturAksiKlik(pengumuman: Pengumuman) {
         binding.gambar.setOnClickListener {
             pengumuman.pmnGambar?.let {
-                tampilkanDialogZoomGambar()
+                tampilkanDialogZoomGambar(it, pengumuman.updated_at)
             }
         }
 
@@ -93,20 +107,25 @@ class DetailPengumumanFragment : Fragment() {
 
         binding.hapus.setOnClickListener {
             pengumuman.pmnId?.let { id ->
-                hapusPengumuman(id, pengumuman.pmnGambar)
+                tampilkanDialogKonfirmasiHapus(id, pengumuman.pmnGambar) {
+                    Toast.makeText(requireContext(), "Pengumuman berhasil dihapus", Toast.LENGTH_SHORT).show()
+                    findNavController().popBackStack()
+                }
             }
         }
     }
 
-    private fun tampilkanDialogZoomGambar() {
+    private fun tampilkanDialogZoomGambar(gambarUrl: String, updatedAt: String?) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_zoom_image, null)
         val photoView = dialogView.findViewById<com.github.chrisbanes.photoview.PhotoView>(R.id.photo_view)
 
+        val urlWithVersion = "$gambarUrl?v=$updatedAt"
+
         Glide.with(requireContext())
-            .load(imageUrlWithUpdatedAt)
+            .load(urlWithVersion)
             .into(photoView)
 
-        val dialog = android.app.AlertDialog.Builder(requireContext())
+        val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogView)
             .create()
 
@@ -115,51 +134,21 @@ class DetailPengumumanFragment : Fragment() {
         dialog.show()
     }
 
-    private fun hapusPengumuman(pengumumanId: Long, gambarUrl: String?) {
-        val supabase = SupabaseProvider.client
-
-        showLoading(true)
-        viewLifecycleOwner.lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                try {
-                    hapusDataPengumumanDariDatabase(supabase, pengumumanId)
-                    hapusGambarDariStorage(supabase, gambarUrl)
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(requireContext(), "Pengumuman berhasil dihapus", Toast.LENGTH_SHORT).show()
-                        findNavController().popBackStack()
-                    }
-                } catch (e: Exception) {
-                    Log.e(
-                        "HapusPengumuman",
-                        "Terjadi error saat menghapus pengumuman: ${e.message}"
-                    )
-                } finally {
-                    withContext(Dispatchers.Main) {
-                        showLoading(false)
-                    }
+    private fun tampilkanDialogKonfirmasiHapus(
+        pengumumanId: Long,
+        gambarUrl: String?,
+        onHapusConfirmed: () -> Unit
+    ) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Konfirmasi Hapus")
+            .setMessage("Apakah kamu yakin ingin menghapus pengumuman ini?")
+            .setPositiveButton("Hapus") { _, _ ->
+                viewModel.hapusPengumuman(pengumumanId, gambarUrl) {
+                    onHapusConfirmed()
                 }
             }
-        }
-    }
-
-    private suspend fun hapusDataPengumumanDariDatabase(supabase: SupabaseClient, id: Long) {
-        supabase.from("pengumuman").delete {
-            filter { eq("pmnId", id) }
-        }
-    }
-
-    private suspend fun hapusGambarDariStorage(supabase: SupabaseClient, url: String?) {
-        if (url.isNullOrBlank()) return
-
-        val fileName = url.substringAfterLast("/")
-        val path = "images/$fileName"
-        val bucket = supabase.storage.from("pengumuman")
-
-        try {
-            bucket.delete(path)
-        } catch (e: Exception) {
-            Log.e("HapusGambar", "Gagal hapus gambar: ${e.message}")
-        }
+            .setNegativeButton("Batal", null)
+            .show()
     }
 
     private fun formatTanggalUpdate(updatedAt: String): String {

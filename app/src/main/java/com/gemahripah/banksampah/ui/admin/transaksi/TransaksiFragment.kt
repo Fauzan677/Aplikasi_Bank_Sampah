@@ -16,7 +16,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.databinding.FragmentTransaksiBinding
-import com.gemahripah.banksampah.ui.admin.transaksi.adapter.RiwayatTransaksiAdapter
+import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatTransaksiAdapter
 import com.google.android.material.datepicker.MaterialDatePicker
 import java.util.Locale
 import java.time.OffsetDateTime

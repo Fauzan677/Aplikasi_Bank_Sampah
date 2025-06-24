@@ -1,11 +1,13 @@
 package com.gemahripah.banksampah.ui.admin.pengaturan
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -63,18 +65,34 @@ class PengaturanFragment : Fragment() {
             findNavController().navigate(R.id.action_navigation_pengaturan_to_penggunaFragment)
         }
 
-        binding.logout.setOnClickListener { logout() }
+        binding.keluar.setOnClickListener {
+            tampilkanDialogKonfirmasiKeluar()
+        }
     }
 
-    private fun logout() {
-        lifecycleScope.launch {
-            val supabase = SupabaseProvider.client
-            supabase.auth.signOut()
+    private fun tampilkanDialogKonfirmasiKeluar() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Konfirmasi Keluar")
+            .setMessage("Apakah Anda yakin ingin keluar?")
+            .setPositiveButton("Keluar") { _, _ -> keluar() }
+            .setNegativeButton("Batal", null)
+            .show()
+    }
 
-            val intent = Intent(requireContext(), MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+    private fun keluar() {
+        lifecycleScope.launch {
+            try {
+                SupabaseProvider.client.auth.signOut()
+
+                val intent = Intent(requireContext(), MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                startActivity(intent)
+
+                Toast.makeText(requireContext(), "Logout berhasil", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Gagal logout: ${e.message}", Toast.LENGTH_LONG).show()
             }
-            startActivity(intent)
         }
     }
 

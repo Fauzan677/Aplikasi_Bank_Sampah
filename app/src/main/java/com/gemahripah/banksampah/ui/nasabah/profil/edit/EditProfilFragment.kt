@@ -1,5 +1,6 @@
 package com.gemahripah.banksampah.ui.nasabah.profil.edit
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -8,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
@@ -28,6 +30,7 @@ class EditProfilFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: NasabahViewModel by activityViewModels()
+    private val editViewModel: EditProfilViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -40,21 +43,44 @@ class EditProfilFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        var userId: String? = null
-        var emailLama: String? = null
-
         binding.judul.text = "Edit Pengguna"
         binding.hapus.visibility = View.GONE
 
+        observeViewModel()
+        setupListeners()
+    }
+
+    private fun observeViewModel() {
         viewModel.pengguna.observe(viewLifecycleOwner) { pengguna ->
             if (pengguna != null) {
                 binding.nama.setText(pengguna.pgnNama ?: "")
                 binding.email.setText(pengguna.pgnEmail ?: "")
-                userId = pengguna.pgnId
-                emailLama = pengguna.pgnEmail
+                editViewModel.setInitialData(pengguna)
             }
         }
 
+        editViewModel.toastMessage.observe(viewLifecycleOwner) { message ->
+            message?.let {
+                Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        editViewModel.successUpdate.observe(viewLifecycleOwner) { success ->
+            if (success) {
+                val pengguna = viewModel.pengguna.value
+                val namaBaru = binding.nama.text.toString().trim()
+                val emailBaru = binding.email.text.toString().trim()
+
+                viewModel.setPengguna(
+                    pengguna?.copy(pgnNama = namaBaru, pgnEmail = emailBaru)
+                )
+
+                findNavController().navigate(R.id.action_editProfilFragment_to_navigation_notifications)
+            }
+        }
+    }
+
+    private fun setupListeners() {
         binding.konfirmasi.setOnClickListener {
             val namaBaru = binding.nama.text.toString().trim()
             val emailBaru = binding.email.text.toString().trim()
@@ -65,75 +91,14 @@ class EditProfilFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    try {
-
-                        SupabaseProvider.client.from("pengguna").update(
-                            {
-                                set("pgnNama", namaBaru)
-                                set("pgnEmail", emailBaru)
-                            }
-                        ) {
-                            filter {
-                                userId?.let { eq("pgnId", it) }
-                            }
-                        }
-
-                        if (emailBaru != emailLama) {
-                            try {
-                                SupabaseProvider.client.auth.updateUser {
-                                    email = emailBaru
-                                }
-
-                                withContext(Dispatchers.Main) {
-                                    Toast.makeText(
-                                        requireContext(),
-                                        "Kami telah mengirimkan tautan verifikasi ke email baru Anda",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-
-                            } catch (e: Exception) {
-                                withContext(Dispatchers.Main) {
-                                    Toast.makeText(requireContext(), "Gagal update email auth: ${e.message}", Toast.LENGTH_SHORT).show()
-                                    Log.e("EditProfilFragment", "Error update email: ${e.message}", e)
-                                }
-                            }
-                        }
-
-                        if (passwordBaru.isNotEmpty()) {
-                            try {
-                                SupabaseProvider.client.auth.updateUser {
-                                    password = passwordBaru
-                                }
-                            } catch (e: Exception) {
-                                withContext(Dispatchers.Main) {
-                                    Toast.makeText(requireContext(), "Gagal update password: ${e.message}", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        }
-
-                        withContext(Dispatchers.Main) {
-                            viewModel.setPengguna(
-                                viewModel.pengguna.value?.copy(
-                                    pgnNama = namaBaru,
-                                    pgnEmail = emailBaru
-                                )
-                            )
-
-                            Toast.makeText(requireContext(), "Data pengguna berhasil diperbarui", Toast.LENGTH_SHORT).show()
-                            findNavController().navigate(R.id.action_editProfilFragment_to_navigation_notifications)
-                        }
-
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(requireContext(), "Terjadi kesalahan: ${e.message}", Toast.LENGTH_SHORT).show()
-                        }
-                    }
+            AlertDialog.Builder(requireContext())
+                .setTitle("Konfirmasi Perubahan")
+                .setMessage("Apakah Anda yakin ingin menyimpan perubahan profil?")
+                .setPositiveButton("Simpan") { _, _ ->
+                    editViewModel.updateProfil(namaBaru, emailBaru, passwordBaru)
                 }
-            }
-
+                .setNegativeButton("Batal", null)
+                .show()
         }
     }
 

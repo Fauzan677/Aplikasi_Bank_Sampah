@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.admin.transaksi.adapter
+package com.gemahripah.banksampah.ui.gabungan.adapter.transaksi
 
 import android.annotation.SuppressLint
 import android.graphics.Typeface

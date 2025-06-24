@@ -15,7 +15,7 @@ import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.databinding.FragmentDetailPenggunaBinding
 import com.gemahripah.banksampah.ui.admin.beranda.adapter.TotalSampahAdapter
-import com.gemahripah.banksampah.ui.admin.transaksi.adapter.RiwayatTransaksiAdapter
+import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatTransaksiAdapter
 import kotlinx.coroutines.launch
 
 class DetailPenggunaFragment : Fragment() {

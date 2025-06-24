@@ -1,4 +1,4 @@
-package com.gemahripah.banksampah.ui.admin.pengumuman.adapter
+package com.gemahripah.banksampah.ui.gabungan.adapter.pengumuman
 
 import android.view.LayoutInflater
 import android.view.ViewGroup

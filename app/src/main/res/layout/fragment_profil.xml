@@ -65,9 +65,9 @@
         />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/logout"
+        android:id="@+id/keluar"
         style="@style/ButtonProfil"
-        android:text="Logout"
+        android:text="Keluar"
         app:icon="@drawable/power"
         android:paddingHorizontal="50dp"
         android:layout_marginTop="100dp"

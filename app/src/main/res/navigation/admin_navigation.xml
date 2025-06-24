@@ -308,7 +308,7 @@
         android:id="@+id/detailPengumumanFragment"
         android:name="com.gemahripah.banksampah.ui.admin.pengumuman.detail.DetailPengumumanFragment"
         android:label="fragment_detail_pengumuman"
-        tools:layout="@layout/fragment_detail_pengumuman_nasabah" >
+        tools:layout="@layout/fragment_detail_pengumuman" >
 
         <argument
             android:name="pengumuman"
