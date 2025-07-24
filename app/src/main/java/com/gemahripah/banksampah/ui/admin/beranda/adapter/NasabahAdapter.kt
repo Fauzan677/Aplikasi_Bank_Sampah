@@ -52,13 +52,13 @@ class NasabahAdapter(
                         "hitung_total_jumlah_per_pengguna_masuk",
                         buildJsonObject { put("pgn_id_input", penggunaId) }
                     )
-                    val berat = resultBerat.data.toString().toDoubleOrNull() ?: 0.0
+                    val berat = resultBerat.data.toDoubleOrNull() ?: 0.0
 
                     val resultSaldo = SupabaseProvider.client.postgrest.rpc(
                         "hitung_saldo_pengguna",
                         buildJsonObject { put("pgn_id_input", penggunaId) }
                     )
-                    val saldo = resultSaldo.data.toString().toDoubleOrNull() ?: 0.0
+                    val saldo = resultSaldo.data.toDoubleOrNull() ?: 0.0
 
                     launch(Dispatchers.Main) {
                         binding.berat.text = "%.2f Kg".format(berat)
@@ -77,7 +77,6 @@ class NasabahAdapter(
         }
     }
 
-    // Fungsi filter cari berdasarkan nama
     fun filterList(query: String) {
         val filteredList = if (query.isEmpty()) {
             listFull
@@ -88,7 +87,6 @@ class NasabahAdapter(
         notifyDataSetChanged()
     }
 
-    // Update data (misal setelah fetch ulang dari server)
     fun updateData(newList: List<Pengguna>) {
         listFull = ArrayList(newList)
         list = newList

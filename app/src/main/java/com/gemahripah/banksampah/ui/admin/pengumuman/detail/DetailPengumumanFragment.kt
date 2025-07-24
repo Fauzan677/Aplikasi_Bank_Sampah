@@ -1,31 +1,27 @@
 package com.gemahripah.banksampah.ui.admin.pengumuman.detail
 
 import android.app.AlertDialog
+import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengumuman.Pengumuman
-import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentDetailPengumumanBinding
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.storage.storage
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.bumptech.glide.request.target.Target
 
 class DetailPengumumanFragment : Fragment() {
 
@@ -48,6 +44,8 @@ class DetailPengumumanFragment : Fragment() {
         val pengumuman = arguments?.let {
             DetailPengumumanFragmentArgs.fromBundle(it).pengumuman
         }
+
+        viewModel.setLoading(true)
 
         pengumuman?.let {
             viewModel.setPengumuman(it)
@@ -79,16 +77,44 @@ class DetailPengumumanFragment : Fragment() {
         }
 
         if (!pengumuman.pmnGambar.isNullOrBlank()) {
-            binding.gambar.visibility = View.VISIBLE
             val imageUrlWithUpdatedAt = "${pengumuman.pmnGambar}?v=${pengumuman.updated_at}"
+
+            binding.gambar.visibility = View.INVISIBLE
+            binding.teksErrorGambar.visibility = View.GONE
 
             Glide.with(requireContext())
                 .load(imageUrlWithUpdatedAt)
                 .diskCacheStrategy(DiskCacheStrategy.NONE)
                 .skipMemoryCache(true)
+                .listener(object : RequestListener<Drawable> {
+                    override fun onLoadFailed(
+                        e: GlideException?,
+                        model: Any?,
+                        target: Target<Drawable>,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        binding.teksErrorGambar.visibility = View.VISIBLE
+                        binding.gambar.visibility = View.GONE
+                        viewModel.setLoading(false)
+                        return false
+                    }
+
+                    override fun onResourceReady(
+                        resource: Drawable,
+                        model: Any,
+                        target: Target<Drawable>?,
+                        dataSource: DataSource,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        binding.gambar.visibility = View.VISIBLE
+                        viewModel.setLoading(false)
+                        return false
+                    }
+                })
                 .into(binding.gambar)
         } else {
             binding.gambar.visibility = View.GONE
+            viewModel.setLoading(false)
         }
     }
 

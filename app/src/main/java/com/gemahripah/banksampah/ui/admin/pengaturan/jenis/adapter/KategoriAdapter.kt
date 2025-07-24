@@ -1,5 +1,6 @@
 package com.gemahripah.banksampah.ui.admin.pengaturan.jenis.adapter
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.GridLayout
@@ -21,12 +22,13 @@ import kotlinx.coroutines.launch
 
 class KategoriAdapter(
     private var kategoriList: List<Kategori>,
-    private val onSampahClick: (KategoridanSampah) -> Unit  // ubah param
+    private val onSampahClick: (KategoridanSampah) -> Unit
 ) : RecyclerView.Adapter<KategoriAdapter.KategoriViewHolder>() {
 
+    @SuppressLint("NotifyDataSetChanged")
     fun updateKategoriList(newList: List<Kategori>) {
         kategoriList = newList
-        notifyDataSetChanged()  // atau gunakan DiffUtil untuk performa lebih baik
+        notifyDataSetChanged()
     }
 
     inner class KategoriViewHolder(private val binding: ItemJenisSampahBinding) :

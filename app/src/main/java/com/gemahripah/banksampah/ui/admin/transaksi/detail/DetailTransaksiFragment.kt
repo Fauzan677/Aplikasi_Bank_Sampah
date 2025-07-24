@@ -46,6 +46,8 @@ class DetailTransaksiFragment : Fragment() {
     private fun setupUI() {
         val riwayat = args.riwayat
 
+        binding.nama.text = riwayat.nama
+        binding.tanggal.text = riwayat.tanggal
         binding.nominal.text = riwayat.totalHarga.toString()
         binding.keterangan.text = riwayat.tskKeterangan
 
@@ -65,10 +67,14 @@ class DetailTransaksiFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
+                    val isLoading = state is DetailTransaksiUiState.Loading
+
+                    binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+                    binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+                    binding.layoutKonten.isEnabled = !isLoading
+
                     when (state) {
-                        is DetailTransaksiUiState.Loading -> {
-                            // Optional: tampilkan progress bar
-                        }
+                        is DetailTransaksiUiState.Loading -> Unit
 
                         is DetailTransaksiUiState.Success -> {
                             binding.rvDetail.apply {

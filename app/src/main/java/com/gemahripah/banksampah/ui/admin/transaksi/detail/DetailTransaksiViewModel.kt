@@ -70,7 +70,6 @@ class DetailTransaksiViewModel : ViewModel() {
                 }
 
                 _uiState.value = DetailTransaksiUiState.Success(enrichedList)
-
             } catch (e: Exception) {
                 Log.e("DetailVM", "Gagal ambil data: ${e.message}", e)
                 _uiState.value = DetailTransaksiUiState.Error(e.message ?: "Terjadi kesalahan")

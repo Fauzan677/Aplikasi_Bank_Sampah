@@ -16,6 +16,7 @@ import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.databinding.FragmentDetailPenggunaBinding
 import com.gemahripah.banksampah.ui.admin.beranda.adapter.TotalSampahAdapter
 import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatTransaksiAdapter
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 class DetailPenggunaFragment : Fragment() {
@@ -88,36 +89,55 @@ class DetailPenggunaFragment : Fragment() {
                 launch {
                     viewModel.saldo.collect { binding.nominal.text = it }
                 }
+
                 launch {
-                    viewModel.totalSampah.collect { list ->
-                        if (list.isNotEmpty()) {
-                            binding.rvTotal.adapter = TotalSampahAdapter(list)
-                            binding.rvTotal.visibility = View.VISIBLE
-                            binding.textKosongTotal.visibility = View.GONE
-                        } else {
-                            binding.rvTotal.visibility = View.GONE
-                            binding.textKosongTotal.visibility = View.VISIBLE
-                        }
-                    }
-                }
-                launch {
-                    viewModel.riwayatTransaksi.collect { list ->
-                        if (list.isNotEmpty()) {
-                            binding.rvRiwayat.adapter = RiwayatTransaksiAdapter(list) { riwayat ->
-                                val action = DetailPenggunaFragmentDirections
-                                    .actionDetailPenggunaFragmentToDetailTransaksiFragment(riwayat)
-                                findNavController().navigate(action)
+                    viewModel.totalSampah
+                        .combine(viewModel.isLoading) { list, loading -> list to loading }
+                        .collect { (list, loading) ->
+                            if (list.isNotEmpty()) {
+                                binding.rvTotal.adapter = TotalSampahAdapter(list)
+                                binding.rvTotal.visibility = View.VISIBLE
+                                binding.textKosongTotal.visibility = View.GONE
+                            } else if (!loading) {
+                                binding.rvTotal.visibility = View.GONE
+                                binding.textKosongTotal.visibility = View.VISIBLE
                             }
-                            binding.rvRiwayat.visibility = View.VISIBLE
-                            binding.textKosongRiwayat.visibility = View.GONE
-                        } else {
-                            binding.rvRiwayat.visibility = View.GONE
-                            binding.textKosongRiwayat.visibility = View.VISIBLE
                         }
+                }
+
+                launch {
+                    viewModel.riwayatTransaksi
+                        .combine(viewModel.isLoading) { list, loading -> list to loading }
+                        .collect { (list, loading) ->
+                            if (list.isNotEmpty()) {
+                                binding.rvRiwayat.adapter = RiwayatTransaksiAdapter(list) { riwayat ->
+                                    val action = DetailPenggunaFragmentDirections
+                                        .actionDetailPenggunaFragmentToDetailTransaksiFragment(riwayat)
+                                    findNavController().navigate(action)
+                                }
+                                binding.rvRiwayat.visibility = View.VISIBLE
+                                binding.textKosongRiwayat.visibility = View.GONE
+                            } else if (!loading) {
+                                binding.rvRiwayat.visibility = View.GONE
+                                binding.textKosongRiwayat.visibility = View.VISIBLE
+                            }
+                        }
+                }
+
+                launch {
+                    viewModel.isLoading.collect { isLoading ->
+                        showLoading(isLoading)
                     }
                 }
             }
         }
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+        binding.menarik.isEnabled = !isLoading
+        binding.menabung.isEnabled = !isLoading
     }
 
     override fun onDestroyView() {

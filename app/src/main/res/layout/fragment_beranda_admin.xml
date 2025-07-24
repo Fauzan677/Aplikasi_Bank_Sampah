@@ -280,15 +280,6 @@
 
         </FrameLayout>
 
-        <View
-            android:id="@+id/dummyFocus"
-            android:layout_width="1dp"
-            android:layout_height="1dp"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:alpha="0"
-            android:importantForAccessibility="no" />
-
     </LinearLayout>
 
 </androidx.core.widget.NestedScrollView>

@@ -1,15 +1,19 @@
 package com.gemahripah.banksampah.ui.nasabah.pengumuman.detail
 
 import android.app.AlertDialog
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import androidx.fragment.app.viewModels
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengumuman.Pengumuman
 import com.gemahripah.banksampah.databinding.FragmentDetailPengumumanBinding
@@ -35,6 +39,8 @@ class DetailPengumumanFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        showLoading(true)
 
         val pengumuman = arguments?.let {
             DetailPengumumanFragmentArgs.fromBundle(it).pengumuman
@@ -63,9 +69,12 @@ class DetailPengumumanFragment : Fragment() {
         if (!pengumuman.pmnGambar.isNullOrBlank()) {
             imageUrlWithUpdatedAt = "${pengumuman.pmnGambar}?v=${pengumuman.updated_at}"
             binding.gambar.visibility = View.VISIBLE
-            binding.gambar.loadImageNoCache(imageUrlWithUpdatedAt!!)
+            binding.gambar.loadImageNoCache(imageUrlWithUpdatedAt!!) {
+                showLoading(false)
+            }
         } else {
             binding.gambar.visibility = View.GONE
+            showLoading(false)
         }
     }
 
@@ -106,13 +115,50 @@ class DetailPengumumanFragment : Fragment() {
         }
     }
 
-    private fun ImageView.loadImageNoCache(url: String) {
+    private fun ImageView.loadImageNoCache(url: String, onImageFinished: () -> Unit) {
+        val teksError = binding.teksErrorGambar
+        val progress = binding.loading
+
+        teksError.visibility = View.GONE
+
         Glide.with(this.context)
             .load(url)
             .diskCacheStrategy(DiskCacheStrategy.NONE)
             .skipMemoryCache(true)
+            .listener(object : RequestListener<Drawable> {
+                override fun onLoadFailed(
+                    e: GlideException?,
+                    model: Any?,
+                    target: Target<Drawable>,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    progress.visibility = View.GONE
+                    teksError.visibility = View.VISIBLE
+                    onImageFinished()
+                    return false
+                }
+
+                override fun onResourceReady(
+                    resource: Drawable,
+                    model: Any,
+                    target: Target<Drawable>?,
+                    dataSource: DataSource,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    progress.visibility = View.GONE
+                    teksError.visibility = View.GONE
+                    onImageFinished()
+                    return false
+                }
+            })
             .into(this)
     }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+    }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

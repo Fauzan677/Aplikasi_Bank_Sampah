@@ -96,11 +96,11 @@ class BerandaViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val params = buildJsonObject {
-                    if (startDate != null) put("start_date", startDate.toString()) else put("start_date", JsonNull)
-                    if (endDate != null) put("end_date", endDate.toString()) else put("end_date", JsonNull)
                     if (filter == "Transaksi Keluar") {
                         put("tipe_transaksi", "Keluar")
                     }
+                    if (startDate != null) put("start_date", startDate.toString()) else put("start_date", JsonNull)
+                    if (endDate != null) put("end_date", endDate.toString()) else put("end_date", JsonNull)
                 }
 
                 val total = when (filter) {
@@ -136,8 +136,8 @@ class BerandaViewModel : ViewModel() {
                     "tipe_transaksi" to "Masuk"
                 )
 
-                start?.let { params["tanggal_awal"] = it.toString() }
-                end?.let { params["tanggal_akhir"] = it.toString() }
+                start?.let { params["start_date"] = it.toString() }
+                end?.let { params["end_date"] = it.toString() }
                 val result = SupabaseProvider.client.postgrest.rpc(
                     "hitung_total_jumlah_berdasarkan_tipe",
                     params

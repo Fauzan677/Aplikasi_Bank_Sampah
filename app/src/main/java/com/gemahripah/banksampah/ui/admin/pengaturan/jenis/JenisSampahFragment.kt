@@ -56,8 +56,11 @@ class JenisSampahFragment : Fragment() {
 
     private fun observeKategoriList() {
         viewModel.kategoriList.observe(viewLifecycleOwner) { list ->
-            Log.d("JenisSampahFragment", "Kategori diterima: ${list.size}")
             kategoriAdapter.updateKategoriList(list)
+        }
+
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            showLoading(isLoading)
         }
     }
 
@@ -73,6 +76,11 @@ class JenisSampahFragment : Fragment() {
                 R.id.action_jenisSampahFragment_to_tambahKategoriFragment
             )
         }
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
     }
 
     override fun onDestroyView() {

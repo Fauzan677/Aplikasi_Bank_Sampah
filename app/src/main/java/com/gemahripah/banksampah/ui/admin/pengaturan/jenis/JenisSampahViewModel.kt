@@ -15,8 +15,12 @@ class JenisSampahViewModel : ViewModel() {
     private val _kategoriList = MutableLiveData<List<Kategori>>()
     val kategoriList: LiveData<List<Kategori>> get() = _kategoriList
 
+    private val _isLoading = MutableLiveData<Boolean>()
+    val isLoading: LiveData<Boolean> get() = _isLoading
+
     fun loadKategori() {
         viewModelScope.launch {
+            _isLoading.postValue(true)
             try {
                 val response = SupabaseProvider.client
                     .from("kategori")
@@ -27,6 +31,8 @@ class JenisSampahViewModel : ViewModel() {
             } catch (e: Exception) {
                 _kategoriList.postValue(emptyList())
                 Log.e("JenisSampahViewModel", "Gagal memuat kategori", e)
+            } finally {
+                _isLoading.postValue(false)
             }
         }
     }

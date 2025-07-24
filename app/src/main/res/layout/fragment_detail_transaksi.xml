@@ -52,11 +52,35 @@
 
             </androidx.cardview.widget.CardView>
 
+            <TextView
+                android:id="@+id/nama"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nama"
+                android:fontFamily="@font/nunito_bold"
+                android:textColor="@color/black"
+                android:textSize="30sp"
+                android:layout_marginTop="10dp"
+                android:layout_gravity="center"
+                />
+
+            <TextView
+                android:id="@+id/tanggal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tanggal"
+                android:fontFamily="@font/nunito_medium"
+                android:textColor="@color/black"
+                android:textSize="16sp"
+                android:layout_marginTop="5dp"
+                android:layout_gravity="center"
+                />
+
             <androidx.cardview.widget.CardView
                 android:id="@+id/saldo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="30dp"
+                android:layout_marginTop="20dp"
                 app:cardCornerRadius="10dp"
                 android:layout_marginHorizontal="40dp"
                 >
@@ -110,6 +134,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="keterangan transaksi"
+                android:fontFamily="@font/nunito_regular"
+                android:textColor="@color/black"
+                android:textSize="16sp"
                 android:layout_marginTop="10dp"
                 android:layout_marginHorizontal="20dp"
                 />
@@ -148,7 +175,9 @@
             app:trackColor="@color/primary"
             app:indicatorSize="60dp"
             android:indeterminate="true"
-            app:trackThickness="4dp" />
+            app:trackThickness="4dp"
+            android:visibility="gone"
+            />
 
     </FrameLayout>
 
