@@ -21,12 +21,15 @@ import com.gemahripah.banksampah.data.model.transaksi.DetailTransaksi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentSetorSampahBinding
 import com.gemahripah.banksampah.databinding.ItemSetorSampahBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class EditTransaksiMasukFragment : Fragment() {
+class EditTransaksiMasukFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentSetorSampahBinding? = null
     private val binding get() = _binding!!
@@ -51,9 +54,15 @@ class EditTransaksiMasukFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        loadNamaNasabah()
+        if (!updateInternetCard()) return
+
         loadJenisSampahDenganDataAwal()
         setupListeners()
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+        loadJenisSampahDenganDataAwal()
     }
 
     private fun setupListeners() {
@@ -103,7 +112,7 @@ class EditTransaksiMasukFragment : Fragment() {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(
                         requireContext(),
-                        "Gagal memperbarui data: ${e.message}",
+                        "Gagal memperbarui data, periksa koneksi internet",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -189,6 +198,14 @@ class EditTransaksiMasukFragment : Fragment() {
                     binding.judul.text = "Edit Menabung Sampah"
                     binding.nama.setText(riwayat.nama)
                     binding.keterangan.setText(riwayat.tskKeterangan)
+
+                    binding.nama.apply {
+                        isFocusable = false
+                        isFocusableInTouchMode = false
+                        isClickable = false
+                        isEnabled = false
+                    }
+
                     selectedUserId = riwayat.tskIdPengguna
 
                     if (enrichedList.isNotEmpty()) {
@@ -231,57 +248,6 @@ class EditTransaksiMasukFragment : Fragment() {
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    private fun loadNamaNasabah() {
-        lifecycleScope.launch {
-            try {
-                val penggunaList = withContext(Dispatchers.IO) {
-                    SupabaseProvider.client
-                        .from("pengguna")
-                        .select()
-                        .decodeList<Pengguna>()
-                }
-
-                Log.d("SetorSampahFragment", "Jumlah pengguna yang diambil: ${penggunaList.size}")
-
-                val namaToPenggunaMap = penggunaList.associateBy { it.pgnNama }
-                val namaList = penggunaList.mapNotNull { it.pgnNama }.distinct()
-
-                withContext(Dispatchers.Main) {
-                    val adapter = ArrayAdapter(
-                        requireContext(),
-                        android.R.layout.simple_dropdown_item_1line,
-                        namaList
-                    )
-                    binding.nama.setAdapter(adapter)
-
-                    binding.nama.threshold = 1
-                    binding.nama.setOnTouchListener { _, _ ->
-                        binding.nama.showDropDown()
-                        false
-                    }
-
-                    binding.nama.setOnItemClickListener { _, _, position, _ ->
-                        val selectedNama = adapter.getItem(position)
-                        val selectedPengguna = namaToPenggunaMap[selectedNama]
-                        selectedUserId = selectedPengguna?.pgnId
-                        Log.d("SetorSampahFragment", "ID pengguna terpilih: $selectedUserId")
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Gagal memuat nama nasabah",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
-    }
-
-
     @SuppressLint("ClickableViewAccessibility", "SetTextI18n")
     private fun tambahInputSampah() {
         val index = tambahanSampahList.size
@@ -293,15 +259,15 @@ class EditTransaksiMasukFragment : Fragment() {
         itemBinding.hapusTambahan.id = dynamicId
 
         itemBinding.hapusTambahan.setOnClickListener {
-            binding.containerInput.removeView(itemBinding.root)
+            binding.layoutKonten.removeView(itemBinding.root)
             tambahanSampahList.remove(itemBinding)
             perbaruiLabelInput()
             updateAllAdapters()
         }
 
         tambahanSampahList.add(itemBinding)
-        val position = binding.containerInput.indexOfChild(binding.tambah)
-        binding.containerInput.addView(itemBinding.root, position)
+        val position = binding.layoutKonten.indexOfChild(binding.tambah)
+        binding.layoutKonten.addView(itemBinding.root, position)
 
         updateAllAdapters()
     }
@@ -384,6 +350,13 @@ class EditTransaksiMasukFragment : Fragment() {
 
         binding.tambah.isEnabled = !semuaJenisTerpakai
         binding.tambah.alpha = if (binding.tambah.isEnabled) 1f else 0.5f
+    }
+
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
     }
 
     override fun onDestroyView() {

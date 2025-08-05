@@ -200,7 +200,7 @@ class TambahPengumumanFragment : Fragment() {
                 findNavController().navigateUp()
             } catch (e: Exception) {
                 e.printStackTrace()
-                showToast("Gagal menyimpan: ${e.message}")
+                showToast("Gagal menyimpan, periksa koneksi internet")
             } finally {
                 withContext(Dispatchers.Main) {
                     showLoading(false)

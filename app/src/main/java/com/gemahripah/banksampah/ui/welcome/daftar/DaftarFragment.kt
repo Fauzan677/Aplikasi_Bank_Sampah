@@ -96,11 +96,11 @@ class DaftarFragment : Fragment() {
             }
         } catch (e: RestException) {
             withContext(Dispatchers.Main) {
-                showToast("Terjadi kesalahan: ${e.message}")
+                showToast("Gagal daftar, periksa koneksi internet")
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                showToast("Gagal daftar: ${e.localizedMessage}")
+                showToast("Gagal daftar, periksa koneksi internet")
             }
         } finally {
             withContext(Dispatchers.Main) {
@@ -125,7 +125,7 @@ class DaftarFragment : Fragment() {
                 )
             )
         } catch (e: Exception) {
-            throw Exception("Gagal menyimpan data pengguna: ${e.message}")
+            throw Exception("Gagal menyimpan data pengguna")
         }
     }
 

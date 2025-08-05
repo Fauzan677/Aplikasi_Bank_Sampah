@@ -22,10 +22,12 @@ class TransaksiViewModel : ViewModel() {
     private val client = SupabaseProvider.client
 
     private val _riwayatList = MutableLiveData<List<RiwayatTransaksi>>()
-    val riwayatList: LiveData<List<RiwayatTransaksi>> = _riwayatList
 
     private val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
+
+    private val _isError = MutableLiveData(false)
+    val isError: LiveData<Boolean> = _isError
 
     private val _filteredRiwayat = MutableLiveData<List<RiwayatTransaksi>>()
     val filteredRiwayat: LiveData<List<RiwayatTransaksi>> = _filteredRiwayat
@@ -94,11 +96,13 @@ class TransaksiViewModel : ViewModel() {
                 withContext(Dispatchers.Main) {
                     _riwayatList.value = hasil
                     applyFilters()
+                    _isError.value = false
                     _isLoading.value = false
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
+                    _isError.value = true
                     _isLoading.value = false
                 }
             }

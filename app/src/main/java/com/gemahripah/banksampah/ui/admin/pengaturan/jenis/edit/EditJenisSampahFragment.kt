@@ -1,5 +1,6 @@
 package com.gemahripah.banksampah.ui.admin.pengaturan.jenis.edit
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -23,6 +24,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.content.Context
 import com.gemahripah.banksampah.data.model.sampah.Kategori
+import com.gemahripah.banksampah.ui.admin.AdminActivity
+import com.gemahripah.banksampah.utils.NetworkUtil
 import io.github.jan.supabase.postgrest.postgrest
 
 class EditJenisSampahFragment : Fragment() {
@@ -48,6 +51,8 @@ class EditJenisSampahFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupUI()
+
+        if (!updateInternetCard()) return
         setupKategoriDropdown()
         setupSatuanDropdown()
         setupButtonActions()
@@ -168,8 +173,7 @@ class EditJenisSampahFragment : Fragment() {
                 showToast("Data berhasil diperbarui")
                 navigateBack()
             } catch (e: Exception) {
-                Log.e("UpdateSampah", "Error: ${e.message}")
-                showToast("Terjadi kesalahan saat memperbarui data")
+                showToast("Gagal memperbarui data, periksa koneksi internet")
             }
         }
     }
@@ -199,16 +203,22 @@ class EditJenisSampahFragment : Fragment() {
             return
         }
 
-        lifecycleScope.launch {
-            try {
-                deleteSampah(id)
-                showToast("Data berhasil dihapus")
-                navigateBack()
-            } catch (e: Exception) {
-                Log.e("HapusSampah", "Error: ${e.message}")
-                showToast("Gagal menghapus data")
+        AlertDialog.Builder(requireContext())
+            .setTitle("Konfirmasi Hapus")
+            .setMessage("Apakah kamu yakin ingin menghapus data ini?")
+            .setPositiveButton("Ya") { _, _ ->
+                lifecycleScope.launch {
+                    try {
+                        deleteSampah(id)
+                        showToast("Data berhasil dihapus")
+                        navigateBack()
+                    } catch (e: Exception) {
+                        showToast("Gagal menghapus data, periksa koneksi internet")
+                    }
+                }
             }
-        }
+            .setNegativeButton("Batal", null)
+            .show()
     }
 
     private suspend fun deleteSampah(id: Long) = withContext(Dispatchers.IO) {
@@ -228,6 +238,13 @@ class EditJenisSampahFragment : Fragment() {
     private fun hideKeyboard() {
         val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(view?.windowToken, 0)
+    }
+
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
     }
 
     override fun onDestroyView() {

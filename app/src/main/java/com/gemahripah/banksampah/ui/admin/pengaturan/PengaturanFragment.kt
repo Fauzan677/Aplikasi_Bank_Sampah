@@ -91,7 +91,8 @@ class PengaturanFragment : Fragment() {
 
                 Toast.makeText(requireContext(), "Logout berhasil", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Gagal logout: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), "Gagal logout, periksa koneksi internet", Toast
+                    .LENGTH_LONG).show()
             }
         }
     }

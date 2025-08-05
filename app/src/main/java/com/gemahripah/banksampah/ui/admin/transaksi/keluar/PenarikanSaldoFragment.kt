@@ -16,14 +16,19 @@ import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.model.transaksi.Transaksi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentPenarikanSaldoBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.text.NumberFormat
+import java.util.Locale
 
-class PenarikanSaldoFragment : Fragment() {
+class PenarikanSaldoFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentPenarikanSaldoBinding? = null
     private val binding get() = _binding!!
@@ -43,6 +48,8 @@ class PenarikanSaldoFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (!updateInternetCard()) return
+
         val pengguna = arguments?.let { PenarikanSaldoFragmentArgs.fromBundle(it).pengguna }
 
         pengguna?.let {
@@ -53,6 +60,14 @@ class PenarikanSaldoFragment : Fragment() {
 
         fetchNamaPengguna()
         setupKonfirmasiButton()
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+        fetchNamaPengguna()
+        selectedPgnId?.let {
+            tampilkanSaldoPengguna(it)
+        }
     }
 
     private fun fetchNamaPengguna() {
@@ -114,6 +129,7 @@ class PenarikanSaldoFragment : Fragment() {
             }
 
             lifecycleScope.launch {
+                showLoading(true)
                 try {
                     val saldo = withContext(Dispatchers.IO) {
                         val rpcParams = buildJsonObject {
@@ -128,7 +144,9 @@ class PenarikanSaldoFragment : Fragment() {
 
                     if (saldo < jumlahInput) {
                         binding.jumlah.requestFocus()
-                        binding.jumlah.error = "Saldo tidak mencukupi. Sisa saldo: Rp %.2f".format(saldo)
+
+                        val formattedSaldo = NumberFormat.getNumberInstance(Locale("in", "ID")).format(saldo)
+                        binding.jumlah.error = "Saldo tidak mencukupi. Sisa saldo: Rp $formattedSaldo"
                     } else {
                         try {
                             val transaksiResponse = withContext(Dispatchers.IO) {
@@ -160,14 +178,17 @@ class PenarikanSaldoFragment : Fragment() {
                                 Toast.makeText(requireContext(), "Penarikan saldo berhasil", Toast.LENGTH_SHORT).show()
                                 findNavController().navigate(R.id.action_penarikanSaldoFragment_to_navigation_transaksi)
                             }
-
                         } catch (e: Exception) {
                             e.printStackTrace()
+                            Toast.makeText(requireContext(), "Penarikan saldo gagal, periksa koneksi internet", Toast.LENGTH_SHORT).show()
+                        } finally {
+                            showLoading(false)
                         }
                     }
-
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    Toast.makeText(requireContext(), "Penarikan saldo gagal, periksa koneksi internet", Toast.LENGTH_SHORT).show()
+                    showLoading(false)
                 }
             }
         }
@@ -175,6 +196,12 @@ class PenarikanSaldoFragment : Fragment() {
 
     @SuppressLint("SetTextI18n")
     private fun tampilkanSaldoPengguna(pgnId: String?) {
+
+        if (!NetworkUtil.isInternetAvailable(requireContext())) {
+            updateInternetCard()
+            return
+        }
+
         lifecycleScope.launch {
             try {
                 val saldo = withContext(Dispatchers.IO) {
@@ -183,7 +210,8 @@ class PenarikanSaldoFragment : Fragment() {
                 }
 
                 if (saldo != null) {
-                    binding.saldo.text = "Rp %.2f".format(saldo)
+                    val formattedSaldo = NumberFormat.getNumberInstance(Locale("in", "ID")).format(saldo)
+                    binding.saldo.text = "Rp $formattedSaldo"
                 } else {
                     binding.saldo.text = "0"
                 }
@@ -192,6 +220,19 @@ class PenarikanSaldoFragment : Fragment() {
                 e.printStackTrace()
             }
         }
+    }
+
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+        binding.konfirmasi.isEnabled = !isLoading
     }
 
     override fun onDestroyView() {

@@ -12,7 +12,10 @@ import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengumuman.Pengumuman
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentPengumumanBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.ui.gabungan.adapter.pengumuman.PengumumanAdapter
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
@@ -20,7 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class PengumumanFragment : Fragment() {
+class PengumumanFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentPengumumanBinding? = null
     private val binding get() = _binding!!
@@ -44,6 +47,11 @@ class PengumumanFragment : Fragment() {
             )
         }
 
+        binding.swipeRefresh.setOnRefreshListener {
+            reloadData()
+        }
+
+        if (!updateInternetCard()) return
         loadPengumuman()
     }
 
@@ -56,7 +64,7 @@ class PengumumanFragment : Fragment() {
                     SupabaseProvider.client
                         .from("pengumuman")
                         .select(columns = Columns.list("*")) {
-                            order(column = "updated_at", order = Order.DESCENDING)
+                            order(column = "created_at", order = Order.DESCENDING)
                         }
                         .decodeList<Pengumuman>()
 
@@ -77,8 +85,22 @@ class PengumumanFragment : Fragment() {
         }
     }
 
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+        loadPengumuman()
+        binding.swipeRefresh.isRefreshing = false
+    }
+
     private fun showLoading(isLoading: Boolean) {
         binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.rvPengumuman.visibility = if (isLoading) View.GONE else View.VISIBLE
     }
 
     override fun onDestroyView() {

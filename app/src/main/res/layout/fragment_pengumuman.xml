@@ -1,62 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefresh"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/light_gray"
-    android:orientation="vertical"
-    android:gravity="center_horizontal"
     >
 
-    <TextView
-        android:id="@+id/terbaru"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Pengumuman Terbaru"
-        android:layout_marginTop="20dp"
-        android:fontFamily="@font/nunito_bold"
-        android:textColor="@color/black"
-        android:textSize="24sp"
-        />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/tambah"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Tambah"
-        android:textColor="@color/hijau"
-        android:layout_marginHorizontal="50dp"
-        android:layout_marginTop="10dp"
-        app:strokeColor="@color/hijau"
-        app:strokeWidth="3dp"
-        app:cornerRadius="15dp"
-        android:backgroundTint="@android:color/transparent"
-        />
-
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
         >
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_pengumuman"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:layout_marginHorizontal="10dp"
-            />
-
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:id="@+id/loading"
+        <TextView
+            android:id="@+id/terbaru"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            app:trackColor="@color/primary"
-            app:trackThickness="4dp"
-            android:indeterminate="true"
-            android:layout_marginVertical="20dp"
+            android:text="Pengumuman Terbaru"
+            android:layout_marginTop="20dp"
+            android:fontFamily="@font/nunito_bold"
+            android:textColor="@color/black"
+            android:textSize="24sp"
             />
 
-    </FrameLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/tambah"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tambah"
+            android:textColor="@color/hijau"
+            android:layout_marginHorizontal="50dp"
+            android:layout_marginTop="10dp"
+            app:strokeColor="@color/hijau"
+            app:strokeWidth="3dp"
+            app:cornerRadius="15dp"
+            android:backgroundTint="@android:color/transparent"
+            />
 
-</LinearLayout>
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            >
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_pengumuman"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_marginHorizontal="10dp"
+                />
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/loading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                app:trackColor="@color/primary"
+                app:trackThickness="4dp"
+                android:indeterminate="true"
+                android:layout_marginVertical="20dp"
+                />
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

@@ -98,10 +98,10 @@ class MasukFragment : Fragment() {
                     showToast("Email atau Password salah")
                 } catch (e: RestException) {
                     logError("RestException", e)
-                    showToast("Terjadi kesalahan: ${e.message}")
+                    showToast("Gagal masuk, periksa koneksi internet")
                 } catch (e: Exception) {
                     logError("Exception", e)
-                    showToast("Gagal login: ${e.localizedMessage}")
+                    showToast("Gagal masuk, periksa koneksi internet")
                 } finally {
                     showLoading(false)
                 }

@@ -61,13 +61,13 @@ class ProfilFragment : Fragment() {
                 val intent = Intent(requireContext(), MainActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)
-                Toast.makeText(requireContext(), "Logout berhasil", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Berhasil Keluar", Toast.LENGTH_SHORT).show()
             }
         }
 
         profilViewModel.logoutError.observe(viewLifecycleOwner) { errorMessage ->
             errorMessage?.let {
-                Toast.makeText(requireContext(), "Terjadi kesalahan: $it", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), "Gagal keluar, periksa koneksi internet", Toast.LENGTH_LONG).show()
             }
         }
     }

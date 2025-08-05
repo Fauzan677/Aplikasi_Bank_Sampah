@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/swipeRefresh"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -7,178 +8,187 @@
     android:background="@color/light_gray"
     >
 
-    <FrameLayout
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        >
 
-        <LinearLayout
-            android:id="@+id/layout_konten"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginBottom="30dp"
-            >
+            android:layout_height="wrap_content">
 
-            <TextView
-                android:id="@+id/judul"
-                android:text="Detail Transaksi"
-                style="@style/TextJudulHalaman"
-                />
-
-            <View
-                android:id="@+id/garis_judul"
+            <LinearLayout
+                android:id="@+id/layout_konten"
                 android:layout_width="match_parent"
-                android:layout_height="2dp"
-                android:background="@color/black"
-                android:layout_marginTop="10dp"
-                />
-
-            <androidx.cardview.widget.CardView
-                android:id="@+id/jenis"
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="15dp"
-                app:cardCornerRadius="10dp"
-                android:layout_gravity="center_horizontal"
+                android:orientation="vertical"
+                android:layout_marginBottom="30dp"
                 >
 
                 <TextView
-                    android:id="@+id/transaksi"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="10dp"
-                    android:textColor="@color/white"
+                    android:id="@+id/judul"
+                    android:text="Detail Transaksi"
+                    style="@style/TextJudulHalaman"
                     />
 
-            </androidx.cardview.widget.CardView>
-
-            <TextView
-                android:id="@+id/nama"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Nama"
-                android:fontFamily="@font/nunito_bold"
-                android:textColor="@color/black"
-                android:textSize="30sp"
-                android:layout_marginTop="10dp"
-                android:layout_gravity="center"
-                />
-
-            <TextView
-                android:id="@+id/tanggal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tanggal"
-                android:fontFamily="@font/nunito_medium"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:layout_marginTop="5dp"
-                android:layout_gravity="center"
-                />
-
-            <androidx.cardview.widget.CardView
-                android:id="@+id/saldo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                app:cardCornerRadius="10dp"
-                android:layout_marginHorizontal="40dp"
-                >
-
-                <LinearLayout
+                <View
+                    android:id="@+id/garis_judul"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:paddingVertical="20dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_horizontal"
-                    android:background="@drawable/border_kuning"
+                    android:layout_height="2dp"
+                    android:background="@color/black"
+                    android:layout_marginTop="10dp"
+                    />
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/jenis"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="15dp"
+                    app:cardCornerRadius="10dp"
+                    android:layout_gravity="center_horizontal"
                     >
 
                     <TextView
-                        android:id="@+id/nominal"
+                        android:id="@+id/transaksi"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="@font/nunito_medium"
-                        android:text="000"
-                        android:textColor="@color/black"
-                        android:textSize="30sp"
-                        android:layout_marginStart="5dp"
+                        android:layout_margin="10dp"
+                        android:textColor="@color/white"
                         />
 
-                </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
-            </androidx.cardview.widget.CardView>
+                <TextView
+                    android:id="@+id/nama"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Nama"
+                    android:fontFamily="@font/nunito_bold"
+                    android:textColor="@color/black"
+                    android:textSize="30sp"
+                    android:layout_marginTop="10dp"
+                    android:layout_gravity="center"
+                    />
 
-            <TextView
-                android:id="@+id/detail"
-                style="@style/TextSubJudul"
-                android:text="Detail Transaksi"
-                />
+                <TextView
+                    android:id="@+id/tanggal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tanggal"
+                    android:fontFamily="@font/nunito_medium"
+                    android:textColor="@color/black"
+                    android:textSize="16sp"
+                    android:layout_marginTop="5dp"
+                    android:layout_gravity="center"
+                    />
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_detail"
-                android:layout_width="match_parent"
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/saldo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    app:cardCornerRadius="10dp"
+                    android:layout_marginHorizontal="40dp"
+                    >
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:paddingVertical="20dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_horizontal"
+                        android:background="@drawable/border_kuning"
+                        >
+
+                        <TextView
+                            android:id="@+id/nominal"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/nunito_medium"
+                            android:text="000"
+                            android:textColor="@color/black"
+                            android:textSize="30sp"
+                            android:layout_marginStart="5dp"
+                            />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+                <TextView
+                    android:id="@+id/detail"
+                    style="@style/TextSubJudul"
+                    android:text="Detail Transaksi"
+                    />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_detail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginHorizontal="10dp"
+                    />
+
+                <TextView
+                    android:id="@+id/keterangan_label"
+                    style="@style/TextSubJudul"
+                    android:text="Keterangan"
+                    />
+
+                <TextView
+                    android:id="@+id/keterangan"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="keterangan transaksi"
+                    android:fontFamily="@font/nunito_regular"
+                    android:textColor="@color/black"
+                    android:textSize="16sp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginHorizontal="20dp"
+                    />
+
+                <Button
+                    android:id="@+id/edit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Edit"
+                    android:fontFamily="@font/nunito_bold"
+                    android:textColor="@color/black"
+                    android:backgroundTint="@color/secondary"
+                    android:layout_marginTop="30dp"
+                    android:layout_marginHorizontal="30dp"
+                    />
+
+                <Button
+                    android:id="@+id/hapus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Hapus"
+                    android:fontFamily="@font/nunito_bold"
+                    android:textColor="@color/white"
+                    android:backgroundTint="@color/merah"
+                    android:layout_marginVertical="20dp"
+                    android:layout_marginHorizontal="30dp"
+                    />
+
+            </LinearLayout>
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/loading"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:layout_marginHorizontal="10dp"
+                android:layout_gravity="center"
+                app:trackColor="@color/primary"
+                app:indicatorSize="60dp"
+                android:indeterminate="true"
+                app:trackThickness="4dp"
+                android:visibility="gone"
                 />
 
-            <TextView
-                android:id="@+id/keterangan_label"
-                style="@style/TextSubJudul"
-                android:text="Keterangan"
-                />
+        </FrameLayout>
 
-            <TextView
-                android:id="@+id/keterangan"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="keterangan transaksi"
-                android:fontFamily="@font/nunito_regular"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:layout_marginTop="10dp"
-                android:layout_marginHorizontal="20dp"
-                />
+    </androidx.core.widget.NestedScrollView>
 
-            <Button
-                android:id="@+id/edit"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Edit"
-                android:fontFamily="@font/nunito_bold"
-                android:textColor="@color/black"
-                android:backgroundTint="@color/secondary"
-                android:layout_marginTop="30dp"
-                android:layout_marginHorizontal="30dp"
-                />
-
-            <Button
-                android:id="@+id/hapus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Hapus"
-                android:fontFamily="@font/nunito_bold"
-                android:textColor="@color/white"
-                android:backgroundTint="@color/merah"
-                android:layout_marginVertical="20dp"
-                android:layout_marginHorizontal="30dp"
-                />
-
-        </LinearLayout>
-
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:id="@+id/loading"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            app:trackColor="@color/primary"
-            app:indicatorSize="60dp"
-            android:indeterminate="true"
-            app:trackThickness="4dp"
-            android:visibility="gone"
-            />
-
-    </FrameLayout>
-
-</ScrollView>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

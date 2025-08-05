@@ -92,7 +92,7 @@ class TambahPenggunaFragment : Fragment() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
-                    showToast("Gagal membuat pengguna")
+                    showToast("Gagal membuat pengguna, periksa koneksi internet")
                 }
             } finally {
                 withContext(Dispatchers.Main) {

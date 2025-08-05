@@ -7,6 +7,7 @@
         <item name="colorSurface">@color/surface</item>
         <item name="colorOnSurface">@color/onSurface</item>
         <item name="colorControlActivated">@color/secondary</item>
+        <item name="android:windowBackground">@color/white</item>
     </style>
 
     <style name="Theme.BankSampah" parent="Base.Theme.BankSampah" />

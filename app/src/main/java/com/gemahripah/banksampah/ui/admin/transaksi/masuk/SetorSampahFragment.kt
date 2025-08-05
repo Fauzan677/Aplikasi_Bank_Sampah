@@ -14,9 +14,12 @@ import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.databinding.FragmentSetorSampahBinding
 import com.gemahripah.banksampah.databinding.ItemSetorSampahBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import kotlinx.coroutines.launch
 
-class SetorSampahFragment : Fragment() {
+class SetorSampahFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentSetorSampahBinding? = null
     private val binding get() = _binding!!
@@ -38,11 +41,9 @@ class SetorSampahFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel.loadPengguna()
-        viewModel.loadSampah()
-
         observePengguna()
         observeSampah()
+        observeIsLoading()
 
         val pengguna = arguments?.let { SetorSampahFragmentArgs.fromBundle(it).pengguna }
         pengguna?.let {
@@ -82,12 +83,22 @@ class SetorSampahFragment : Fragment() {
                     findNavController().navigate(R.id.action_setorSampahFragment_to_navigation_transaksi)
                 },
                 onError = {
-                    Toast.makeText(requireContext(), "Gagal menyimpan: $it", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Gagal menyimpan, periksa koneksi internet", Toast.LENGTH_SHORT).show()
                 }
             )
-
         }
 
+        if (!updateInternetCard()) return
+
+        viewModel.loadPengguna()
+        viewModel.loadSampah()
+
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+        viewModel.loadPengguna()
+        viewModel.loadSampah()
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -134,6 +145,14 @@ class SetorSampahFragment : Fragment() {
                 }
             }
 
+        }
+    }
+
+    private fun observeIsLoading() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.isLoading.collect { isLoading ->
+                showLoading(isLoading)
+            }
         }
     }
 
@@ -235,6 +254,20 @@ class SetorSampahFragment : Fragment() {
 
         binding.tambah.isEnabled = !semuaJenisTerpakai
         binding.tambah.alpha = if (binding.tambah.isEnabled) 1f else 0.5f
+    }
+
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+        binding.konfirmasi.isEnabled = !isLoading
+        binding.tambah.isEnabled = !isLoading
     }
 
     override fun onDestroyView() {

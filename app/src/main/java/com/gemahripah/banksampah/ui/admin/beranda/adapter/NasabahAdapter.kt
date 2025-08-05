@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.text.NumberFormat
 import java.util.Locale
 
 class NasabahAdapter(
@@ -61,8 +62,10 @@ class NasabahAdapter(
                     val saldo = resultSaldo.data.toDoubleOrNull() ?: 0.0
 
                     launch(Dispatchers.Main) {
+                        val formattedSaldo = NumberFormat.getNumberInstance(Locale("in", "ID")).format(saldo.toInt())
+
                         binding.berat.text = "%.2f Kg".format(berat)
-                        binding.nominal.text = "Rp%,.0f".format(saldo).replace(",", ".")
+                        binding.nominal.text = "Rp $formattedSaldo"
                     }
                 } catch (e: Exception) {
                     launch(Dispatchers.Main) {
@@ -77,6 +80,7 @@ class NasabahAdapter(
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     fun filterList(query: String) {
         val filteredList = if (query.isEmpty()) {
             listFull
@@ -87,6 +91,7 @@ class NasabahAdapter(
         notifyDataSetChanged()
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     fun updateData(newList: List<Pengguna>) {
         listFull = ArrayList(newList)
         list = newList

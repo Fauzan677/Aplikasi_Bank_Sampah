@@ -6,23 +6,24 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.gemahripah.banksampah.R
-import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
 import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentPenarikanSaldoBinding
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.text.NumberFormat
+import java.util.Locale
 
 class EditTransaksiKeluarFragment : Fragment() {
     private var _binding: FragmentPenarikanSaldoBinding? = null
@@ -30,7 +31,6 @@ class EditTransaksiKeluarFragment : Fragment() {
 
     private val args: EditTransaksiKeluarFragmentArgs by navArgs()
     private var selectedPgnId: String? = null
-    private val namaToPenggunaMap = mutableMapOf<String, Pengguna>()
 
     private lateinit var riwayat: RiwayatTransaksi
     private lateinit var enrichedList: Array<DetailTransaksiRelasi>
@@ -51,9 +51,7 @@ class EditTransaksiKeluarFragment : Fragment() {
         selectedPgnId = riwayat.tskIdPengguna
 
         setupFormAwal()
-        fetchNamaPengguna()
         setupKonfirmasiButton()
-
     }
 
     private fun setupFormAwal() {
@@ -62,47 +60,12 @@ class EditTransaksiKeluarFragment : Fragment() {
         binding.jumlah.setText(enrichedList[0].dtlJumlah.toString())
         binding.keterangan.setText(riwayat.tskKeterangan ?: "")
         selectedPgnId?.let { tampilkanSaldoPengguna(it) }
-    }
 
-    private fun fetchNamaPengguna() {
-        lifecycleScope.launch {
-            try {
-                val penggunaList = SupabaseProvider.client
-                    .postgrest["pengguna"]
-                    .select()
-                    .decodeList<Pengguna>()
-
-                namaToPenggunaMap.clear()
-                penggunaList.forEach { pengguna ->
-                    pengguna.pgnNama?.let {
-                        namaToPenggunaMap[it] = pengguna
-                    }
-                }
-
-                setupAutoComplete()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private fun setupAutoComplete() {
-        val namaList = namaToPenggunaMap.keys.toList()
-
-        val adapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_dropdown_item_1line,
-            namaList
-        )
-
-        binding.nama.setAdapter(adapter)
-        binding.nama.threshold = 1
-
-        binding.nama.setOnItemClickListener { _, _, position, _ ->
-            val selectedNama = adapter.getItem(position)
-            val penggunaTerpilih = namaToPenggunaMap[selectedNama]
-            selectedPgnId = penggunaTerpilih?.pgnId
-            selectedPgnId?.let { tampilkanSaldoPengguna(it) }
+        binding.nama.apply {
+            isFocusable = false
+            isFocusableInTouchMode = false
+            isClickable = false
+            isEnabled = false
         }
     }
 
@@ -157,27 +120,44 @@ class EditTransaksiKeluarFragment : Fragment() {
         return saldo + jumlahSebelumnya!!
     }
 
-    private suspend fun updateTransaksiDanDetail(jumlahInput: Double, keterangan: String) {
+    private fun updateTransaksiDanDetail(jumlahInput: Double, keterangan: String) {
         val transaksiId = riwayat.tskId
         val detailId = enrichedList.getOrNull(0)?.dtlId
 
-        SupabaseProvider.client.from("transaksi").update({
-            set("tskIdPengguna", selectedPgnId!!)
-            set("tskKeterangan", keterangan)
-        }) {
-            filter { eq("tskId", transaksiId) }
-        }
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    SupabaseProvider.client.from("transaksi").update({
+                        set("tskIdPengguna", selectedPgnId!!)
+                        set("tskKeterangan", keterangan)
+                    }) {
+                        filter { eq("tskId", transaksiId) }
+                    }
 
-        detailId?.let {
-            SupabaseProvider.client.from("detail_transaksi").update({
-                set("dtlJumlah", jumlahInput)
-            }) {
-                filter { eq("dtlId", it) }
+                    detailId?.let {
+                        SupabaseProvider.client.from("detail_transaksi").update({
+                            set("dtlJumlah", jumlahInput)
+                        }) {
+                            filter { eq("dtlId", it) }
+                        }
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(requireContext(), "Transaksi berhasil diperbarui", Toast.LENGTH_SHORT).show()
+                    findNavController().navigate(R.id.action_editTransaksiKeluarFragment_to_navigation_transaksi)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Gagal memperbarui data, periksa koneksi internet",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
-
-        showToast("Transaksi berhasil diperbarui")
-        findNavController().navigate(R.id.action_editTransaksiKeluarFragment_to_navigation_transaksi)
     }
 
     @SuppressLint("SetTextI18n")
@@ -185,7 +165,8 @@ class EditTransaksiKeluarFragment : Fragment() {
         lifecycleScope.launch {
             try {
                 val saldo = hitungSaldoDenganPenyesuaian(pgnId, enrichedList[0].dtlJumlah)
-                binding.saldo.text = "Rp %.2f".format(saldo)
+                val formattedSaldo = NumberFormat.getNumberInstance(Locale("in", "ID")).format(saldo)
+                binding.saldo.text = "Rp $formattedSaldo"
             } catch (e: Exception) {
                 e.printStackTrace()
                 binding.saldo.text = "Rp 0"

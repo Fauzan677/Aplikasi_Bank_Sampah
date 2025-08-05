@@ -14,8 +14,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.ui.admin.pengaturan.jenis.adapter.KategoriAdapter
 import com.gemahripah.banksampah.databinding.FragmentJenisSampahBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 
-class JenisSampahFragment : Fragment() {
+class JenisSampahFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentJenisSampahBinding? = null
     private val binding get() = _binding!!
@@ -38,6 +41,17 @@ class JenisSampahFragment : Fragment() {
         observeKategoriList()
         setupClickListeners()
 
+        binding.swipeRefresh.setOnRefreshListener {
+            reloadData()
+        }
+
+        if (!updateInternetCard()) return
+        viewModel.loadKategori()
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+        binding.swipeRefresh.isRefreshing = true
         viewModel.loadKategori()
     }
 
@@ -78,9 +92,21 @@ class JenisSampahFragment : Fragment() {
         }
     }
 
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
+    }
+
     private fun showLoading(isLoading: Boolean) {
         binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
         binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+    }
+
+    override fun onResume() {
+        super.onResume()
+        reloadData()
     }
 
     override fun onDestroyView() {

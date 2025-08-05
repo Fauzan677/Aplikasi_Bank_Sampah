@@ -48,7 +48,7 @@ class EditProfilViewModel : ViewModel() {
                             }
                             _toastMessage.postValue("Kami telah mengirimkan tautan verifikasi ke email baru Anda")
                         } catch (e: Exception) {
-                            _toastMessage.postValue("Gagal update email auth: ${e.message}")
+
                         }
                     }
 
@@ -58,14 +58,14 @@ class EditProfilViewModel : ViewModel() {
                                 password = passwordBaru
                             }
                         } catch (e: Exception) {
-                            _toastMessage.postValue("Gagal update password: ${e.message}")
+
                         }
                     }
 
                     _toastMessage.postValue("Data pengguna berhasil diperbarui")
                     _successUpdate.postValue(true)
                 } catch (e: Exception) {
-                    _toastMessage.postValue("Terjadi kesalahan: ${e.message}")
+                    _toastMessage.postValue("Gagal memperbarui data, periksa koneksi internet")
                 }
             }
         }

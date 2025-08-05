@@ -73,6 +73,8 @@ class EditProfilFragment : Fragment() {
         }
 
         lifecycleScope.launch {
+            showLoading(true)
+
             try {
                 val userId = pengguna.pgnId
 
@@ -95,8 +97,7 @@ class EditProfilFragment : Fragment() {
                             if (isEmailBerubah) email = emailBaru
                             if (isPasswordBerubah) password = passwordBaru
                         }
-                    } catch (e: Exception) {
-                        Toast.makeText(requireContext(), "Gagal update Auth: ${e.message}", Toast.LENGTH_SHORT).show()
+                    } catch (_: Exception) {
                     }
                 }
 
@@ -107,9 +108,17 @@ class EditProfilFragment : Fragment() {
                 Toast.makeText(requireContext(), "Data pengguna berhasil diperbarui", Toast.LENGTH_SHORT).show()
                 findNavController().navigate(R.id.navigation_pengaturan, null, navOptions)
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Terjadi kesalahan: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Gagal edit pengguna, periksa koneksi internet", Toast.LENGTH_SHORT).show()
+            } finally {
+                showLoading(false)
             }
         }
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+        binding.konfirmasi.isEnabled = !isLoading
     }
 
     override fun onDestroyView() {

@@ -36,7 +36,7 @@ class BerandaViewModel : ViewModel() {
     private val _totalSetoran = MutableLiveData<String>()
     val totalSetoran: LiveData<String> = _totalSetoran
 
-    private val formatter = NumberFormat.getCurrencyInstance(Locale("in", "ID"))
+    private val formatter = NumberFormat.getNumberInstance(Locale("in", "ID"))
 
     fun fetchDashboardData() {
         getPengguna()

@@ -70,6 +70,7 @@ class EditPenggunaFragment : Fragment() {
                 showToast("ID pengguna tidak ditemukan")
                 return@setOnClickListener
             }
+
             hapusPengguna()
         }
     }
@@ -117,7 +118,7 @@ class EditPenggunaFragment : Fragment() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
-                    showToast("Gagal memperbarui pengguna")
+                    showToast("Gagal memperbarui pengguna, periksa koneksi internet")
                 }
             } finally {
                 withContext(Dispatchers.Main) {
@@ -149,7 +150,7 @@ class EditPenggunaFragment : Fragment() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
-                    showToast("Gagal menghapus pengguna")
+                    showToast("Gagal menghapus pengguna, periksa koneksi internet")
                 }
             } finally {
                 withContext(Dispatchers.Main) {

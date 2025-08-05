@@ -15,6 +15,9 @@ import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentDetailTransaksiBinding
 import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.DetailTransaksiAdapter
 import com.gemahripah.banksampah.ui.admin.transaksi.detail.DetailTransaksiFragmentArgs
+import com.gemahripah.banksampah.ui.nasabah.NasabahActivity
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
@@ -26,7 +29,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class DetailTransaksiFragment : Fragment() {
+class DetailTransaksiFragment : Fragment(), Reloadable {
 
     private val args: DetailTransaksiFragmentArgs by navArgs()
     private var _binding: FragmentDetailTransaksiBinding? = null
@@ -47,6 +50,18 @@ class DetailTransaksiFragment : Fragment() {
 
         setupUI()
         observeViewModel()
+
+        binding.swipeRefresh.setOnRefreshListener {
+            reloadData()
+        }
+
+        if (!updateInternetCard()) return
+        loadData()
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+        binding.swipeRefresh.isRefreshing = false
         loadData()
     }
 
@@ -97,6 +112,13 @@ class DetailTransaksiFragment : Fragment() {
     private fun showLoading(isLoading: Boolean) {
         binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
         binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+    }
+
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? NasabahActivity)?.showNoInternetCard(showCard)
+        return isConnected
     }
 
     override fun onDestroyView() {

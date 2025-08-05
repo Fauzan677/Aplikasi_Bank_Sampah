@@ -1,7 +1,6 @@
 package com.gemahripah.banksampah.ui.nasabah.beranda
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,7 +15,10 @@ import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
 import com.gemahripah.banksampah.databinding.FragmentBerandaNasabahBinding
 import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatTransaksiAdapter
+import com.gemahripah.banksampah.ui.nasabah.NasabahActivity
 import com.gemahripah.banksampah.ui.nasabah.NasabahViewModel
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import com.google.android.material.datepicker.MaterialDatePicker
 import java.time.Instant
 import java.time.LocalDate
@@ -25,7 +27,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-class BerandaFragment : Fragment() {
+class BerandaFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentBerandaNasabahBinding? = null
     private val binding get() = _binding!!
@@ -52,18 +54,51 @@ class BerandaFragment : Fragment() {
 
         observeViewModel()
         setupSpinner()
+        setupDatePickers()
+
+        binding.swipeRefresh.setOnRefreshListener {
+            reloadData()
+        }
+
+        if (!updateInternetCard()) return
         setupTransaksi()
         setupSetoran()
-        setupDatePickers()
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+        binding.swipeRefresh.isRefreshing = false
+        refreshDashboardData()
+    }
+
+    private fun refreshDashboardData() {
+        startDate = null
+        endDate = null
+
+        binding.tvTanggalTransaksi.visibility = View.GONE
+        binding.tvTanggalSetoran.visibility = View.GONE
+        binding.startDateEditText.setText("")
+        binding.endDateEditText.setText("")
+
+        val spinner = binding.spinnerFilterTransaksi
+        spinner.setSelection(0, false)
+        selectedFilter = resources.getStringArray(R.array.filter_transaksi)[0]
+
+        nasabahViewModel.pengguna.value?.pgnId?.let { pgnId ->
+            berandaViewModel.getSaldo(pgnId)
+            berandaViewModel.getTotalSetoran(pgnId)
+            berandaViewModel.getTotalTransaksi(pgnId, selectedFilter)
+            berandaViewModel.fetchRiwayat(pgnId)
+        }
     }
 
     private fun observeViewModel() {
         nasabahViewModel.pengguna.observe(viewLifecycleOwner) { pengguna ->
-            pengguna?.pgnId?.let { pgnId ->
-                berandaViewModel.getSaldo(pgnId)
-                berandaViewModel.getTotalSetoran(pgnId)
-                berandaViewModel.fetchRiwayat(pgnId)
-            }
+            val pgnId = pengguna?.pgnId ?: return@observe
+            if (!updateInternetCard()) return@observe
+
+            berandaViewModel.getSaldo(pgnId)
+            berandaViewModel.fetchRiwayat(pgnId)
         }
 
         berandaViewModel.loadingRiwayat.observe(viewLifecycleOwner) { isLoading ->
@@ -281,25 +316,17 @@ class BerandaFragment : Fragment() {
         }
     }
 
+
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? NasabahActivity)?.showNoInternetCard(showCard)
+        return isConnected
+    }
+
     override fun onResume() {
         super.onResume()
-        startDate = null
-        endDate = null
-
-        binding.tvTanggalTransaksi.visibility = View.GONE
-        binding.tvTanggalSetoran.visibility = View.GONE
-        binding.startDateEditText.setText("")
-        binding.endDateEditText.setText("")
-
-        val spinner = binding.spinnerFilterTransaksi
-        spinner.setSelection(0, false)
-        selectedFilter = resources.getStringArray(R.array.filter_transaksi)[0]
-
-        nasabahViewModel.pengguna.value?.pgnId?.let { pgnId ->
-            berandaViewModel.getTotalSetoran(pgnId)
-            berandaViewModel.getTotalTransaksi(pgnId, selectedFilter)
-            berandaViewModel.fetchRiwayat(pgnId)
-        }
+        reloadData()
     }
 
     override fun onDestroyView() {

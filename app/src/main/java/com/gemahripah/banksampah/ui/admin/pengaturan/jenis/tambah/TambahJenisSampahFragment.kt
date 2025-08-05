@@ -14,6 +14,8 @@ import com.gemahripah.banksampah.data.model.sampah.Kategori
 import com.gemahripah.banksampah.data.model.sampah.Sampah
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentTambahJenisSampahBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
+import com.gemahripah.banksampah.utils.NetworkUtil
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
@@ -35,6 +37,8 @@ class TambahJenisSampahFragment : Fragment(R.layout.fragment_tambah_jenis_sampah
         binding = FragmentTambahJenisSampahBinding.bind(view)
 
         binding.hapus.visibility = View.GONE
+
+        if (!updateInternetCard()) return
 
         setupKategoriDropdown()
         setupSatuanDropdown()
@@ -128,7 +132,6 @@ class TambahJenisSampahFragment : Fragment(R.layout.fragment_tambah_jenis_sampah
                 sphKeterangan = if (keterangan.isNotEmpty()) keterangan else null
             )
 
-
             submitSampah(data)
         }
     }
@@ -149,9 +152,16 @@ class TambahJenisSampahFragment : Fragment(R.layout.fragment_tambah_jenis_sampah
                 )
             } catch (e: Exception) {
                 e.printStackTrace()
-                showToast("Gagal menambahkan data")
+                showToast("Gagal menambahkan data, periksa koneksi internet")
             }
         }
+    }
+
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
     }
 
     private fun showToast(message: String) {

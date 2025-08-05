@@ -36,11 +36,11 @@ class TambahKategoriFragment : Fragment() {
             if (nama.isNotEmpty()) {
                 viewModel.tambahKategori(nama,
                     onSuccess = {
-                        Toast.makeText(requireContext(), "Berhasil ditambahkan", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "Kategori berhasil ditambahkan", Toast.LENGTH_SHORT).show()
                         findNavController().navigate(R.id.action_tambahKategoriFragment_to_jenisSampahFragment)
                     },
                     onError = { e ->
-                        Toast.makeText(requireContext(), "Gagal: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "Gagal menambahkan kategori, periksa koneksi internet", Toast.LENGTH_SHORT).show()
                     }
                 )
             } else {

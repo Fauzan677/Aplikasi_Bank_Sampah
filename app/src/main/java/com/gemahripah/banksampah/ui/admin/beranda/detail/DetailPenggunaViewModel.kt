@@ -60,7 +60,7 @@ class DetailPenggunaViewModel : ViewModel() {
                 buildJsonObject { put("pgn_id_input", pgnId) }
             )
             val saldoDouble = result.data.toDoubleOrNull() ?: 0.0
-            val formatted = NumberFormat.getCurrencyInstance(Locale("in", "ID")).format(saldoDouble)
+            val formatted = NumberFormat.getNumberInstance(Locale("in", "ID")).format(saldoDouble)
             _saldo.value = formatted
         } catch (e: Exception) {
             _saldo.value = "Rp 0"

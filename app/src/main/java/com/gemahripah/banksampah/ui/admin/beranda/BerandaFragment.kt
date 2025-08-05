@@ -2,6 +2,8 @@ package com.gemahripah.banksampah.ui.admin.beranda
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -17,7 +19,10 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.databinding.FragmentBerandaAdminBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.ui.admin.beranda.adapter.NasabahAdapter
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import com.google.android.material.datepicker.MaterialDatePicker
 import java.time.Instant
 import java.time.LocalDate
@@ -25,8 +30,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-class BerandaFragment : Fragment() {
-
+class BerandaFragment : Fragment(), Reloadable {
     private var _binding: FragmentBerandaAdminBinding? = null
     private val binding get() = _binding!!
 
@@ -46,14 +50,14 @@ class BerandaFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel.fetchDashboardData()
-
         setupRecyclerView()
         observeViewModel()
         setupSearchListener()
         setupSpinner()
-        setupTransaksi()
-        setupSetoran()
+
+        binding.swipeRefresh.setOnRefreshListener {
+            reloadData()
+        }
 
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
             if (binding.searchNasabah.hasFocus()) {
@@ -69,6 +73,31 @@ class BerandaFragment : Fragment() {
                 requireActivity().onBackPressedDispatcher.onBackPressed()
             }
         }
+
+        if (!updateInternetCard()) return
+        
+        setupTransaksi()
+        setupSetoran()
+        viewModel.fetchDashboardData()
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+        binding.swipeRefresh.isRefreshing = true
+        refreshDashboardData()
+    }
+
+    private fun refreshDashboardData() {
+        binding.searchNasabah.setText("")
+        binding.searchNasabah.clearFocus()
+        binding.tvTanggalTransaksi.visibility = View.GONE
+        binding.tvTanggalSetoran.visibility = View.GONE
+        binding.scrollView.post {
+            binding.scrollView.scrollTo(0, 0)
+        }
+        binding.spinnerFilterTransaksi.setSelection(0)
+
+        viewModel.fetchDashboardData()
     }
 
     private fun setupRecyclerView() {
@@ -81,18 +110,23 @@ class BerandaFragment : Fragment() {
         binding.rvListNasabah.adapter = adapter
     }
 
+    @SuppressLint("SetTextI18n")
     private fun observeViewModel() {
         viewModel.nasabahList.observe(viewLifecycleOwner) {
             adapter.updateData(it)
         }
 
         viewModel.isLoadingNasabah.observe(viewLifecycleOwner) { isLoading ->
-            binding.progressNasabah.visibility = if (isLoading) View.VISIBLE else View.GONE
+            binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
             binding.rvListNasabah.visibility = if (isLoading) View.GONE else View.VISIBLE
+
+            if (!isLoading) {
+                binding.swipeRefresh.isRefreshing = false
+            }
         }
 
         viewModel.totalSaldo.observe(viewLifecycleOwner) {
-            binding.nominal.text = it
+            binding.nominal.text = "Rp $it"
         }
 
         viewModel.totalNasabah.observe(viewLifecycleOwner) {
@@ -100,7 +134,7 @@ class BerandaFragment : Fragment() {
         }
 
         viewModel.totalTransaksi.observe(viewLifecycleOwner) {
-            binding.transaksi.text = it
+            binding.transaksi.text = "Rp $it"
         }
 
         viewModel.totalSetoran.observe(viewLifecycleOwner) {
@@ -111,7 +145,7 @@ class BerandaFragment : Fragment() {
     @SuppressLint("ClickableViewAccessibility")
     private fun setupSearchListener() {
         binding.searchNasabah.setOnTouchListener { v, event ->
-            if (event.action == MotionEvent.ACTION_DOWN) {
+            if (event.action == MotionEvent.ACTION_UP) {
                 binding.scrollView.post {
                     val y = binding.listNasabah.top
                     binding.scrollView.scrollTo(0, y)
@@ -222,20 +256,16 @@ class BerandaFragment : Fragment() {
         }
     }
 
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
+    }
+
     override fun onResume() {
         super.onResume()
-        binding.searchNasabah.setText("")
-        binding.searchNasabah.clearFocus()
-        binding.scrollView.post {
-            binding.scrollView.scrollTo(0, 0)
-        }
-        binding.tvTanggalTransaksi.visibility = View.GONE
-        binding.tvTanggalSetoran.visibility = View.GONE
-
-        viewModel.fetchDashboardData()
-        val selectedItem = binding.spinnerFilterTransaksi.selectedItem?.toString()
-        viewModel.getTotalTransaksi(selectedItem ?: "")
-        viewModel.getTotalSetoran()
+        reloadData()
     }
 
     override fun onDestroyView() {

@@ -23,6 +23,9 @@ import androidx.appcompat.app.AlertDialog
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.model.sampah.gabungan.SampahRelasi
 import com.gemahripah.banksampah.databinding.FragmentLaporanBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.apache.poi.ss.usermodel.CellStyle
@@ -37,7 +40,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
-class LaporanFragment : Fragment() {
+class LaporanFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentLaporanBinding? = null
     private val binding get() = _binding!!
@@ -57,28 +60,38 @@ class LaporanFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.transaksi.setOnClickListener {
+            if (!updateInternetCard()) return@setOnClickListener
             tampilkanDialogKonfirmasi("Konfirmasi", "Apakah Anda ingin menyimpan laporan ini?") {
                 ambilDataTransaksiLengkap()
             }
         }
 
         binding.setoran.setOnClickListener {
+            if (!updateInternetCard()) return@setOnClickListener
             tampilkanDialogKonfirmasi("Konfirmasi", "Apakah Anda ingin menyimpan laporan ini?") {
                 ambilDataSetoran()
             }
         }
 
         binding.nasabah.setOnClickListener {
+            if (!updateInternetCard()) return@setOnClickListener
             tampilkanDialogKonfirmasi("Konfirmasi", "Apakah Anda ingin menyimpan data nasabah?") {
                 ambilDataNasabah()
             }
         }
 
         binding.sampah.setOnClickListener {
+            if (!updateInternetCard()) return@setOnClickListener
             tampilkanDialogKonfirmasi("Konfirmasi", "Apakah Anda ingin menyimpan data sampah?") {
                 ambilDataSampah()
             }
         }
+
+        if (!updateInternetCard()) return
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
     }
 
     private fun tampilkanDialogKonfirmasi(
@@ -449,6 +462,13 @@ class LaporanFragment : Fragment() {
 
     private fun hideLoading() {
         loadingDialog?.dismiss()
+    }
+
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
     }
 
     override fun onDestroyView() {

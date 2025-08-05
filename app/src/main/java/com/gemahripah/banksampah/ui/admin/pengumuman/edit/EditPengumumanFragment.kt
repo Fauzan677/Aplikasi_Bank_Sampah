@@ -22,6 +22,8 @@ import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengumuman.Pengumuman
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentTambahPengumumanBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
+import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.reduceFileImage
 import com.gemahripah.banksampah.utils.uriToFile
 import io.github.jan.supabase.SupabaseClient
@@ -77,7 +79,6 @@ class EditPengumumanFragment : Fragment() {
                 editPengumuman(pengumuman)
             }
         }
-
     }
 
     private fun loadPengumumanData(pengumuman: Pengumuman) {
@@ -101,7 +102,7 @@ class EditPengumumanFragment : Fragment() {
     }
 
     private fun showDeleteImageConfirmation() {
-        if (currentImageUri == null) {
+        if (currentImageUri == null && existingImageUrl.isNullOrEmpty()) {
             showToast("Belum ada gambar yang dipilih")
             return
         }
@@ -120,8 +121,11 @@ class EditPengumumanFragment : Fragment() {
         binding.selectedImageView.setImageDrawable(null)
         binding.selectedImageView.visibility = View.GONE
         binding.uploadText.visibility = View.VISIBLE
+
         gambarDihapus = true
         currentImageUri = null
+        existingImageUrl = null
+
         showToast("Gambar dihapus")
     }
 
@@ -237,7 +241,7 @@ class EditPengumumanFragment : Fragment() {
                 findNavController().navigate(R.id.action_editPengumumanFragment_to_navigation_pengumuman)
             } catch (e: Exception) {
                 e.printStackTrace()
-                showToast("Gagal menyimpan: ${e.message}")
+                showToast("Gagal menyimpan, periksa koneksi internet")
                 showLoading(false)
             }
         }

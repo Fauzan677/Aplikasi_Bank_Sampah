@@ -15,6 +15,9 @@ import kotlinx.coroutines.launch
 
 class SetorSampahViewModel : ViewModel() {
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> get() = _isLoading
+
     private val _penggunaList = MutableStateFlow<List<Pengguna>>(emptyList())
     val penggunaList: StateFlow<List<Pengguna>> get() = _penggunaList
 
@@ -66,6 +69,7 @@ class SetorSampahViewModel : ViewModel() {
         onError: (String) -> Unit
     ) {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 val transaksi = Transaksi(
                     tskIdPengguna = userId,
@@ -106,6 +110,8 @@ class SetorSampahViewModel : ViewModel() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 onError(e.message ?: "Terjadi kesalahan.")
+            } finally {
+                _isLoading.value = false
             }
         }
     }

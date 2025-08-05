@@ -17,10 +17,15 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.databinding.FragmentDetailTransaksiBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.DetailTransaksiAdapter
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import kotlinx.coroutines.launch
+import java.text.NumberFormat
+import java.util.Locale
 
-class DetailTransaksiFragment : Fragment() {
+class DetailTransaksiFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentDetailTransaksiBinding? = null
     private val binding get() = _binding!!
@@ -40,6 +45,14 @@ class DetailTransaksiFragment : Fragment() {
         setupUI()
         observeUiState()
         setupClickListeners()
+
+        binding.swipeRefresh.setOnRefreshListener {
+            if (!updateInternetCard()) return@setOnRefreshListener
+            reloadData()
+            binding.swipeRefresh.isRefreshing = false
+        }
+
+        if (!updateInternetCard()) return
         viewModel.getDetailTransaksi(args.riwayat.tskId)
     }
 
@@ -48,7 +61,8 @@ class DetailTransaksiFragment : Fragment() {
 
         binding.nama.text = riwayat.nama
         binding.tanggal.text = riwayat.tanggal
-        binding.nominal.text = riwayat.totalHarga.toString()
+        val formattedHarga = NumberFormat.getNumberInstance(Locale("in", "ID")).format(riwayat.totalHarga)
+        binding.nominal.text = "Rp $formattedHarga"
         binding.keterangan.text = riwayat.tskKeterangan
 
         if (riwayat.tipe.lowercase() == "keluar") {
@@ -101,11 +115,11 @@ class DetailTransaksiFragment : Fragment() {
                         }
 
                         is DetailTransaksiUiState.Deleted -> {
+                            binding.loading.visibility = View.GONE
                             findNavController().popBackStack()
                         }
 
                         is DetailTransaksiUiState.Error -> {
-                            Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -113,8 +127,17 @@ class DetailTransaksiFragment : Fragment() {
         }
     }
 
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
+    }
+
     private fun setupClickListeners() {
         binding.hapus.setOnClickListener {
+            if (!updateInternetCard()) return@setOnClickListener
+
             AlertDialog.Builder(requireContext())
                 .setTitle("Hapus Transaksi")
                 .setMessage("Yakin ingin menghapus transaksi ini?")
@@ -124,6 +147,12 @@ class DetailTransaksiFragment : Fragment() {
                 .setNegativeButton("Batal", null)
                 .show()
         }
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+        viewModel.getDetailTransaksi(args.riwayat.tskId)
+        binding.swipeRefresh.isRefreshing = false
     }
 
     override fun onDestroyView() {

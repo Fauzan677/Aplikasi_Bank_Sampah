@@ -12,6 +12,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
 import com.gemahripah.banksampah.databinding.ItemRiwayatBinding
+import java.text.NumberFormat
+import java.util.Locale
 
 class RiwayatTransaksiAdapter(
     private var list: List<RiwayatTransaksi>,
@@ -62,9 +64,12 @@ class RiwayatTransaksiAdapter(
         fun bind(item: RiwayatTransaksi) = with(binding) {
             resetView()
 
+            val formattedHarga = NumberFormat.getNumberInstance(Locale("in", "ID")).format(item.totalHarga?.toInt() ?: 0)
+
             nama.text = item.hari ?: item.nama
             tanggal.text = item.tanggal
-            nominal.text = "Rp ${item.totalHarga?.toInt()}"
+            nominal.text = "Rp $formattedHarga"
+
 
             if (item.tipe == "Masuk") {
                 berat.visibility = View.VISIBLE

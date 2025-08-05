@@ -18,11 +18,14 @@ import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengumuman.Pengumuman
 import com.gemahripah.banksampah.databinding.FragmentDetailPengumumanBinding
 import com.gemahripah.banksampah.ui.admin.pengumuman.detail.DetailPengumumanFragmentArgs
+import com.gemahripah.banksampah.ui.nasabah.NasabahActivity
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-class DetailPengumumanFragment : Fragment() {
+class DetailPengumumanFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentDetailPengumumanBinding? = null
     private val binding get() = _binding!!
@@ -40,14 +43,20 @@ class DetailPengumumanFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        binding.edit.visibility = View.GONE
+        binding.hapus.visibility = View.GONE
+
         showLoading(true)
+
+        reloadData()
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
 
         val pengumuman = arguments?.let {
             DetailPengumumanFragmentArgs.fromBundle(it).pengumuman
         }
-
-        binding.edit.visibility = View.GONE
-        binding.hapus.visibility = View.GONE
 
         pengumuman?.let {
             tampilkanDetailPengumuman(it)
@@ -154,11 +163,17 @@ class DetailPengumumanFragment : Fragment() {
             .into(this)
     }
 
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? NasabahActivity)?.showNoInternetCard(showCard)
+        return isConnected
+    }
+
     private fun showLoading(isLoading: Boolean) {
         binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
         binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
     }
-
 
     override fun onDestroyView() {
         super.onDestroyView()

@@ -1,5 +1,6 @@
 package com.gemahripah.banksampah.ui.admin.beranda.detail
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -14,12 +15,15 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.databinding.FragmentDetailPenggunaBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.ui.admin.beranda.adapter.TotalSampahAdapter
 import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatTransaksiAdapter
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
-class DetailPenggunaFragment : Fragment() {
+class DetailPenggunaFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentDetailPenggunaBinding? = null
     private val binding get() = _binding!!
@@ -39,6 +43,8 @@ class DetailPenggunaFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (!updateInternetCard()) return
+
         pengguna = arguments?.let { DetailPenggunaFragmentArgs.fromBundle(it).pengguna }
 
         setupUI()
@@ -46,6 +52,16 @@ class DetailPenggunaFragment : Fragment() {
         setupRecyclerViews()
         setupObservers()
 
+        pengguna?.pgnId?.let { viewModel.loadData(it) }
+
+        binding.swipeRefresh.setOnRefreshListener {
+            reloadData()
+            binding.swipeRefresh.isRefreshing = false
+        }
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
         pengguna?.pgnId?.let { viewModel.loadData(it) }
     }
 
@@ -83,11 +99,12 @@ class DetailPenggunaFragment : Fragment() {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private fun setupObservers() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.saldo.collect { binding.nominal.text = it }
+                    viewModel.saldo.collect { binding.nominal.text = " Rp $it" }
                 }
 
                 launch {
@@ -131,6 +148,13 @@ class DetailPenggunaFragment : Fragment() {
                 }
             }
         }
+    }
+
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
     }
 
     private fun showLoading(isLoading: Boolean) {

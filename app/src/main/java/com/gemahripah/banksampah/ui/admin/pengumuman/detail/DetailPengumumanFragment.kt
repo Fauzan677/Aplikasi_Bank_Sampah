@@ -22,8 +22,11 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.bumptech.glide.request.target.Target
+import com.gemahripah.banksampah.ui.admin.AdminActivity
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 
-class DetailPengumumanFragment : Fragment() {
+class DetailPengumumanFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentDetailPengumumanBinding? = null
     private val binding get() = _binding!!
@@ -41,17 +44,28 @@ class DetailPengumumanFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        observeViewModel()
+
         val pengumuman = arguments?.let {
             DetailPengumumanFragmentArgs.fromBundle(it).pengumuman
         }
 
-        viewModel.setLoading(true)
+        if (!updateInternetCard()) return
 
+        viewModel.setLoading(true)
         pengumuman?.let {
             viewModel.setPengumuman(it)
         }
 
-        observeViewModel()
+    }
+
+    override fun reloadData() {
+        arguments?.let {
+            if (!updateInternetCard()) return
+            val pengumuman = DetailPengumumanFragmentArgs.fromBundle(it).pengumuman
+            viewModel.setLoading(true)
+            viewModel.setPengumuman(pengumuman)
+        }
     }
 
     private fun observeViewModel() {
@@ -132,6 +146,8 @@ class DetailPengumumanFragment : Fragment() {
         }
 
         binding.hapus.setOnClickListener {
+            updateInternetCard()
+
             pengumuman.pmnId?.let { id ->
                 tampilkanDialogKonfirmasiHapus(id, pengumuman.pmnGambar) {
                     Toast.makeText(requireContext(), "Pengumuman berhasil dihapus", Toast.LENGTH_SHORT).show()
@@ -185,6 +201,13 @@ class DetailPengumumanFragment : Fragment() {
         } catch (e: Exception) {
             ""
         }
+    }
+
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
     }
 
     private fun showLoading(isLoading: Boolean) {

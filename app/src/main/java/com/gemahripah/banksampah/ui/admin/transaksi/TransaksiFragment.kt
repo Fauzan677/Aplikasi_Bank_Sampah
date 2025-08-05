@@ -3,6 +3,8 @@ package com.gemahripah.banksampah.ui.admin.transaksi
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -12,17 +14,23 @@ import androidx.activity.addCallback
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.databinding.FragmentTransaksiBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatTransaksiAdapter
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import com.google.android.material.datepicker.MaterialDatePicker
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
-class TransaksiFragment : Fragment() {
+class TransaksiFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentTransaksiBinding? = null
     private val binding get() = _binding!!
@@ -41,12 +49,32 @@ class TransaksiFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setupNavigation()
         setupRecyclerView()
+        setupNavigation()
         setupObservers()
         setupSearchFilter()
         setupDatePickers()
         handleBackButton()
+
+        binding.swipeRefresh.setOnRefreshListener {
+            if (!updateInternetCard()) return@setOnRefreshListener
+            reloadData()
+            binding.swipeRefresh.isRefreshing = false
+        }
+
+        binding.koneksiRiwayat.setOnClickListener {
+            binding.koneksiRiwayat.visibility = View.GONE
+            binding.progressRiwayat.visibility = View.VISIBLE
+            binding.loadingOverlay.visibility = View.VISIBLE
+
+            Handler(Looper.getMainLooper()).postDelayed({
+                viewModel.fetchRiwayat()
+            }, 1000)
+        }
+
+        if (!updateInternetCard()) return
+
+        viewModel.fetchRiwayat()
     }
 
     private fun setupNavigation() {
@@ -60,8 +88,6 @@ class TransaksiFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        viewModel.fetchRiwayat()
-
         binding.rvRiwayat.layoutManager = LinearLayoutManager(requireContext())
         adapter = RiwayatTransaksiAdapter(emptyList()) { riwayat ->
             val action = TransaksiFragmentDirections
@@ -80,6 +106,10 @@ class TransaksiFragment : Fragment() {
             binding.progressRiwayat.visibility = if (isLoading) View.VISIBLE else View.GONE
             binding.loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
+
+        viewModel.isError.observe(viewLifecycleOwner) { isError ->
+            binding.koneksiRiwayat.visibility = if (isError) View.VISIBLE else View.GONE
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -97,7 +127,7 @@ class TransaksiFragment : Fragment() {
         }
 
         binding.searchRiwayat.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_DOWN) {
+            if (event.action == MotionEvent.ACTION_UP) {
                 binding.scrollView.post {
                     binding.scrollView.scrollTo(0, binding.riwayatTransaksi.top)
                 }
@@ -171,13 +201,29 @@ class TransaksiFragment : Fragment() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+
+        viewModel.fetchRiwayat()
+
         binding.searchRiwayat.setText("")
         binding.searchRiwayat.clearFocus()
         binding.scrollView.post {
             binding.scrollView.scrollTo(0, 0)
         }
+        binding.swipeRefresh.isRefreshing = false
+    }
+
+    override fun onResume() {
+        super.onResume()
+        reloadData()
     }
 
     override fun onDestroyView() {

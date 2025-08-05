@@ -89,7 +89,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="30dp"
-            android:hint="Masukkan Password"
+            android:hint="Masukkan Kata Sandi"
             app:boxStrokeColor="@color/primary"
             app:hintTextColor="@color/primary"
             app:boxBackgroundMode="outline"

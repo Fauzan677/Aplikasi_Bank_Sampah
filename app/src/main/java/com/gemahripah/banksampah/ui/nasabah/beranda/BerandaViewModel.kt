@@ -72,8 +72,8 @@ class BerandaViewModel : ViewModel() {
                     else -> 0.0
                 }
 
-                val formatted = NumberFormat.getCurrencyInstance(Locale("in", "ID")).format(total)
-                _totalTransaksi.postValue(formatted)
+                val formatted = NumberFormat.getNumberInstance(Locale("in", "ID")).format(total)
+                _totalTransaksi.postValue("Rp $formatted")
             } catch (e: Exception) {
                 Log.e("Supabase", "Gagal menghitung total transaksi", e)
                 _totalTransaksi.postValue("Rp 0")
@@ -87,9 +87,9 @@ class BerandaViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val response = client.postgrest.rpc("hitung_saldo_pengguna", params)
-                val formatted = NumberFormat.getCurrencyInstance(Locale("in", "ID"))
+                val formatted = NumberFormat.getNumberInstance(Locale("in", "ID"))
                     .format(response.data.toDoubleOrNull() ?: 0.0)
-                _saldo.postValue(formatted)
+                _saldo.postValue("Rp $formatted")
             } catch (e: Exception) {
                 _saldo.postValue("Rp 0")
             }
@@ -116,10 +116,8 @@ class BerandaViewModel : ViewModel() {
                 )
 
                 val total = result.data.toDoubleOrNull() ?: 0.0
-                val formatted = NumberFormat.getNumberInstance(Locale("in", "ID"))
-                    .format(total)
 
-                _setoran.postValue("$formatted Kg")
+                _setoran.postValue("$total Kg")
             } catch (e: Exception) {
                 Log.e("Supabase", "Gagal memuat total setoran", e)
                 _setoran.postValue("0 Kg")

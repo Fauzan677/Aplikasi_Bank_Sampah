@@ -79,6 +79,8 @@ class DetailTransaksiViewModel : ViewModel() {
 
     fun deleteTransaksi(tskId: Long) {
         viewModelScope.launch {
+            _uiState.value = DetailTransaksiUiState.Loading
+
             try {
                 SupabaseProvider.client
                     .from("detail_transaksi")

@@ -10,8 +10,11 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.gemahripah.banksampah.databinding.FragmentPengumumanBinding
 import com.gemahripah.banksampah.ui.gabungan.adapter.pengumuman.PengumumanAdapter
+import com.gemahripah.banksampah.ui.nasabah.NasabahActivity
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 
-class PengumumanFragment : Fragment() {
+class PengumumanFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentPengumumanBinding? = null
     private val binding get() = _binding!!
@@ -31,8 +34,19 @@ class PengumumanFragment : Fragment() {
 
         setupUI()
         observeViewModel()
-        viewModel.loadPengumuman()
 
+        binding.swipeRefresh.setOnRefreshListener {
+            reloadData()
+        }
+
+        if (!updateInternetCard()) return
+        viewModel.loadPengumuman()
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+        binding.swipeRefresh.isRefreshing = false
+        viewModel.loadPengumuman()
     }
 
     private fun setupUI() {
@@ -59,6 +73,13 @@ class PengumumanFragment : Fragment() {
                 }
             }
         }
+    }
+
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? NasabahActivity)?.showNoInternetCard(showCard)
+        return isConnected
     }
 
     override fun onDestroyView() {

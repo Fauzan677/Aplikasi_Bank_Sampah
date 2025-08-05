@@ -21,10 +21,6 @@ class ProfilViewModel : ViewModel() {
     private val _logoutError = MutableLiveData<String?>()
     val logoutError: LiveData<String?> get() = _logoutError
 
-    fun setPengguna(pengguna: Pengguna?) {
-        _pengguna.value = pengguna
-    }
-
     fun logout() {
         viewModelScope.launch {
             try {

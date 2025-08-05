@@ -18,10 +18,13 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.databinding.FragmentPenggunaAdminBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.ui.admin.beranda.adapter.NasabahAdapter
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import kotlinx.coroutines.launch
 
-class PenggunaFragment : Fragment() {
+class PenggunaFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentPenggunaAdminBinding? = null
     private val binding get() = _binding!!
@@ -46,7 +49,25 @@ class PenggunaFragment : Fragment() {
         observeViewModel()
         setupBackPressHandling()
 
+        binding.swipeRefresh.setOnRefreshListener {
+            reloadData()
+        }
+
+        if (!updateInternetCard()) return
         viewModel.ambilData()
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+
+        binding.scrollView.post {
+            binding.scrollView.scrollTo(0, 0)
+        }
+        binding.searchNasabah.setText("")
+        binding.searchNasabah.clearFocus()
+        viewModel.ambilData()
+
+        binding.swipeRefresh.isRefreshing = false
     }
 
     private fun initRecyclerView() {
@@ -65,7 +86,7 @@ class PenggunaFragment : Fragment() {
         }
 
         binding.searchNasabah.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_DOWN) {
+            if (event.action == MotionEvent.ACTION_UP) {
                 binding.scrollView.post {
                     val y = binding.pengguna.top
                     binding.scrollView.scrollTo(0, y)
@@ -115,7 +136,8 @@ class PenggunaFragment : Fragment() {
     }
 
     private fun showLoading(isLoading: Boolean) {
-        binding.progressNasabah.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.rvListNasabah.visibility = if (isLoading) View.GONE else View.VISIBLE
     }
 
     private fun setupBackPressHandling() {
@@ -133,14 +155,16 @@ class PenggunaFragment : Fragment() {
         }
     }
 
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
+    }
+
     override fun onResume() {
         super.onResume()
-        binding.scrollView.post {
-            binding.scrollView.scrollTo(0, 0)
-        }
-        binding.searchNasabah.setText("")
-        binding.searchNasabah.clearFocus()
-        viewModel.ambilData()
+        reloadData()
     }
 
     override fun onDestroyView() {
