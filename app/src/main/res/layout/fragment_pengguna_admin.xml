@@ -47,7 +47,7 @@
                 android:id="@+id/card_saldo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="30dp"
+                android:layout_marginTop="20dp"
                 android:layout_marginHorizontal="20dp"
                 app:cardCornerRadius="15dp"
                 app:cardElevation="2dp"
@@ -167,7 +167,39 @@
                     app:trackColor="@color/primary"
                     app:trackThickness="4dp"
                     android:indeterminate="true"
+                    android:layout_marginTop="10dp"
+                    />
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/koneksi_nasabah"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="30dp"
+                    app:cardElevation="4dp"
+                    app:cardCornerRadius="8dp"
+                    android:layout_gravity="center_horizontal"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="16dp"
+                        android:text="Periksa koneksi internet Anda dan coba lagi"
+                        android:textAlignment="center" />
+
+                </androidx.cardview.widget.CardView>
+
+                <TextView
+                    android:id="@+id/nasabah_kosong"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Data tidak ditemukan"
+                    android:layout_gravity="center_horizontal"
                     android:layout_marginVertical="20dp"
+                    android:fontFamily="@font/nunito_regular"
+                    android:textColor="@color/black"
+                    android:textSize="14sp"
+                    android:visibility="gone"
                     />
 
             </FrameLayout>

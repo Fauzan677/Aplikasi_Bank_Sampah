@@ -1,76 +1,96 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center_horizontal"
     android:background="@color/light_gray"
     >
 
-    <TextView
-        android:id="@+id/nama"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/nunito_extrabold"
-        android:textSize="32sp"
-        android:textColor="@color/black"
-        android:layout_marginTop="50dp"
+    <LinearLayout
+        android:id="@+id/layout_konten"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        >
+
+        <TextView
+            android:id="@+id/nama"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/nunito_extrabold"
+            android:textSize="24sp"
+            android:textColor="@color/black"
+            android:layout_marginTop="30dp"
+            />
+
+        <TextView
+            android:id="@+id/email"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/nunito_regular"
+            android:textSize="18sp"
+            android:textColor="@color/black"
+            />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/bt_profil"
+            style="@style/ButtonProfil"
+            android:layout_marginTop="50dp"
+            android:text="Edit Informasi Profil"
+            app:icon="@drawable/profiledit"
+            android:paddingHorizontal="50dp"
+            android:layout_marginBottom="10dp"
+            />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/nasabah"
+            style="@style/ButtonProfil"
+            android:text="Data Nasabah"
+            app:icon="@drawable/profil"
+            android:paddingHorizontal="50dp"
+            android:layout_marginBottom="10dp"
+            />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/jenis"
+            style="@style/ButtonProfil"
+            android:text="Jenis Sampah"
+            app:icon="@drawable/jenis"
+            android:paddingHorizontal="50dp"
+            android:layout_marginBottom="10dp"
+            />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/bt_cetak"
+            style="@style/ButtonProfil"
+            android:text="Cetak Laporan"
+            app:icon="@drawable/report"
+            android:paddingHorizontal="50dp"
+            />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/keluar"
+            style="@style/ButtonProfil"
+            android:text="Keluar"
+            app:icon="@drawable/power"
+            android:paddingHorizontal="50dp"
+            android:layout_marginTop="100dp"
+            />
+
+    </LinearLayout>
+
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/loading"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        app:trackColor="@color/primary"
+        app:indicatorSize="60dp"
+        app:trackThickness="4dp"
+        android:indeterminate="true"
         />
 
-    <TextView
-        android:id="@+id/email"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/nunito_regular"
-        android:textSize="20sp"
-        android:textColor="@color/black"
-        />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/bt_profil"
-        style="@style/ButtonProfil"
-        android:layout_marginTop="50dp"
-        android:text="Edit Informasi Profil"
-        app:icon="@drawable/profiledit"
-        android:paddingHorizontal="50dp"
-        android:layout_marginBottom="10dp"
-        />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/nasabah"
-        style="@style/ButtonProfil"
-        android:text="Data Nasabah"
-        app:icon="@drawable/profil"
-        android:paddingHorizontal="50dp"
-        android:layout_marginBottom="10dp"
-        />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/jenis"
-        style="@style/ButtonProfil"
-        android:text="Jenis Sampah"
-        app:icon="@drawable/jenis"
-        android:paddingHorizontal="50dp"
-        android:layout_marginBottom="10dp"
-        />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/bt_cetak"
-        style="@style/ButtonProfil"
-        android:text="Cetak Laporan"
-        app:icon="@drawable/report"
-        android:paddingHorizontal="50dp"
-        />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/keluar"
-        style="@style/ButtonProfil"
-        android:text="Keluar"
-        app:icon="@drawable/power"
-        android:paddingHorizontal="50dp"
-        android:layout_marginTop="100dp"
-        />
-
-</LinearLayout>
+</FrameLayout>

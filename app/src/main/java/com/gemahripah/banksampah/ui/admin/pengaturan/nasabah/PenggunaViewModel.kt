@@ -2,54 +2,53 @@ package com.gemahripah.banksampah.ui.admin.pengaturan.nasabah
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gemahripah.banksampah.data.model.pengguna.Pengguna
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.cachedIn
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
-import io.github.jan.supabase.postgrest.from
+import com.gemahripah.banksampah.ui.gabungan.paging.listNasabah.NasabahPagingSource
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 
 class PenggunaViewModel : ViewModel() {
 
-    private val _nasabahList = MutableStateFlow<List<Pengguna>>(emptyList())
-    val nasabahList: StateFlow<List<Pengguna>> = _nasabahList
-
-    private var semuaNasabah: List<Pengguna> = emptyList()
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
-
     private val _totalNasabah = MutableStateFlow(0)
     val totalNasabah: StateFlow<Int> = _totalNasabah
 
-    fun ambilData() {
-        ambilPengguna()
-        ambilTotalNasabah()
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
     }
 
-    private fun ambilPengguna() {
-        viewModelScope.launch(Dispatchers.IO) {
-            _isLoading.value = true
-            try {
-                val penggunaList = SupabaseProvider.client
-                    .from("pengguna")
-                    .select {
-                        filter {
-                            eq("pgnIsAdmin", "False")
-                        }
-                    }
-                    .decodeList<Pengguna>()
-
-                semuaNasabah = penggunaList
-                _nasabahList.value = penggunaList
-            } catch (_: Exception) {
-
-            } finally {
-                _isLoading.value = false
-            }
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+    val pager = searchQuery
+        .debounce(300)
+        .distinctUntilChanged()
+        .flatMapLatest { query ->
+            Pager(
+                PagingConfig(
+                pageSize = 5,
+                initialLoadSize = 5,
+                enablePlaceholders = false
+            )
+            ) {
+                NasabahPagingSource(query)
+            }.flow
         }
+        .cachedIn(viewModelScope)
+
+    fun ambilData() {
+        ambilTotalNasabah()
     }
 
     private fun ambilTotalNasabah() {
@@ -61,16 +60,5 @@ class PenggunaViewModel : ViewModel() {
                 _totalNasabah.value = 0
             }
         }
-    }
-
-    fun cariPengguna(keyword: String) {
-        val result = if (keyword.isBlank()) {
-            semuaNasabah
-        } else {
-            semuaNasabah.filter {
-                it.pgnNama?.contains(keyword, ignoreCase = true) == true
-            }
-        }
-        _nasabahList.value = result
     }
 }

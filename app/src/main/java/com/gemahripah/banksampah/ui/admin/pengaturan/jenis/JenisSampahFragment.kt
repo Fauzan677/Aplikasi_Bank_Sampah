@@ -51,7 +51,8 @@ class JenisSampahFragment : Fragment(), Reloadable {
 
     override fun reloadData() {
         if (!updateInternetCard()) return
-        binding.swipeRefresh.isRefreshing = true
+        binding.swipeRefresh.isRefreshing = false
+
         viewModel.loadKategori()
     }
 

@@ -1,7 +1,194 @@
 package com.gemahripah.banksampah.ui.admin.pengaturan.nasabah.edit
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.gemahripah.banksampah.data.model.pengguna.Pengguna
+import com.gemahripah.banksampah.data.supabase.SupabaseAdminProvider
+import com.gemahripah.banksampah.data.supabase.SupabaseProvider
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.exception.AuthWeakPasswordException
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class EditPenggunaViewModel : ViewModel() {
-    // TODO: Implement the ViewModel
+
+    private val client get() = SupabaseProvider.client
+    private val admin get() = SupabaseAdminProvider.client
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _toast = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 1)
+    val toast: SharedFlow<String> = _toast
+
+    private val _navigateBack = MutableSharedFlow<Unit>(replay = 0, extraBufferCapacity = 1)
+    val navigateBack: SharedFlow<Unit> = _navigateBack
+
+    private var original: Pengguna? = null
+
+    fun init(pengguna: Pengguna) {
+        original = pengguna
+    }
+
+    fun submitEdit(namaBaru: String, emailBaru: String, passwordBaru: String) {
+        val current = original
+        if (current == null) {
+            _toast.tryEmit("Data pengguna tidak tersedia")
+            return
+        }
+
+        val namaTrim = namaBaru.trim()
+        val emailTrim = emailBaru.trim()
+        val pwdTrim = passwordBaru.trim()
+
+        if (namaTrim.isEmpty() || emailTrim.isEmpty()) {
+            _toast.tryEmit("Nama dan Email tidak boleh kosong")
+            return
+        }
+
+        val isNamaBerubah = namaTrim != (current.pgnNama ?: "")
+        val isEmailBerubah = emailTrim != (current.pgnEmail ?: "")
+        val isPasswordBerubah = pwdTrim.isNotEmpty()
+
+        if (!isNamaBerubah && !isEmailBerubah && !isPasswordBerubah) {
+            _toast.tryEmit("Tidak ada perubahan data")
+            return
+        }
+
+        if (isPasswordBerubah && pwdTrim.length < 6) {
+            _toast.tryEmit("Password minimal 6 karakter")
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLoading.value = true
+            try {
+                // Cek unik hanya saat berubah; case-insensitive, exclude diri sendiri
+                if (isNamaBerubah && isNamaDipakai(namaTrim, current.pgnId!!)) {
+                    _toast.emit("Nama sudah digunakan, gunakan nama lain")
+                    return@launch
+                }
+                if (isEmailBerubah && isEmailDipakai(emailTrim, current.pgnId!!)) {
+                    _toast.emit("Email sudah digunakan, gunakan email lain")
+                    return@launch
+                }
+
+                // Update row aplikasi
+                if (isNamaBerubah || isEmailBerubah) {
+                    client.from("pengguna").update({
+                        if (isNamaBerubah) set("pgnNama", namaTrim)
+                        if (isEmailBerubah) set("pgnEmail", emailTrim)
+                    }) {
+                        filter { eq("pgnId", current.pgnId!!) }
+                    }
+                }
+
+                // Update Auth (email/password)
+                if (isEmailBerubah || isPasswordBerubah) {
+                    try {
+                        admin.auth.admin.updateUserById(uid = current.pgnId!!) {
+                            if (isEmailBerubah) email = emailTrim
+                            if (isPasswordBerubah) password = pwdTrim
+                        }
+                    } catch (e: AuthWeakPasswordException) {
+                        _toast.emit("Password minimal 6 karakter")
+                        return@launch
+                    }
+                }
+
+                // Simpan state baru
+                original = current.copy(
+                    pgnNama = namaTrim,
+                    pgnEmail = emailTrim
+                )
+
+                _toast.emit("Pengguna berhasil diperbarui")
+                _navigateBack.emit(Unit)
+
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (e: Exception) {
+                Log.e("EditPenggunaVM", "Gagal update: ${e.message}", e)
+                _toast.emit("Gagal memperbarui pengguna, periksa koneksi internet")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun deleteUser() {
+        val current = original
+        if (current?.pgnId.isNullOrBlank()) {
+            _toast.tryEmit("Data pengguna tidak tersedia")
+            return
+        }
+        val id = current!!.pgnId!!
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLoading.value = true
+            try {
+                // Hapus row di tabel aplikasi
+                client.from("pengguna").delete {
+                    filter { eq("pgnId", id) }
+                }
+                // Hapus akun di Auth
+                admin.auth.admin.deleteUser(uid = id)
+
+                _toast.emit("Pengguna berhasil dihapus")
+                _navigateBack.emit(Unit)
+            } catch (e: Exception) {
+                Log.e("EditPenggunaVM", "Gagal hapus: ${e.message}", e)
+                _toast.emit("Gagal menghapus pengguna, periksa koneksi internet")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    // --- Cek unik (case-insensitive) dengan ilike + exclude current ID ---
+
+    private suspend fun isNamaDipakai(nama: String, excludeId: String): Boolean {
+        return try {
+            client
+                .from("pengguna")
+                .select(columns = Columns.list("pgnId")) {
+                    filter {
+                        ilike("pgnNama", nama) // exact (case-insensitive)
+                        neq("pgnId", excludeId)
+                    }
+                }
+                .decodeList<Pengguna>()
+                .isNotEmpty()
+        } catch (e: Exception) {
+            Log.e("EditPenggunaVM", "Cek nama unik gagal: ${e.message}", e)
+            false
+        }
+    }
+
+    private suspend fun isEmailDipakai(email: String, excludeId: String): Boolean {
+        return try {
+            client
+                .from("pengguna")
+                .select(columns = Columns.list("pgnId")) {
+                    filter {
+                        eq("pgnEmail", email.trim())   // exact match
+                        neq("pgnId", excludeId)        // exclude diri sendiri
+                    }
+                }
+                .decodeList<Pengguna>()
+                .isNotEmpty()
+        } catch (e: Exception) {
+            Log.e("EditPenggunaVM", "Cek email unik gagal: ${e.message}", e)
+            false
+        }
+    }
 }

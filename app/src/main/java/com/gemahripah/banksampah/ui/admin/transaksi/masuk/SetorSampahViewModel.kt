@@ -9,9 +9,11 @@ import com.gemahripah.banksampah.data.model.transaksi.Transaksi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SetorSampahViewModel : ViewModel() {
 
@@ -29,11 +31,13 @@ class SetorSampahViewModel : ViewModel() {
     var jenisToSatuanMap: Map<String, String> = emptyMap()
 
     fun loadPengguna() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val pengguna = SupabaseProvider.client
                     .from("pengguna")
-                    .select()
+                    .select {
+                        filter { eq("pgnIsAdmin", false) }
+                    }
                     .decodeList<Pengguna>()
                 _penggunaList.value = pengguna
             } catch (e: Exception) {
@@ -43,7 +47,7 @@ class SetorSampahViewModel : ViewModel() {
     }
 
     fun loadSampah() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val data = SupabaseProvider.client
                     .from("sampah")
@@ -52,7 +56,6 @@ class SetorSampahViewModel : ViewModel() {
 
                 namaToIdMap = data.associate { (it.sphJenis ?: "Unknown") to (it.sphId ?: 0L) }
                 jenisToSatuanMap = data.associate { (it.sphJenis ?: "Unknown") to (it.sphSatuan ?: "Unit") }
-
                 _sampahList.value = data
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -71,44 +74,35 @@ class SetorSampahViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val transaksi = Transaksi(
-                    tskIdPengguna = userId,
-                    tskKeterangan = keterangan,
-                    tskTipe = "Masuk"
-                )
+                withContext(Dispatchers.IO) {
+                    val transaksi = Transaksi(tskIdPengguna = userId, tskKeterangan = keterangan, tskTipe = "Masuk")
+                    val inserted = SupabaseProvider.client
+                        .from("transaksi")
+                        .insert(transaksi) { select(Columns.list("tskId")) }
+                        .decodeSingle<Transaksi>()
 
-                val inserted = SupabaseProvider.client
-                    .from("transaksi")
-                    .insert(transaksi) {
-                        select(Columns.list("tskId"))
+                    val transaksiId = inserted.tskId ?: error("Gagal menyimpan transaksi.")
+
+                    // insert detail utama
+                    val detailUtama = DetailTransaksi(
+                        dtlTskId = transaksiId,
+                        dtlSphId = namaToIdMap[inputUtama.first] ?: error("Jenis tidak ditemukan"),
+                        dtlJumlah = inputUtama.second
+                    )
+                    SupabaseProvider.client.from("detail_transaksi").insert(detailUtama)
+
+                    val bulk = inputTambahan.mapNotNull { (jenis, jumlah) ->
+                        val id = namaToIdMap[jenis] ?: return@mapNotNull null
+                        if (jumlah <= 0) return@mapNotNull null
+                        DetailTransaksi(dtlTskId = transaksiId, dtlSphId = id, dtlJumlah = jumlah)
                     }
-                    .decodeSingle<Transaksi>()
-
-                val transaksiId = inserted.tskId ?: return@launch onError("Gagal menyimpan transaksi.")
-
-                val detailUtama = DetailTransaksi(
-                    dtlTskId = transaksiId,
-                    dtlSphId = namaToIdMap[inputUtama.first] ?: 0,
-                    dtlJumlah = inputUtama.second
-                )
-
-                SupabaseProvider.client.from("detail_transaksi").insert(detailUtama)
-
-                inputTambahan.forEach { (jenis, jumlah) ->
-                    val sampahId = namaToIdMap[jenis]
-                    if (sampahId != null && jumlah > 0) {
-                        val detail = DetailTransaksi(
-                            dtlTskId = transaksiId,
-                            dtlSphId = sampahId,
-                            dtlJumlah = jumlah
-                        )
-                        SupabaseProvider.client.from("detail_transaksi").insert(detail)
+                    if (bulk.isNotEmpty()) {
+                        SupabaseProvider.client.from("detail_transaksi").insert(bulk)
                     }
                 }
 
                 onSuccess()
             } catch (e: Exception) {
-                e.printStackTrace()
                 onError(e.message ?: "Terjadi kesalahan.")
             } finally {
                 _isLoading.value = false

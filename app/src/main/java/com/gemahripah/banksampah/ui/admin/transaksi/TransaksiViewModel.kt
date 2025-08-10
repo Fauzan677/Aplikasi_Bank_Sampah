@@ -1,157 +1,48 @@
 package com.gemahripah.banksampah.ui.admin.transaksi
 
 import androidx.lifecycle.*
-import com.gemahripah.banksampah.data.model.pengguna.Pengguna
-import com.gemahripah.banksampah.data.model.transaksi.DetailTransaksi
-import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
-import com.gemahripah.banksampah.data.model.transaksi.Transaksi
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.cachedIn
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
-import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Order
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
-import java.util.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 
 class TransaksiViewModel : ViewModel() {
+    private val _query = MutableStateFlow<String?>(null)
+    private val _startDate = MutableStateFlow<String?>(null)
+    private val _endDate = MutableStateFlow<String?>(null)
 
-    private val client = SupabaseProvider.client
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val pagingData = combine(_query, _startDate, _endDate) { query, start, end ->
+        Triple(query, start, end)
+    }.debounce(300)
+        .distinctUntilChanged()
+        .flatMapLatest { (query, start, end) ->
+        Pager(
+            config = PagingConfig(
+                pageSize = 5,
+                initialLoadSize = 5,
+                enablePlaceholders = false
+            )
+        ) {
+            TransaksiPagingSource(SupabaseProvider.client, query, start, end)
+        }.flow
+    }.cachedIn(viewModelScope)
 
-    private val _riwayatList = MutableLiveData<List<RiwayatTransaksi>>()
-
-    private val _isLoading = MutableLiveData(false)
-    val isLoading: LiveData<Boolean> = _isLoading
-
-    private val _isError = MutableLiveData(false)
-    val isError: LiveData<Boolean> = _isError
-
-    private val _filteredRiwayat = MutableLiveData<List<RiwayatTransaksi>>()
-    val filteredRiwayat: LiveData<List<RiwayatTransaksi>> = _filteredRiwayat
-
-    private var currentQuery: String = ""
-    private var currentStartDate: String? = null
-    private var currentEndDate: String? = null
-
-    fun fetchRiwayat() {
-        _isLoading.value = true
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val transaksiList = client.postgrest.from("transaksi")
-                    .select {
-                        order("created_at", order = Order.DESCENDING)
-                    }
-                    .decodeList<Transaksi>()
-
-                val hasil = transaksiList.map { transaksi ->
-                    val pengguna = client.postgrest.from("pengguna")
-                        .select {
-                            filter { eq("pgnId", transaksi.tskIdPengguna!!) }
-                        }
-                        .decodeSingle<Pengguna>()
-
-                    val totalBerat = if (transaksi.tskTipe == "Masuk") {
-                        client.postgrest.rpc("hitung_total_jumlah", buildJsonObject {
-                            put("tsk_id_input", transaksi.tskId)
-                        }).data.toDoubleOrNull()
-                    } else null
-
-                    val totalHarga = if (transaksi.tskTipe == "Keluar") {
-                        val detailList = client.postgrest.from("detail_transaksi")
-                            .select {
-                                filter { transaksi.tskId?.let { eq("dtlTskId", it) } }
-                            }.decodeList<DetailTransaksi>()
-                        detailList.sumOf { it.dtlJumlah ?: 0.0 }
-                    } else {
-                        client.postgrest.rpc("hitung_total_harga", buildJsonObject {
-                            put("tsk_id_input", transaksi.tskId)
-                        }).data.toDoubleOrNull()
-                    }
-
-                    val tanggalFormatted = try {
-                        OffsetDateTime.parse(transaksi.created_at).format(
-                            DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id"))
-                        )
-                    } catch (_: Exception) {
-                        "Tanggal tidak valid"
-                    }
-
-                    RiwayatTransaksi(
-                        tskId = transaksi.tskId!!,
-                        tskIdPengguna = transaksi.tskIdPengguna,
-                        nama = pengguna.pgnNama ?: "Tidak Diketahui",
-                        tanggal = tanggalFormatted,
-                        tipe = transaksi.tskTipe ?: "Masuk",
-                        tskKeterangan = transaksi.tskKeterangan,
-                        totalBerat = totalBerat,
-                        totalHarga = totalHarga,
-                        hari = null,
-                        createdAt = transaksi.created_at ?: ""
-                    )
-                }
-
-                withContext(Dispatchers.Main) {
-                    _riwayatList.value = hasil
-                    applyFilters()
-                    _isError.value = false
-                    _isLoading.value = false
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    _isError.value = true
-                    _isLoading.value = false
-                }
-            }
-        }
-    }
-
-    fun setSearchQuery(query: String) {
-        currentQuery = query
-        applyFilters()
+    fun setSearchQuery(query: String?) {
+        _query.value = query?.trim() ?: ""
     }
 
     fun setStartDate(date: String?) {
-        currentStartDate = date
-        applyFilters()
+        _startDate.value = date
     }
 
     fun setEndDate(date: String?) {
-        currentEndDate = date
-        applyFilters()
-    }
-
-    private fun applyFilters() {
-        val all = _riwayatList.value ?: return
-
-        val filtered = all.filter { riwayat ->
-            val matchNama = riwayat.nama.lowercase(Locale.getDefault())
-                .contains(currentQuery.lowercase(Locale.getDefault()))
-
-            val itemDate = try {
-                OffsetDateTime.parse(riwayat.createdAt)
-            } catch (_: Exception) {
-                null
-            }
-
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")
-
-            val matchStart = currentStartDate?.let {
-                val start = OffsetDateTime.parse("${it}T00:00:00+07:00", formatter)
-                itemDate?.isAfter(start.minusNanos(1)) ?: true
-            } ?: true
-
-            val matchEnd = currentEndDate?.let {
-                val end = OffsetDateTime.parse("${it}T23:59:59+07:00", formatter)
-                itemDate?.isBefore(end.plusNanos(1)) ?: true
-            } ?: true
-
-            matchNama && matchStart && matchEnd
-        }
-
-        _filteredRiwayat.value = filtered
+        _endDate.value = date
     }
 }

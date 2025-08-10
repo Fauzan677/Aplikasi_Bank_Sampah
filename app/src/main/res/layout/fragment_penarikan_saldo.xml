@@ -107,7 +107,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="20dp"
                 android:hint="Masukkan Jumlah Penarikan"
-                android:inputType="numberDecimal"
+                android:inputType="number"
                 android:background="@drawable/et_border"
                 android:padding="20dp"
                 android:layout_marginTop="10dp"

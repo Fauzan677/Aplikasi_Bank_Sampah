@@ -3,8 +3,6 @@ package com.gemahripah.banksampah.ui.admin.transaksi
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -14,17 +12,22 @@ import androidx.activity.addCallback
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.paging.LoadState
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.databinding.FragmentTransaksiBinding
 import com.gemahripah.banksampah.ui.admin.AdminActivity
-import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatTransaksiAdapter
+import com.gemahripah.banksampah.ui.gabungan.adapter.common.LoadingStateAdapter
+import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatPagingAdapter
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
 import com.google.android.material.datepicker.MaterialDatePicker
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.Locale
 import java.time.OffsetDateTime
@@ -35,8 +38,9 @@ class TransaksiFragment : Fragment(), Reloadable {
     private var _binding: FragmentTransaksiBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var adapter: RiwayatTransaksiAdapter
     private val viewModel: TransaksiViewModel by viewModels()
+
+    private lateinit var pagingAdapter: RiwayatPagingAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -49,32 +53,27 @@ class TransaksiFragment : Fragment(), Reloadable {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setupRecyclerView()
         setupNavigation()
-        setupObservers()
         setupSearchFilter()
         setupDatePickers()
         handleBackButton()
 
         binding.swipeRefresh.setOnRefreshListener {
-            if (!updateInternetCard()) return@setOnRefreshListener
             reloadData()
-            binding.swipeRefresh.isRefreshing = false
         }
 
         binding.koneksiRiwayat.setOnClickListener {
             binding.koneksiRiwayat.visibility = View.GONE
-            binding.progressRiwayat.visibility = View.VISIBLE
-            binding.loadingOverlay.visibility = View.VISIBLE
+            binding.loading.visibility = View.VISIBLE
 
-            Handler(Looper.getMainLooper()).postDelayed({
-                viewModel.fetchRiwayat()
-            }, 1000)
+            lifecycleScope.launch {
+                delay(1000L)
+                pagingAdapter.retry()
+            }
         }
 
-        if (!updateInternetCard()) return
-
-        viewModel.fetchRiwayat()
+        updateInternetCard()
+        setupRecyclerView()
     }
 
     private fun setupNavigation() {
@@ -88,27 +87,39 @@ class TransaksiFragment : Fragment(), Reloadable {
     }
 
     private fun setupRecyclerView() {
-        binding.rvRiwayat.layoutManager = LinearLayoutManager(requireContext())
-        adapter = RiwayatTransaksiAdapter(emptyList()) { riwayat ->
+        pagingAdapter = RiwayatPagingAdapter { riwayat ->
             val action = TransaksiFragmentDirections
                 .actionNavigationTransaksiToDetailTransaksiFragment(riwayat)
             findNavController().navigate(action)
         }
-        binding.rvRiwayat.adapter = adapter
-    }
 
-    private fun setupObservers() {
-        viewModel.filteredRiwayat.observe(viewLifecycleOwner) { list ->
-            adapter.updateData(list)
+        binding.rvRiwayat.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvRiwayat.adapter = pagingAdapter.withLoadStateHeaderAndFooter(
+            header = LoadingStateAdapter { pagingAdapter.retry() },
+            footer = LoadingStateAdapter { pagingAdapter.retry() }
+        )
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                pagingAdapter.loadStateFlow.collectLatest { loadState ->
+                    val isLoading = loadState.refresh is LoadState.Loading
+                    val isError   = loadState.refresh is LoadState.Error
+                    val isEmpty   = loadState.refresh is LoadState.NotLoading && pagingAdapter.itemCount == 0
+
+                    binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+                    binding.rvRiwayat.visibility = if (!isLoading && !isError) View.VISIBLE else View.GONE
+                    binding.koneksiRiwayat.visibility = if (isError) View.VISIBLE else View.GONE
+                    binding.riwayatKosong.visibility = if (isEmpty) View.VISIBLE else View.GONE
+                }
+            }
         }
 
-        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.progressRiwayat.visibility = if (isLoading) View.VISIBLE else View.GONE
-            binding.loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
-        }
-
-        viewModel.isError.observe(viewLifecycleOwner) { isError ->
-            binding.koneksiRiwayat.visibility = if (isError) View.VISIBLE else View.GONE
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.pagingData.collectLatest { data ->
+                    pagingAdapter.submitData(data)
+                }
+            }
         }
     }
 
@@ -211,13 +222,17 @@ class TransaksiFragment : Fragment(), Reloadable {
     override fun reloadData() {
         if (!updateInternetCard()) return
 
-        viewModel.fetchRiwayat()
+        viewModel.setSearchQuery("")
+        viewModel.setStartDate(null)
+        viewModel.setEndDate(null)
+        pagingAdapter.refresh()
+
+        binding.scrollView.post { binding.scrollView.scrollTo(0, 0) }
 
         binding.searchRiwayat.setText("")
         binding.searchRiwayat.clearFocus()
-        binding.scrollView.post {
-            binding.scrollView.scrollTo(0, 0)
-        }
+        binding.startDateEditText.setText("")
+        binding.endDateEditText.setText("")
         binding.swipeRefresh.isRefreshing = false
     }
 

@@ -58,6 +58,8 @@ dependencies {
 
     // Ktor (sesuai kebutuhan)
     implementation("io.ktor:ktor-client-android:3.1.2")
+    implementation("androidx.paging:paging-runtime:$3.3.6")
+    implementation("androidx.core:core-splashscreen:1.0.0")
 
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
@@ -66,6 +68,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.8.8")
     implementation("androidx.exifinterface:exifinterface:1.4.1")
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation(libs.androidx.paging.common.android)
     annotationProcessor ("com.github.bumptech.glide:compiler:4.16.0")
 
     implementation("org.apache.poi:poi-ooxml:5.2.3")

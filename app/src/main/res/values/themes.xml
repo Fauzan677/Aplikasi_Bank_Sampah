@@ -1,5 +1,4 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
     <style name="Base.Theme.BankSampah" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorSecondary">@color/secondary</item>
@@ -8,8 +7,18 @@
         <item name="colorOnSurface">@color/onSurface</item>
         <item name="colorControlActivated">@color/secondary</item>
         <item name="android:windowBackground">@color/white</item>
+        <item name="android:statusBarColor">@color/light_gray</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="bottomNavigationStyle">@style/BottomNavigationViewStyle</item>
+        <item name="windowSplashScreenBackground">@color/white</item>
     </style>
 
     <style name="Theme.BankSampah" parent="Base.Theme.BankSampah" />
+
+    <style name="Theme.BankSampah.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/white</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/logobanksampah_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.BankSampah</item>
+    </style>
 
 </resources>

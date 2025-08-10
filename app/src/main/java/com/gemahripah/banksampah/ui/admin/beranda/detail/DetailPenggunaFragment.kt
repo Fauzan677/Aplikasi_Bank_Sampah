@@ -7,9 +7,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.paging.LoadState
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
@@ -17,10 +19,14 @@ import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.databinding.FragmentDetailPenggunaBinding
 import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.ui.admin.beranda.adapter.TotalSampahAdapter
+import com.gemahripah.banksampah.ui.gabungan.adapter.common.LoadingStateAdapter
+import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatPagingAdapter
 import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatTransaksiAdapter
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 
 class DetailPenggunaFragment : Fragment(), Reloadable {
@@ -29,6 +35,8 @@ class DetailPenggunaFragment : Fragment(), Reloadable {
     private val binding get() = _binding!!
 
     private val viewModel: DetailPenggunaViewModel by viewModels()
+
+    private lateinit var pagingAdapter: RiwayatPagingAdapter
 
     private var pengguna: Pengguna? = null
 
@@ -43,8 +51,6 @@ class DetailPenggunaFragment : Fragment(), Reloadable {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        if (!updateInternetCard()) return
-
         pengguna = arguments?.let { DetailPenggunaFragmentArgs.fromBundle(it).pengguna }
 
         setupUI()
@@ -52,18 +58,26 @@ class DetailPenggunaFragment : Fragment(), Reloadable {
         setupRecyclerViews()
         setupObservers()
 
-        pengguna?.pgnId?.let { viewModel.loadData(it) }
-
         binding.swipeRefresh.setOnRefreshListener {
             reloadData()
-            binding.swipeRefresh.isRefreshing = false
+        }
+
+        if (!updateInternetCard()) return
+        pengguna?.pgnId?.let {
+            viewModel.loadData(it)
+            viewModel.loadPagingRiwayat(it)
         }
     }
 
     override fun reloadData() {
         if (!updateInternetCard()) return
-        pengguna?.pgnId?.let { viewModel.loadData(it) }
+        pengguna?.pgnId?.let {
+            viewModel.loadData(it)
+            pagingAdapter.refresh()
+        }
+        binding.swipeRefresh.isRefreshing = false
     }
+
 
     private fun setupUI() {
         binding.nama.text = pengguna?.pgnNama ?: "Tidak diketahui"
@@ -90,6 +104,18 @@ class DetailPenggunaFragment : Fragment(), Reloadable {
     private fun setupRecyclerViews() {
         binding.rvTotal.layoutManager = GridLayoutManager(requireContext(), 2)
         binding.rvRiwayat.layoutManager = LinearLayoutManager(requireContext())
+
+        pagingAdapter = RiwayatPagingAdapter { item ->
+            val action = DetailPenggunaFragmentDirections
+                .actionDetailPenggunaFragmentToDetailTransaksiFragment(item)
+            findNavController().navigate(action)
+        }
+
+        binding.rvRiwayat.adapter = pagingAdapter.withLoadStateHeaderAndFooter(
+            header = LoadingStateAdapter { pagingAdapter.retry() },
+            footer = LoadingStateAdapter { pagingAdapter.retry() }
+        )
+
         binding.rvRiwayat.post {
             val maxHeight = resources.getDimensionPixelSize(R.dimen.recycler_max_height)
             if (binding.rvRiwayat.height > maxHeight) {
@@ -102,48 +128,52 @@ class DetailPenggunaFragment : Fragment(), Reloadable {
     @SuppressLint("SetTextI18n")
     private fun setupObservers() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+
                 launch {
-                    viewModel.saldo.collect { binding.nominal.text = " Rp $it" }
+                    viewModel.saldo.collect {
+                        binding.nominal.text = " Rp $it"
+                    }
                 }
 
                 launch {
-                    viewModel.totalSampah
-                        .combine(viewModel.isLoading) { list, loading -> list to loading }
-                        .collect { (list, loading) ->
-                            if (list.isNotEmpty()) {
-                                binding.rvTotal.adapter = TotalSampahAdapter(list)
-                                binding.rvTotal.visibility = View.VISIBLE
-                                binding.textKosongTotal.visibility = View.GONE
-                            } else if (!loading) {
-                                binding.rvTotal.visibility = View.GONE
-                                binding.textKosongTotal.visibility = View.VISIBLE
-                            }
+                    viewModel.pagingData.collectLatest { paging ->
+                        pagingAdapter.submitData(paging)
+                    }
+                }
+
+                launch {
+                    viewModel.totalSampah.collectLatest { list ->
+                        if (list.isNotEmpty()) {
+                            binding.rvTotal.adapter = TotalSampahAdapter(list)
+                            binding.rvTotal.visibility = View.VISIBLE
+                            binding.textKosongTotal.visibility = View.GONE
+                        } else {
+                            binding.rvTotal.visibility = View.GONE
+                            binding.textKosongTotal.visibility = View.VISIBLE
                         }
+                    }
                 }
 
                 launch {
-                    viewModel.riwayatTransaksi
-                        .combine(viewModel.isLoading) { list, loading -> list to loading }
-                        .collect { (list, loading) ->
-                            if (list.isNotEmpty()) {
-                                binding.rvRiwayat.adapter = RiwayatTransaksiAdapter(list) { riwayat ->
-                                    val action = DetailPenggunaFragmentDirections
-                                        .actionDetailPenggunaFragmentToDetailTransaksiFragment(riwayat)
-                                    findNavController().navigate(action)
+                    pagingAdapter.loadStateFlow
+                        .distinctUntilChangedBy { it.refresh }
+                        .collectLatest { loadState ->
+                            when (loadState.refresh) {
+                                is LoadState.Loading -> showLoading(true)
+                                is LoadState.NotLoading -> showLoading(false)
+                                is LoadState.Error -> {
+                                    showLoading(false)
                                 }
-                                binding.rvRiwayat.visibility = View.VISIBLE
-                                binding.textKosongRiwayat.visibility = View.GONE
-                            } else if (!loading) {
-                                binding.rvRiwayat.visibility = View.GONE
-                                binding.textKosongRiwayat.visibility = View.VISIBLE
                             }
                         }
                 }
 
                 launch {
-                    viewModel.isLoading.collect { isLoading ->
-                        showLoading(isLoading)
+                    pagingAdapter.loadStateFlow.collectLatest { loadStates ->
+                        val isEmpty = loadStates.refresh is LoadState.NotLoading &&
+                                pagingAdapter.itemCount == 0
+                        binding.textKosongRiwayat.visibility = if (isEmpty) View.VISIBLE else View.GONE
                     }
                 }
             }

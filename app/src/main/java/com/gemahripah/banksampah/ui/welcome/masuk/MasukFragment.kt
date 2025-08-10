@@ -23,13 +23,17 @@ import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentMasukBinding
 import com.gemahripah.banksampah.ui.nasabah.NasabahActivity
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.exceptions.BadRequestRestException
+import io.github.jan.supabase.exceptions.HttpRequestException
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.io.IOException
+import java.net.UnknownHostException
 
 class MasukFragment : Fragment() {
 
@@ -93,15 +97,14 @@ class MasukFragment : Fragment() {
                     }
 
                     navigateToNextScreen(pengguna)
-                } catch (e: BadRequestRestException) {
-                    logError("BadRequest", e)
-                    showToast("Email atau Password salah")
-                } catch (e: RestException) {
-                    logError("RestException", e)
-                    showToast("Gagal masuk, periksa koneksi internet")
-                } catch (e: Exception) {
-                    logError("Exception", e)
-                    showToast("Gagal masuk, periksa koneksi internet")
+                } catch (e: HttpRequestException) {
+                    showToast("Tidak ada koneksi internet")
+                } catch (e: AuthRestException) {
+                    if (e.error.contains("invalid_credentials", ignoreCase = true)) {
+                        showToast("Email atau Password salah")
+                    } else {
+                        showToast("Terjadi kesalahan saat login")
+                    }
                 } finally {
                     showLoading(false)
                 }

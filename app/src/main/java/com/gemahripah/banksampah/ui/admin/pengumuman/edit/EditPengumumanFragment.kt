@@ -1,10 +1,11 @@
 package com.gemahripah.banksampah.ui.admin.pengumuman.edit
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,32 +14,35 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengumuman.Pengumuman
-import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentTambahPengumumanBinding
 import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import com.gemahripah.banksampah.utils.reduceFileImage
-import com.gemahripah.banksampah.utils.uriToFile
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.storage.storage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 
-class EditPengumumanFragment : Fragment() {
+class EditPengumumanFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentTambahPengumumanBinding? = null
     private val binding get() = _binding!!
+
+    private val vm: EditPengumumanViewModel by viewModels()
 
     private lateinit var cameraLauncher: ActivityResultLauncher<Uri>
     private lateinit var galleryLauncher: ActivityResultLauncher<PickVisualMediaRequest>
@@ -46,7 +50,6 @@ class EditPengumumanFragment : Fragment() {
     private var currentImageUri: Uri? = null
 
     private var existingImageUrl: String? = null
-    private var gambarDihapus: Boolean = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -56,6 +59,7 @@ class EditPengumumanFragment : Fragment() {
         return binding.root
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -65,81 +69,116 @@ class EditPengumumanFragment : Fragment() {
 
         binding.judul.text = "Edit Pengumuman"
 
-        binding.gambarFile.setOnClickListener {
-            showImagePickerDialog()
-        }
-
         val pengumuman = arguments?.let {
             EditPengumumanFragmentArgs.fromBundle(it).pengumuman
         }
+        if (pengumuman == null) {
+            toast("Data tidak ditemukan")
+            findNavController().navigateUp()
+            return
+        }
 
-        pengumuman?.let {
-            loadPengumumanData(it)
-            binding.konfirmasi.setOnClickListener {
-                editPengumuman(pengumuman)
+        // Prefill UI
+        loadPengumumanData(pengumuman)
+        // Init VM state
+        vm.initFromPengumuman(pengumuman)
+
+        // Actions
+        binding.gambarFile.setOnClickListener { showImagePickerDialog() }
+        binding.selectedImageView.setOnLongClickListener {
+            showDeleteImageConfirmation()
+            true
+        }
+        binding.konfirmasi.setOnClickListener { validateAndSubmit() }
+
+        collectVm()
+    }
+
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+
+        if (currentImageUri == null && !existingImageUrl.isNullOrEmpty()) {
+            binding.selectedImageView.visibility = View.VISIBLE
+            binding.uploadText.visibility = View.GONE
+            Glide.with(requireContext())
+                .load("${existingImageUrl}?v=${System.currentTimeMillis()}")
+                .into(binding.selectedImageView)
+        }
+    }
+
+    private fun collectVm() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { vm.isLoading.collect { showLoading(it) } }
+                launch { vm.toast.collect { toast(it) } }
+
+                launch {
+                    vm.navigateBack.collect {
+                        findNavController().popBackStack(R.id.navigation_pengumuman, false)
+                    }
+                }
             }
         }
     }
 
-    private fun loadPengumumanData(pengumuman: Pengumuman) {
-        binding.nama.setText(pengumuman.pmnJudul)
-        binding.edtTextarea.setText(pengumuman.pmnIsi)
+    private fun loadPengumumanData(p: Pengumuman) {
+        binding.nama.setText(p.pmnJudul)
+        binding.edtTextarea.setText(p.pmnIsi)
 
-        existingImageUrl = pengumuman.pmnGambar
-
-        if (!pengumuman.pmnGambar.isNullOrEmpty()) {
+        existingImageUrl = p.pmnGambar
+        if (!existingImageUrl.isNullOrEmpty()) {
             binding.selectedImageView.visibility = View.VISIBLE
             binding.uploadText.visibility = View.GONE
-            Glide.with(requireContext())
-                .load("${pengumuman.pmnGambar}?v=${pengumuman.updated_at}")
-                .into(binding.selectedImageView)
-        }
 
-        binding.selectedImageView.setOnLongClickListener {
-            showDeleteImageConfirmation()
-            true
+            if (!updateInternetCard()) return
+            Glide.with(requireContext())
+                .load("${existingImageUrl}?v=${p.updated_at}")
+                .into(binding.selectedImageView)
+        } else {
+            binding.selectedImageView.visibility = View.GONE
+            binding.uploadText.visibility = View.VISIBLE
         }
     }
 
     private fun showDeleteImageConfirmation() {
         if (currentImageUri == null && existingImageUrl.isNullOrEmpty()) {
-            showToast("Belum ada gambar yang dipilih")
+            toast("Belum ada gambar yang dipilih")
             return
         }
-
         AlertDialog.Builder(requireContext())
             .setTitle("Hapus Gambar")
             .setMessage("Apakah Anda yakin ingin menghapus gambar yang dipilih?")
             .setPositiveButton("Hapus") { _, _ ->
                 clearSelectedImage()
+                vm.markImageDeleted(true)
             }
             .setNegativeButton("Batal", null)
             .show()
     }
 
     private fun clearSelectedImage() {
+        currentImageUri = null
+        existingImageUrl = null
         binding.selectedImageView.setImageDrawable(null)
         binding.selectedImageView.visibility = View.GONE
         binding.uploadText.visibility = View.VISIBLE
-
-        gambarDihapus = true
-        currentImageUri = null
-        existingImageUrl = null
-
-        showToast("Gambar dihapus")
+        toast("Gambar dihapus")
     }
+
+    // --- Activity Result setup ---
 
     private fun setupPermissionLauncher() {
         requestCameraPermissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
-        ) { isGranted ->
-            if (isGranted) launchCamera()
-            else showToast("Izin kamera dibutuhkan")
+        ) { granted ->
+            if (granted) launchCamera() else toast("Izin kamera dibutuhkan")
         }
     }
 
     private fun setupCameraLauncher() {
-        cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        cameraLauncher = registerForActivityResult(
+            ActivityResultContracts.TakePicture()
+        ) { success ->
             if (success && currentImageUri != null) {
                 updateSelectedImage(currentImageUri!!)
             }
@@ -147,13 +186,17 @@ class EditPengumumanFragment : Fragment() {
     }
 
     private fun setupGalleryLauncher() {
-        galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        galleryLauncher = registerForActivityResult(
+            ActivityResultContracts.PickVisualMedia()
+        ) { uri ->
             uri?.let { updateSelectedImage(it) }
         }
     }
 
     private fun updateSelectedImage(uri: Uri) {
+        vm.markImageDeleted(false) // ada gambar baru, batal status "hapus"
         currentImageUri = uri
+        existingImageUrl = null // preview pakai URI baru
         binding.selectedImageView.setImageURI(uri)
         binding.selectedImageView.visibility = View.VISIBLE
         binding.uploadText.visibility = View.GONE
@@ -173,8 +216,8 @@ class EditPengumumanFragment : Fragment() {
     }
 
     private fun openCamera() {
-        if (requireContext().checkSelfPermission(android.Manifest.permission.CAMERA) ==
-            PackageManager.PERMISSION_GRANTED
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+            == PackageManager.PERMISSION_GRANTED
         ) {
             launchCamera()
         } else {
@@ -183,15 +226,14 @@ class EditPengumumanFragment : Fragment() {
     }
 
     private fun launchCamera() {
-        val context = requireContext()
-        val imageFile = File.createTempFile("IMG_", ".jpg", context.cacheDir).apply {
+        val ctx = requireContext()
+        val imageFile = File.createTempFile("IMG_", ".jpg", ctx.cacheDir).apply {
             createNewFile()
             deleteOnExit()
         }
-
         val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
+            ctx,
+            "${ctx.packageName}.fileprovider",
             imageFile
         )
         currentImageUri = uri
@@ -202,125 +244,29 @@ class EditPengumumanFragment : Fragment() {
         galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
 
-    private fun editPengumuman(pengumuman: Pengumuman) {
+    private fun validateAndSubmit() {
         val judul = binding.nama.text.toString()
         val isi = binding.edtTextarea.text.toString()
 
         if (judul.isBlank() || isi.isBlank()) {
-            showToast("Judul dan isi wajib diisi")
+            toast("Judul dan isi wajib diisi")
             return
         }
 
-        showLoading(true)
-        lifecycleScope.launch {
-            val supabase = SupabaseProvider.client
-            try {
-                var imageUrl = existingImageUrl
-                var imageChanged = false
-
-                if (gambarDihapus) {
-                    hapusGambarDariStorage(supabase, existingImageUrl)
-                    imageUrl = null
-                    imageChanged = true
-                } else if (currentImageUri != null) {
-                    val result = handleImageUpload(currentImageUri, existingImageUrl)
-                    imageUrl = result.first
-                    imageChanged = result.second
+        viewLifecycleOwner.lifecycleScope.launch {
+            val imageBytes: ByteArray? = withContext(Dispatchers.IO) {
+                currentImageUri?.let { uri ->
+                    val file = copyUriToTempFile(uri, requireContext()).reduceFileImage()
+                    val bytes = file.readBytes()
+                    file.delete()
+                    bytes
                 }
-
-                val needsUpdate = shouldUpdatePengumuman(judul, isi, imageChanged, pengumuman)
-
-                if (needsUpdate) {
-                    updatePengumumanData(pengumuman, judul, isi, imageUrl)
-                    showToast("Pengumuman berhasil diupdate")
-                } else {
-                    showToast("Tidak ada perubahan yang disimpan")
-                }
-
-                showLoading(false)
-                findNavController().navigate(R.id.action_editPengumumanFragment_to_navigation_pengumuman)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                showToast("Gagal menyimpan, periksa koneksi internet")
-                showLoading(false)
             }
+            vm.submitEdit(judul, isi, imageBytes)
         }
     }
 
-    private suspend fun hapusGambarDariStorage(supabase: SupabaseClient, url: String?) {
-        if (url.isNullOrBlank()) return
-
-        val fileName = url.substringAfterLast("/")
-        val path = "images/$fileName"
-        val bucket = supabase.storage.from("pengumuman")
-
-        try {
-            bucket.delete(path)
-        } catch (e: Exception) {
-            Log.e("HapusGambar", "Gagal hapus gambar: ${e.message}")
-        }
-    }
-
-    private suspend fun handleImageUpload(
-        uri: Uri?,
-        existingUrl: String?
-    ): Pair<String?, Boolean> {
-        val supabase = SupabaseProvider.client
-        if (uri == null) return Pair(existingUrl, false)
-
-        val file = copyUriToTempFile(uri, requireContext()).reduceFileImage()
-        val byteArray = file.readBytes()
-        file.delete()
-
-        val bucket = supabase.storage.from("pengumuman")
-        return try {
-            val imageUrl = if (existingUrl.isNullOrEmpty()) {
-                val fileName = "images/${file.name}"
-                bucket.upload(fileName, byteArray) { upsert = false }
-                bucket.publicUrl(fileName)
-            } else {
-                val fileName = existingUrl.substringAfterLast("/")
-                bucket.update("images/$fileName", byteArray) { upsert = false }
-                bucket.publicUrl("images/$fileName")
-            }
-            Pair(imageUrl, true)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Pair(existingUrl, false)
-        }
-    }
-
-    private fun shouldUpdatePengumuman(
-        judul: String,
-        isi: String,
-        imageChanged: Boolean,
-        pengumuman: Pengumuman
-    ): Boolean {
-        return judul != pengumuman.pmnJudul ||
-                isi != pengumuman.pmnIsi ||
-                imageChanged
-    }
-
-    private suspend fun updatePengumumanData(
-        pengumuman: Pengumuman,
-        judul: String,
-        isi: String,
-        imageUrl: String?
-    ) {
-        val supabase = SupabaseProvider.client
-        supabase.from("pengumuman").update({
-            set("updated_at", OffsetDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSSXXX")))
-            set("pmnJudul", judul)
-            set("pmnIsi", isi)
-            set("pmnGambar", imageUrl)
-            set("pmnIsPublic", true)
-            set("pmnPin", pengumuman.pmnPin)
-        }) {
-            filter {
-                pengumuman.pmnId?.let { eq("pmnId", it) }
-            }
-        }
-    }
+    // --- Utils ---
 
     private fun copyUriToTempFile(uri: Uri, context: Context): File {
         val file = File.createTempFile("selected_image", ".jpg", context.cacheDir)
@@ -332,18 +278,24 @@ class EditPengumumanFragment : Fragment() {
         return file
     }
 
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        return isConnected
+    }
+
     private fun showLoading(isLoading: Boolean) {
         binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
         binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
         binding.konfirmasi.isEnabled = !isLoading
     }
 
-    private fun showToast(message: String) {
-        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
-    }
+    private fun toast(msg: String) =
+        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
 
     override fun onDestroyView() {
-        super.onDestroyView()
         _binding = null
+        super.onDestroyView()
     }
 }

@@ -24,7 +24,7 @@
                 android:id="@+id/card_saldo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="10dp"
                 android:layout_marginHorizontal="20dp"
                 app:cardCornerRadius="10dp"
                 app:cardElevation="2dp"
@@ -262,19 +262,51 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rv_riwayat"
                     android:layout_width="match_parent"
-                    android:layout_height="610dp"
+                    android:layout_height="600dp"
                     android:nestedScrollingEnabled="false"
                     />
 
                 <com.google.android.material.progressindicator.CircularProgressIndicator
-                    android:id="@+id/loading_riwayat"
+                    android:id="@+id/loading"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     app:trackColor="@color/primary"
                     app:trackThickness="4dp"
                     android:indeterminate="true"
-                    android:layout_marginVertical="20dp"
+                    android:layout_marginTop="10dp"
+                    />
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/koneksi_riwayat"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="30dp"
+                    app:cardElevation="4dp"
+                    app:cardCornerRadius="8dp"
+                    android:layout_gravity="center_horizontal"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="16dp"
+                        android:text="Periksa koneksi internet Anda dan coba lagi"
+                        android:textAlignment="center" />
+
+                </androidx.cardview.widget.CardView>
+
+                <TextView
+                    android:id="@+id/riwayat_kosong"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Data tidak ditemukan"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="@font/nunito_regular"
+                    android:textColor="@color/black"
+                    android:textSize="14sp"
+                    android:visibility="gone"
                     />
 
             </FrameLayout>

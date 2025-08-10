@@ -3,6 +3,8 @@ package com.gemahripah.banksampah.ui.welcome.daftar
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.text.InputType
+import android.util.Log
+import android.util.Patterns
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -10,12 +12,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.view.isInvisible
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
+import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentDaftarBinding
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.exception.AuthRestException
+import io.github.jan.supabase.auth.exception.AuthWeakPasswordException
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.exceptions.BadRequestRestException
 import io.github.jan.supabase.exceptions.RestException
@@ -30,7 +36,8 @@ class DaftarFragment : Fragment() {
     private val binding get() = _binding!!
 
     private var isPasswordVisible = false
-    private val supabaseClient = SupabaseProvider.client
+
+    private val viewModel: DaftarViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -65,67 +72,64 @@ class DaftarFragment : Fragment() {
     }
 
     private fun validateInput(nama: String, email: String, password: String): Boolean {
-        return if (nama.isEmpty() || email.isEmpty() || password.isEmpty()) {
+        if (nama.isEmpty() || email.isEmpty() || password.isEmpty()) {
             showToast("Semua field harus diisi")
-            false
-        } else true
+            return false
+        }
+
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            showToast("Format email tidak valid")
+            return false
+        }
+
+        return true
     }
+
 
     private suspend fun handleRegistrationResult(nama: String, email: String, password: String) {
         try {
-            registerUser(email, password)
-
-            val user = supabaseClient.auth.currentSessionOrNull()?.user
-
-            if (user != null) {
-                insertUserToDatabase(nama, email)
-                supabaseClient.auth.signOut()
-
+            if (viewModel.isNamaExists(nama)) {
+                Log.d("DaftarFragment", "Nama sudah digunakan, proses dihentikan.")
                 withContext(Dispatchers.Main) {
-                    showToast("Pendaftaran berhasil")
-                    findNavController().navigate(R.id.action_daftarFragment_to_landingFragment)
+                    showToast("Nama sudah digunakan, gunakan nama lain")
                 }
-            } else {
-                withContext(Dispatchers.Main) {
-                    showToast("Gagal mendapatkan data pengguna")
-                }
+                return
             }
-        } catch (e: BadRequestRestException) {
+
+            Log.d("DaftarFragment", "Lanjut ke registerUser()")
+
+            viewModel.registerUser(email, password)
+            viewModel.insertUserToDatabase(nama, email)
+            viewModel.signOut()
+
             withContext(Dispatchers.Main) {
-                showToast("Email sudah digunakan")
-            }
-        } catch (e: RestException) {
-            withContext(Dispatchers.Main) {
-                showToast("Gagal daftar, periksa koneksi internet")
+                showToast("Pendaftaran berhasil")
+                findNavController().navigate(R.id.action_daftarFragment_to_landingFragment)
             }
         } catch (e: Exception) {
+            Log.e("DaftarFragment", "Registration error final: ${e.message}", e)
             withContext(Dispatchers.Main) {
-                showToast("Gagal daftar, periksa koneksi internet")
+                when {
+                    e is AuthWeakPasswordException -> {
+                        showToast("Password minimal 6 karakter")
+                    }
+
+                    e is AuthRestException && e.error.contains("already_exists", ignoreCase = true) ->
+                        showToast("Email sudah digunakan")
+
+                    e.message?.contains("Nama sudah digunakan", ignoreCase = true) == true ->
+                        showToast("Nama sudah digunakan, gunakan nama lain")
+
+                    e is BadRequestRestException ->
+                        showToast("Email tidak valid atau sudah terdaftar")
+
+                    else -> showToast("Gagal daftar, periksa koneksi internet")
+                }
             }
         } finally {
             withContext(Dispatchers.Main) {
                 showLoading(false)
             }
-        }
-    }
-
-    private suspend fun registerUser(email: String, password: String) {
-        supabaseClient.auth.signUpWith(Email) {
-            this.email = email
-            this.password = password
-        }
-    }
-
-    private suspend fun insertUserToDatabase(nama: String, email: String) {
-        try {
-            supabaseClient.from("pengguna").insert(
-                mapOf(
-                    "pgnNama" to nama,
-                    "pgnEmail" to email
-                )
-            )
-        } catch (e: Exception) {
-            throw Exception("Gagal menyimpan data pengguna")
         }
     }
 
@@ -160,6 +164,10 @@ class DaftarFragment : Fragment() {
         }
         isPasswordVisible = !isPasswordVisible
         binding.password.setSelection(selection)
+    }
+
+    private fun isValidEmail(email: String): Boolean {
+        return Patterns.EMAIL_ADDRESS.matcher(email).matches()
     }
 
     private fun showLoading(isLoading: Boolean) {

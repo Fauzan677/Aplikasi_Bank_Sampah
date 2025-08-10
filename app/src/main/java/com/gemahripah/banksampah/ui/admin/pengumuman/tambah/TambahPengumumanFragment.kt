@@ -14,12 +14,14 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentTambahPengumumanBinding
 import com.gemahripah.banksampah.utils.reduceFileImage
-import com.gemahripah.banksampah.utils.uriToFile
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +34,8 @@ class TambahPengumumanFragment : Fragment() {
 
     private var _binding: FragmentTambahPengumumanBinding? = null
     private val binding get() = _binding!!
+
+    private val vm: TambahPengumumanViewModel by viewModels()
 
     private lateinit var cameraLauncher: ActivityResultLauncher<Uri>
     private lateinit var galleryLauncher: ActivityResultLauncher<PickVisualMediaRequest>
@@ -53,6 +57,23 @@ class TambahPengumumanFragment : Fragment() {
         setupCameraLauncher()
         setupGalleryLauncher()
         setupViewListeners()
+        collectVm()
+    }
+
+    private fun collectVm() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    vm.isLoading.collect { showLoading(it) }
+                }
+                launch {
+                    vm.toast.collect { showToast(it) }
+                }
+                launch {
+                    vm.navigateBack.collect { requireActivity().onBackPressedDispatcher.onBackPressed() }
+                }
+            }
+        }
     }
 
     private fun setupPermissionLauncher() {
@@ -80,20 +101,13 @@ class TambahPengumumanFragment : Fragment() {
             }
     }
 
-    private fun updateSelectedImage(uri: Uri) {
-        currentImageUri = uri
-        binding.selectedImageView.setImageURI(uri)
-        binding.selectedImageView.visibility = View.VISIBLE
-        binding.uploadText.visibility = View.GONE
-    }
-
     private fun setupViewListeners() {
         binding.gambarFile.setOnClickListener { showImagePickerDialog() }
         binding.gambarFile.setOnLongClickListener {
             showDeleteImageConfirmation()
             true
         }
-        binding.konfirmasi.setOnClickListener { validateAndUploadPengumuman() }
+        binding.konfirmasi.setOnClickListener { validateAndSubmit() }
     }
 
     private fun showDeleteImageConfirmation() {
@@ -101,13 +115,10 @@ class TambahPengumumanFragment : Fragment() {
             showToast("Belum ada gambar yang dipilih")
             return
         }
-
         AlertDialog.Builder(requireContext())
             .setTitle("Hapus Gambar")
             .setMessage("Apakah Anda yakin ingin menghapus gambar yang dipilih?")
-            .setPositiveButton("Hapus") { _, _ ->
-                clearSelectedImage()
-            }
+            .setPositiveButton("Hapus") { _, _ -> clearSelectedImage() }
             .setNegativeButton("Batal", null)
             .show()
     }
@@ -134,8 +145,8 @@ class TambahPengumumanFragment : Fragment() {
     }
 
     private fun openCamera() {
-        if (requireContext().checkSelfPermission(android.Manifest.permission.CAMERA) ==
-            PackageManager.PERMISSION_GRANTED
+        if (requireContext().checkSelfPermission(android.Manifest.permission.CAMERA)
+            == PackageManager.PERMISSION_GRANTED
         ) {
             launchCamera()
         } else {
@@ -149,7 +160,6 @@ class TambahPengumumanFragment : Fragment() {
             createNewFile()
             deleteOnExit()
         }
-
         val uri = FileProvider.getUriForFile(
             context,
             "${context.packageName}.fileprovider",
@@ -160,10 +170,19 @@ class TambahPengumumanFragment : Fragment() {
     }
 
     private fun openGallery() {
-        galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        galleryLauncher.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        )
     }
 
-    private fun validateAndUploadPengumuman() {
+    private fun updateSelectedImage(uri: Uri) {
+        currentImageUri = uri
+        binding.selectedImageView.setImageURI(uri)
+        binding.selectedImageView.visibility = View.VISIBLE
+        binding.uploadText.visibility = View.GONE
+    }
+
+    private fun validateAndSubmit() {
         val judul = binding.nama.text.toString()
         val isi = binding.edtTextarea.text.toString()
 
@@ -172,59 +191,21 @@ class TambahPengumumanFragment : Fragment() {
             return
         }
 
-        uploadPengumuman(judul, isi)
-    }
-
-    private fun uploadPengumuman(judul: String, isi: String) {
-        showLoading(true)
-
-        lifecycleScope.launch {
-            try {
-                val imageUrl = currentImageUri?.let { uploadImage(it) }
-
-                val pengumuman = com.gemahripah.banksampah.data.model.pengumuman.Pengumuman(
-                    pmnJudul = judul,
-                    pmnIsi = isi,
-                    pmnGambar = imageUrl,
-                    pmnIsPublic = true,
-                    pmnPin = false
-                )
-
-                withContext(Dispatchers.IO) {
-                    SupabaseProvider.client
-                        .from("pengumuman")
-                        .insert(pengumuman)
-                }
-
-                showToast("Pengumuman berhasil ditambahkan")
-                findNavController().navigateUp()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                showToast("Gagal menyimpan, periksa koneksi internet")
-            } finally {
-                withContext(Dispatchers.Main) {
-                    showLoading(false)
+        // Siapkan bytes gambar (kalau ada) di background thread
+        viewLifecycleOwner.lifecycleScope.launch {
+            val imageBytes: ByteArray? = withContext(Dispatchers.IO) {
+                currentImageUri?.let { uri ->
+                    val file = copyUriToTempFile(uri, requireContext()).reduceFileImage()
+                    val bytes = file.readBytes()
+                    file.delete()
+                    bytes
                 }
             }
+            vm.submitPengumuman(judul, isi, imageBytes)
         }
     }
 
-    private suspend fun uploadImage(uri: Uri): String {
-        return withContext(Dispatchers.IO) {
-            val file = copyUriToTempFile(uri, requireContext()).reduceFileImage()
-            val byteArray = file.readBytes()
-            file.delete()
-
-            SupabaseProvider.client.storage
-                .from("pengumuman")
-                .upload("images/${file.name}", byteArray) {
-                    upsert = false
-                }
-
-            "https://gxqnvejigdthwlkeshks.supabase.co/storage/v1/object/public/pengumuman/images/${file.name}"
-        }
-    }
-
+    /** Salin Uri ke file sementara (agar mudah dibaca sebagai bytes). */
     private fun copyUriToTempFile(uri: Uri, context: Context): File {
         val file = File.createTempFile("selected_image", ".jpg", context.cacheDir)
         context.contentResolver.openInputStream(uri).use { input ->
@@ -246,7 +227,7 @@ class TambahPengumumanFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         _binding = null
+        super.onDestroyView()
     }
 }

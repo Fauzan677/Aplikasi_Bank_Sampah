@@ -11,6 +11,8 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.databinding.ActivityMainBinding
 import com.gemahripah.banksampah.ui.nasabah.NasabahActivity

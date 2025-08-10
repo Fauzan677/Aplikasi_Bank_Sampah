@@ -13,4 +13,3 @@ data class Pengguna(
     val pgnEmail: String? = null,
     val pgnIsAdmin: Boolean? = null
 ) : Parcelable
-

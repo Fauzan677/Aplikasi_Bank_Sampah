@@ -8,13 +8,16 @@ import android.view.View
 import androidx.activity.viewModels
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.navigation.fragment.NavHostFragment
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.databinding.ActivityAdminBinding
 import com.gemahripah.banksampah.utils.Reloadable
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.gemahripah.banksampah.utils.NetworkUtil
+import kotlinx.coroutines.launch
 
 class AdminActivity : AppCompatActivity() {
 
@@ -27,6 +30,8 @@ class AdminActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+
         binding = ActivityAdminBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -34,20 +39,17 @@ class AdminActivity : AppCompatActivity() {
             binding.noConnectionCard.visibility = View.GONE
             showLoading(true)
 
-            Handler(Looper.getMainLooper()).postDelayed({
-                if (NetworkUtil.isInternetAvailable(this)) {
+            lifecycleScope.launch {
+                kotlinx.coroutines.delay(1000)
+                if (NetworkUtil.isInternetAvailable(this@AdminActivity)) {
                     showNoInternetCard(false)
-
-                    val currentFragment = navHostFragment.childFragmentManager.primaryNavigationFragment
-                    if (currentFragment is Reloadable) {
-                        currentFragment.reloadData()
-                    }
+                    (navHostFragment.childFragmentManager.primaryNavigationFragment as? Reloadable)
+                        ?.reloadData()
                 } else {
                     showNoInternetCard(true)
                 }
-
                 showLoading(false)
-            }, 1000)
+            }
         }
 
         getPenggunaFromIntent()

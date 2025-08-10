@@ -1,13 +1,18 @@
 package com.gemahripah.banksampah.ui.admin.transaksi.keluar.edit
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.gemahripah.banksampah.R
@@ -15,6 +20,9 @@ import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
 import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentPenarikanSaldoBinding
+import com.gemahripah.banksampah.ui.admin.AdminActivity
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.Dispatchers
@@ -25,15 +33,15 @@ import kotlinx.serialization.json.put
 import java.text.NumberFormat
 import java.util.Locale
 
-class EditTransaksiKeluarFragment : Fragment() {
+class EditTransaksiKeluarFragment : Fragment(), Reloadable {
+
     private var _binding: FragmentPenarikanSaldoBinding? = null
     private val binding get() = _binding!!
 
     private val args: EditTransaksiKeluarFragmentArgs by navArgs()
-    private var selectedPgnId: String? = null
+    private val vm: EditTransaksiKeluarViewModel by viewModels()
 
-    private lateinit var riwayat: RiwayatTransaksi
-    private lateinit var enrichedList: Array<DetailTransaksiRelasi>
+    private val rupiah = NumberFormat.getNumberInstance(Locale("id", "ID"))
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -43,143 +51,102 @@ class EditTransaksiKeluarFragment : Fragment() {
         return binding.root
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        riwayat = args.riwayat
-        enrichedList = args.enrichedList
-        selectedPgnId = riwayat.tskIdPengguna
-
-        setupFormAwal()
-        setupKonfirmasiButton()
-    }
-
-    private fun setupFormAwal() {
+        // Prefill form statis dari args (UI only)
         binding.judul.text = "Edit Penarikan Saldo"
-        binding.nama.setText(riwayat.nama, false)
-        binding.jumlah.setText(enrichedList[0].dtlJumlah.toString())
-        binding.keterangan.setText(riwayat.tskKeterangan ?: "")
-        selectedPgnId?.let { tampilkanSaldoPengguna(it) }
+        binding.nama.setText(args.riwayat.nama, false)
+        binding.keterangan.setText(args.riwayat.tskKeterangan ?: "")
+        val jumlahAwal = args.enrichedList.firstOrNull()?.dtlJumlah
+        binding.jumlah.setText(jumlahAwal?.toInt()?.toString() ?: "")
+        binding.nama.apply { isFocusable = false; isFocusableInTouchMode = false; isClickable = false; isEnabled = false }
 
-        binding.nama.apply {
-            isFocusable = false
-            isFocusableInTouchMode = false
-            isClickable = false
-            isEnabled = false
-        }
-    }
+        // Init VM dengan args (memicu fetch saldo + penyesuaian)
+        vm.setArgs(args.riwayat, args.enrichedList)
 
-    private fun setupKonfirmasiButton() {
+        // Actions
         binding.konfirmasi.setOnClickListener {
-            val jumlahInput = binding.jumlah.text.toString().toDoubleOrNull()
+            val jumlahBaru = binding.jumlah.text.toString().toDoubleOrNull()
             val keterangan = binding.keterangan.text.toString()
+            vm.submitUpdate(jumlahBaru, keterangan)
+        }
 
-            if (!isValidInput(jumlahInput)) return@setOnClickListener
+        // Collect VM state & events
+        collectVm()
 
-            lifecycleScope.launch {
-                try {
-                    val saldoTotal = hitungSaldoDenganPenyesuaian(selectedPgnId!!, enrichedList[0].dtlJumlah)
+        if (!updateInternetCard()) return
+        vm.refreshSaldo()
+    }
 
-                    if (saldoTotal < jumlahInput!!) {
+    override fun reloadData() {
+        if (!updateInternetCard()) return
+        vm.refreshSaldo()
+    }
+
+    private fun collectVm() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+
+                // Loading
+                launch {
+                    vm.isLoading.collect { showLoading(it) }
+                }
+
+                // Saldo text
+                launch {
+                    vm.saldoText.collect { binding.saldo.text = it }
+                }
+
+                // Saldo kurang -> tampilkan error di EditText jumlah
+                launch {
+                    vm.saldoKurang.collect { sisa ->
+                        val formatted = rupiah.format(sisa)
                         binding.jumlah.requestFocus()
-                        binding.jumlah.error = ("Saldo tidak mencukupi. Sisa saldo tersedia: Rp %" +
-                                ".2f").format(saldoTotal)
-                        return@launch
+                        binding.jumlah.error = "Saldo tidak mencukupi. Sisa saldo: Rp $formatted"
                     }
+                }
 
-                    updateTransaksiDanDetail(jumlahInput, keterangan)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    showToast("Terjadi kesalahan saat memperbarui transaksi")
+                // Toast
+                launch {
+                    vm.toast.collect { requireContext().toast(it) }
+                }
+
+                // Navigate & hapus EditTransaksiKeluarFragment dari back stack
+                launch {
+                    vm.navigateBack.collect {
+                        findNavController().navigate(
+                            R.id.navigation_transaksi,
+                            null,
+                            NavOptions.Builder()
+                                .setPopUpTo(R.id.editTransaksiKeluarFragment, true)
+                                .setLaunchSingleTop(true)
+                                .build()
+                        )
+                    }
                 }
             }
         }
     }
 
-    private fun isValidInput(jumlahInput: Double?): Boolean {
-        if (selectedPgnId.isNullOrEmpty()) {
-            binding.nama.error = "Silakan pilih nasabah"
-            return false
-        }
-
-        if (jumlahInput == null || jumlahInput <= 0) {
-            binding.jumlah.error = "Jumlah penarikan tidak valid"
-            return false
-        }
-
-        return true
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        (activity as? AdminActivity)?.showNoInternetCard(!isConnected)
+        return isConnected
     }
 
-    private suspend fun hitungSaldoDenganPenyesuaian(pgnId: String, jumlahSebelumnya: Double?):
-            Double {
-        val saldo = SupabaseProvider.client.postgrest.rpc(
-            "hitung_saldo_pengguna",
-            buildJsonObject { put("pgn_id_input", pgnId) }
-        ).decodeAs<Double>()
-
-        return saldo + jumlahSebelumnya!!
-    }
-
-    private fun updateTransaksiDanDetail(jumlahInput: Double, keterangan: String) {
-        val transaksiId = riwayat.tskId
-        val detailId = enrichedList.getOrNull(0)?.dtlId
-
-        lifecycleScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    SupabaseProvider.client.from("transaksi").update({
-                        set("tskIdPengguna", selectedPgnId!!)
-                        set("tskKeterangan", keterangan)
-                    }) {
-                        filter { eq("tskId", transaksiId) }
-                    }
-
-                    detailId?.let {
-                        SupabaseProvider.client.from("detail_transaksi").update({
-                            set("dtlJumlah", jumlahInput)
-                        }) {
-                            filter { eq("dtlId", it) }
-                        }
-                    }
-                }
-
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "Transaksi berhasil diperbarui", Toast.LENGTH_SHORT).show()
-                    findNavController().navigate(R.id.action_editTransaksiKeluarFragment_to_navigation_transaksi)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Gagal memperbarui data, periksa koneksi internet",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-        }
-    }
-
-    @SuppressLint("SetTextI18n")
-    private fun tampilkanSaldoPengguna(pgnId: String) {
-        lifecycleScope.launch {
-            try {
-                val saldo = hitungSaldoDenganPenyesuaian(pgnId, enrichedList[0].dtlJumlah)
-                val formattedSaldo = NumberFormat.getNumberInstance(Locale("in", "ID")).format(saldo)
-                binding.saldo.text = "Rp $formattedSaldo"
-            } catch (e: Exception) {
-                e.printStackTrace()
-                binding.saldo.text = "Rp 0"
-            }
-        }
-    }
-
-    private fun showToast(message: String) {
-        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+    private fun showLoading(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+        binding.konfirmasi.isEnabled = !isLoading
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         _binding = null
+        super.onDestroyView()
     }
+
+    private fun Context.toast(msg: String) =
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 }

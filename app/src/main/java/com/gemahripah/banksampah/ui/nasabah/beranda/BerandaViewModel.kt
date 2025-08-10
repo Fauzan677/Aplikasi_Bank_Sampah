@@ -5,14 +5,20 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.model.transaksi.DetailTransaksi
 import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
 import com.gemahripah.banksampah.data.model.transaksi.Transaksi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
+import com.gemahripah.banksampah.ui.gabungan.paging.riwayatTransaksi.RiwayatTransaksiPagingSource
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
@@ -27,9 +33,6 @@ class BerandaViewModel : ViewModel() {
 
     private val client = SupabaseProvider.client
 
-    private val _loadingRiwayat = MutableLiveData<Boolean>()
-    val loadingRiwayat: LiveData<Boolean> = _loadingRiwayat
-
     private val _totalTransaksi = MutableLiveData<String>()
     val totalTransaksi: LiveData<String> = _totalTransaksi
 
@@ -38,9 +41,6 @@ class BerandaViewModel : ViewModel() {
 
     private val _setoran = MutableLiveData<String>()
     val setoran: LiveData<String> = _setoran
-
-    private val _riwayat = MutableLiveData<List<RiwayatTransaksi>>()
-    val riwayat: LiveData<List<RiwayatTransaksi>> = _riwayat
 
     fun getTotalTransaksi(
         pgnId: String,
@@ -52,7 +52,6 @@ class BerandaViewModel : ViewModel() {
             put("pgn_id_input", pgnId)
             if (startDate != null) put("start_date", startDate.toString()) else put("start_date", JsonNull)
             if (endDate != null) put("end_date", endDate.toString()) else put("end_date", JsonNull)
-
             if (filter == "Transaksi Keluar") {
                 put("tipe_transaksi", "Keluar")
             }
@@ -125,69 +124,24 @@ class BerandaViewModel : ViewModel() {
         }
     }
 
-    fun fetchRiwayat(pgnId: String) {
-        viewModelScope.launch {
-            _loadingRiwayat.postValue(true)
-            try {
-                val transaksiList = client.postgrest.from("transaksi")
-                    .select {
-                        filter { eq("tskIdPengguna", pgnId) }
-                        order("created_at", order = Order.DESCENDING)
-                    }
-                    .decodeList<Transaksi>()
-
-                val hasil = transaksiList.map { transaksi ->
-                    val pengguna = client.postgrest.from("pengguna")
-                        .select {
-                            filter { eq("pgnId", transaksi.tskIdPengguna!!) }
-                        }
-                        .decodeSingle<Pengguna>()
-
-                    val totalBerat = if (transaksi.tskTipe == "Masuk") {
-                        val res = client.postgrest.rpc("hitung_total_jumlah", buildJsonObject {
-                            put("tsk_id_input", transaksi.tskId)
-                        })
-                        res.data.toDoubleOrNull()
-                    } else null
-
-                    val totalHarga = if (transaksi.tskTipe == "Keluar") {
-                        val detail = client.postgrest.from("detail_transaksi")
-                            .select {
-                                filter { transaksi.tskId?.let { eq("dtlTskId", it) } }
-                            }
-                            .decodeList<DetailTransaksi>()
-                        detail.sumOf { it.dtlJumlah ?: 0.0 }
-                    } else {
-                        client.postgrest.rpc("hitung_total_harga", buildJsonObject {
-                            put("tsk_id_input", transaksi.tskId)
-                        }).data.toDoubleOrNull()
-                    }
-
-                    val dateTime = OffsetDateTime.parse(transaksi.created_at)
-                    val tanggal = dateTime.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id")))
-                    val hari = dateTime.format(DateTimeFormatter.ofPattern("EEEE", Locale("id")))
-
-                    RiwayatTransaksi(
-                        tskId = transaksi.tskId!!,
-                        tskIdPengguna = transaksi.tskIdPengguna,
-                        nama = pengguna.pgnNama ?: "Tidak Diketahui",
-                        tanggal = tanggal,
-                        tipe = transaksi.tskTipe ?: "Masuk",
-                        tskKeterangan = transaksi.tskKeterangan,
-                        totalBerat = totalBerat,
-                        totalHarga = totalHarga,
-                        hari = hari,
-                        createdAt = transaksi.created_at ?: ""
-                    )
-                }
-
-                _riwayat.postValue(hasil)
-            } catch (e: Exception) {
-                Log.e("BerandaViewModel", "fetchRiwayat: gagal", e)
-                _riwayat.postValue(emptyList())
-            } finally {
-                _loadingRiwayat.postValue(false)
+    fun pagingData(
+        pgnId: String,
+        startDate: String? = null,
+        endDate: String? = null
+    ): Flow<PagingData<RiwayatTransaksi>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 5,
+                initialLoadSize = 5,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                RiwayatTransaksiPagingSource(
+                    pgnId = pgnId,
+                    startDate = startDate?.let { it + "T00:00:00+00" },
+                    endDate = endDate?.let { it + "T23:59:59+00" }
+                )
             }
-        }
+        ).flow.cachedIn(viewModelScope)
     }
 }

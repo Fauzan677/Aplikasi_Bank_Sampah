@@ -1,28 +1,32 @@
 package com.gemahripah.banksampah.ui.admin.pengaturan.nasabah.tambah
 
+import android.annotation.SuppressLint
 import android.os.Bundle
-import androidx.fragment.app.Fragment
+import android.text.InputType
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
-import com.gemahripah.banksampah.data.model.pengguna.Pengguna
-import com.gemahripah.banksampah.data.supabase.SupabaseAdminProvider
 import com.gemahripah.banksampah.databinding.FragmentTambahPenggunaBinding
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.postgrest.from
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.put
 
 class TambahPenggunaFragment : Fragment() {
 
     private var _binding: FragmentTambahPenggunaBinding? = null
     private val binding get() = _binding!!
+
+    private val vm: TambahPenggunaViewModel by viewModels()
+
+    private var isPasswordVisible = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -36,6 +40,8 @@ class TambahPenggunaFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupUI()
+        setupPasswordToggle()
+        collectVm()
     }
 
     private fun setupUI() {
@@ -45,61 +51,69 @@ class TambahPenggunaFragment : Fragment() {
             val nama = binding.nama.text.toString().trim()
             val email = binding.email.text.toString().trim()
             val password = binding.password.text.toString().trim()
-
-            if (!isValidInput(nama, email, password)) {
-                showToast("Semua field wajib diisi")
-                return@setOnClickListener
-            }
-
-            tambahPengguna(nama, email, password)
+            // Serahin semua ke VM (validasi + proses)
+            vm.submit(nama, email, password)
         }
     }
 
-    private fun isValidInput(nama: String, email: String, password: String): Boolean {
-        return nama.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()
-    }
-
-    private fun tambahPengguna(nama: String, email: String, password: String) {
-        showLoading(true)
-
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val client = SupabaseAdminProvider.client
-
-                val userWithEmail = client.auth.admin.createUserWithEmail {
-                    this.email = email
-                    this.password = password
-                    userMetadata {
-                        put("name", nama)
+    private fun collectVm() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    vm.isLoading.collect { showLoading(it) }
+                }
+                launch {
+                    vm.toast.collect { msg ->
+                        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
                     }
                 }
-
-                val userId = userWithEmail.id
-
-                val penggunaBaru = Pengguna(
-                    pgnId = userId,
-                    pgnNama = nama,
-                    pgnEmail = email
-                )
-
-                client.from("pengguna").insert(penggunaBaru)
-
-                withContext(Dispatchers.Main) {
-                    showToast("Pengguna berhasil dibuat")
-                    findNavController().navigate(R.id.action_tambahPenggunaFragment_to_penggunaFragment)
-                }
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    showToast("Gagal membuat pengguna, periksa koneksi internet")
-                }
-            } finally {
-                withContext(Dispatchers.Main) {
-                    showLoading(false)
+                launch {
+                    vm.navigateBack.collect {
+                        // pop Edit dari backstack (inclusive) supaya tidak bisa balik ke form
+                        findNavController().navigate(
+                            R.id.action_tambahPenggunaFragment_to_penggunaFragment,
+                            null,
+                            NavOptions.Builder()
+                                .setPopUpTo(R.id.tambahPenggunaFragment, true)
+                                .setLaunchSingleTop(true)
+                                .build()
+                        )
+                    }
                 }
             }
         }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupPasswordToggle() {
+        binding.password.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
+                val drawableEnd = 2
+                val drawable = binding.password.compoundDrawables[drawableEnd]
+                if (drawable != null &&
+                    event.rawX >= (binding.password.right - drawable.bounds.width() - binding.password.paddingEnd)
+                ) {
+                    togglePasswordVisibility()
+                    return@setOnTouchListener true
+                }
+            }
+            false
+        }
+    }
+
+    private fun togglePasswordVisibility() {
+        val selection = binding.password.selectionEnd
+        if (isPasswordVisible) {
+            binding.password.inputType =
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            binding.password.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.visibility_off, 0)
+        } else {
+            binding.password.inputType =
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            binding.password.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.visibility_on, 0)
+        }
+        isPasswordVisible = !isPasswordVisible
+        binding.password.setSelection(selection)
     }
 
     private fun showLoading(isLoading: Boolean) {
@@ -108,12 +122,8 @@ class TambahPenggunaFragment : Fragment() {
         binding.konfirmasi.isEnabled = !isLoading
     }
 
-    private fun showToast(message: String) {
-        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
-    }
-
     override fun onDestroyView() {
-        super.onDestroyView()
         _binding = null
+        super.onDestroyView()
     }
 }

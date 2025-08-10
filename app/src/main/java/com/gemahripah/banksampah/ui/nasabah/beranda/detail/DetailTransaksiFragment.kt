@@ -70,6 +70,9 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
 
         binding.edit.visibility = View.GONE
         binding.hapus.visibility = View.GONE
+
+        binding.nama.text = riwayat.nama
+        binding.tanggal.text = riwayat.tanggal
         binding.nominal.text = riwayat.totalHarga.toString()
         binding.keterangan.text = riwayat.tskKeterangan
 

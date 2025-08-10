@@ -6,13 +6,19 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.paging.LoadState
 import androidx.recyclerview.widget.GridLayoutManager
 import com.gemahripah.banksampah.databinding.FragmentPengumumanBinding
+import com.gemahripah.banksampah.ui.gabungan.adapter.common.LoadingStateAdapter
 import com.gemahripah.banksampah.ui.gabungan.adapter.pengumuman.PengumumanAdapter
+import com.gemahripah.banksampah.ui.gabungan.adapter.pengumuman.PengumumanPagingAdapter
 import com.gemahripah.banksampah.ui.nasabah.NasabahActivity
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class PengumumanFragment : Fragment(), Reloadable {
 
@@ -20,6 +26,7 @@ class PengumumanFragment : Fragment(), Reloadable {
     private val binding get() = _binding!!
 
     private val viewModel: PengumumanViewModel by viewModels()
+    private lateinit var pagingAdapter: PengumumanPagingAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -33,44 +40,59 @@ class PengumumanFragment : Fragment(), Reloadable {
         super.onViewCreated(view, savedInstanceState)
 
         setupUI()
-        observeViewModel()
+        setupRecyclerView()
+        setupLoadStateListener()
 
         binding.swipeRefresh.setOnRefreshListener {
             reloadData()
         }
 
         if (!updateInternetCard()) return
-        viewModel.loadPengumuman()
+        observePagingData()
     }
 
     override fun reloadData() {
         if (!updateInternetCard()) return
         binding.swipeRefresh.isRefreshing = false
-        viewModel.loadPengumuman()
+        observePagingData()
     }
 
     private fun setupUI() {
         binding.tambah.visibility = View.GONE
-
-        val layoutParams = binding.rvPengumuman.layoutParams as ViewGroup.MarginLayoutParams
-        layoutParams.topMargin = (40 * resources.displayMetrics.density).toInt()
-        binding.rvPengumuman.layoutParams = layoutParams
     }
 
-    private fun observeViewModel() {
-        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
-            binding.rvPengumuman.visibility = if (isLoading) View.GONE else View.VISIBLE
+    private fun setupRecyclerView() {
+        pagingAdapter = PengumumanPagingAdapter { pengumuman ->
+            val action = PengumumanFragmentDirections
+                .actionNavigationDashboardToDetailPengumumanFragment(pengumuman)
+            findNavController().navigate(action)
         }
 
-        viewModel.pengumumanList.observe(viewLifecycleOwner) { list ->
-            binding.rvPengumuman.apply {
-                layoutManager = GridLayoutManager(requireContext(), 2)
-                adapter = PengumumanAdapter(list) { pengumuman ->
-                    val action = PengumumanFragmentDirections
-                        .actionNavigationDashboardToDetailPengumumanFragment(pengumuman)
-                    findNavController().navigate(action)
-                }
+        binding.rvPengumuman.layoutManager = GridLayoutManager(requireContext(), 2)
+        binding.rvPengumuman.adapter = pagingAdapter.withLoadStateHeaderAndFooter(
+            header = LoadingStateAdapter { pagingAdapter.retry() },
+            footer = LoadingStateAdapter { pagingAdapter.retry() }
+        )
+    }
+
+    private fun setupLoadStateListener() {
+        lifecycleScope.launch {
+            pagingAdapter.loadStateFlow.collectLatest { loadStates ->
+                val isLoading = loadStates.refresh is LoadState.Loading
+                val isError = loadStates.refresh is LoadState.Error
+                val isEmpty = loadStates.refresh is LoadState.NotLoading && pagingAdapter.itemCount == 0
+
+                binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+                binding.rvPengumuman.visibility = if (!isLoading && !isError) View.VISIBLE else View.GONE
+                binding.pengumumanKosong.visibility = if (isEmpty) View.VISIBLE else View.GONE
+            }
+        }
+    }
+
+    private fun observePagingData() {
+        lifecycleScope.launch {
+            viewModel.pagingData().collectLatest {
+                pagingAdapter.submitData(it)
             }
         }
     }

@@ -11,7 +11,10 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.gemahripah.banksampah.R
@@ -34,13 +37,12 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
     private var _binding: FragmentSetorSampahBinding? = null
     private val binding get() = _binding!!
 
-    private var namaToIdMap: Map<String, Long> = emptyMap()
-    private var jenisList: List<String> = emptyList()
-    private var jenisToSatuanMap: Map<String, String> = emptyMap()
+    private val vm: EditTransaksiMasukViewModel by viewModels()
+    private val args: EditTransaksiMasukFragmentArgs by navArgs()
+
     private val tambahanSampahList = mutableListOf<ItemSetorSampahBinding>()
     private var selectedUserId: String? = null
-
-    private val args: EditTransaksiMasukFragmentArgs by navArgs()
+    private var prefillDone = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -50,213 +52,165 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
         return binding.root
     }
 
-    @SuppressLint("ClickableViewAccessibility")
+    @SuppressLint("ClickableViewAccessibility", "SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setupUiStatic()
+        setupListeners()
+        collectVm()
+
         if (!updateInternetCard()) return
 
-        loadJenisSampahDenganDataAwal()
-        setupListeners()
+        vm.loadSampah()
     }
 
     override fun reloadData() {
         if (!updateInternetCard()) return
-        loadJenisSampahDenganDataAwal()
+        vm.loadSampah()
+    }
+
+    // --- UI static ---
+    @SuppressLint("SetTextI18n")
+    private fun setupUiStatic() {
+        val riwayat = args.riwayat
+        binding.judul.text = "Edit Menabung Sampah"
+        binding.nama.setText(riwayat.nama)
+        binding.keterangan.setText(riwayat.tskKeterangan)
+
+        // nama tidak bisa diubah (sesuai kode lama)
+        binding.nama.apply {
+            isFocusable = false
+            isFocusableInTouchMode = false
+            isClickable = false
+            isEnabled = false
+        }
+        selectedUserId = riwayat.tskIdPengguna
     }
 
     private fun setupListeners() {
-        binding.tambah.setOnClickListener {
-            tambahInputSampah()
-        }
-
-        binding.konfirmasi.setOnClickListener {
-            val userId = selectedUserId
-            val keterangan = binding.keterangan.text.toString()
-            val transaksiId = args.riwayat.tskId
-
-            if (userId == null) {
-                Toast.makeText(requireContext(), "Silakan pilih nama nasabah dari daftar", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            updateTransaksi(transaksiId, userId, keterangan)
-        }
+        binding.tambah.setOnClickListener { tambahInputSampah() }
+        binding.konfirmasi.setOnClickListener { onKonfirmasiClicked() }
     }
 
-    private fun updateTransaksi(transaksiId: Long, userId: String, keterangan: String) {
-        lifecycleScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    SupabaseProvider.client
-                        .from("transaksi")
-                        .update({
-                            set("tskIdPengguna", userId)
-                            set("tskKeterangan", keterangan)
-                            set("tskTipe", "Masuk")
-                        }) {
-                            filter { eq("tskId", transaksiId) }
+    private fun collectVm() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+
+                launch {
+                    vm.isLoading.collect { showLoading(it) }
+                }
+
+                launch {
+                    vm.toast.collect { requireContext().toast(it) }
+                }
+
+                launch {
+                    vm.navigateBack.collect {
+                        findNavController().navigate(
+                            R.id.navigation_transaksi, null,
+                            NavOptions.Builder()
+                                .setPopUpTo(R.id.editTransaksiMasukFragment, true)
+                                .setLaunchSingleTop(true)
+                                .build()
+                        )
+                    }
+                }
+
+                // Master jenis => set adapter utama + prefill dari args sekali
+                launch {
+                    vm.jenisList.collect { jenisList ->
+                        if (jenisList.isEmpty()) return@collect
+
+                        setAdapterJenisUtama(jenisList)
+
+                        if (!prefillDone) {
+                            prefillFromArgs(jenisList)
+                            prefillDone = true
                         }
 
-                    hapusDetailTransaksiLama(transaksiId)
-                    tambahDetailBaru(transaksiId)
-                }
-
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "Data berhasil diperbarui", Toast.LENGTH_SHORT)
-                        .show()
-                    findNavController().navigate(R.id.action_editTransaksiMasukFragment_to_navigation_transaksi)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Gagal memperbarui data, periksa koneksi internet",
-                        Toast.LENGTH_LONG
-                    ).show()
+                        updateAllAdapters() // refresh opsi anti-duplikasi
+                    }
                 }
             }
         }
     }
 
-    private suspend fun hapusDetailTransaksiLama(transaksiId: Long) {
-        SupabaseProvider.client
-            .from("detail_transaksi")
-            .delete {
-                filter { eq("dtlTskId", transaksiId) }
+    // Prefill field utama + item tambahan dari args.enrichedList
+    @SuppressLint("SetTextI18n")
+    private fun prefillFromArgs(jenisList: List<String>) {
+        val enrichedList = args.enrichedList
+        if (enrichedList.isEmpty()) return
+
+        val first = enrichedList[0]
+        val jenisPertama = first.dtlSphId?.sphJenis.orEmpty()
+        val jumlahPertama = first.dtlJumlah
+        binding.jenis1.setText(jenisPertama, false)
+        binding.jumlah1.setText(jumlahPertama.toString())
+        binding.jumlahLabel1.text = "Jumlah Setor (${vm.getSatuan(jenisPertama)})"
+
+        for (i in 1 until enrichedList.size) {
+            val item = enrichedList[i]
+            tambahInputSampah()
+            val inputView = tambahanSampahList.last()
+            val jenis = item.dtlSphId?.sphJenis.orEmpty()
+            val jumlah = item.dtlJumlah
+
+            inputView.autoCompleteJenis.post {
+                inputView.autoCompleteJenis.setText(jenis, false)
+                inputView.editTextJumlah.setText(jumlah.toString())
+                updateAllAdapters()
             }
+        }
     }
 
-    private suspend fun tambahDetailBaru(transaksiId: Long) {
-        val jenisUtama = binding.jenis1.text.toString()
-        val sampahIdUtama = namaToIdMap[jenisUtama]
-        val jumlahUtama = binding.jumlah1.text.toString().toDoubleOrNull() ?: 0.0
-
-        if (sampahIdUtama != null && jumlahUtama > 0) {
-            val detailUtama = DetailTransaksi(
-                dtlTskId = transaksiId,
-                dtlSphId = sampahIdUtama,
-                dtlJumlah = jumlahUtama
-            )
-            SupabaseProvider.client.from("detail_transaksi").insert(detailUtama)
+    // --- Adapters ---
+    @SuppressLint("ClickableViewAccessibility", "SetTextI18n")
+    private fun setAdapterJenisUtama(list: List<String>) {
+        binding.jenis1.setAdapter(ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, list))
+        binding.jenis1.setOnTouchListener { _, _ ->
+            binding.jenis1.showDropDown()
+            false
         }
-
-        for (item in tambahanSampahList) {
-            val jenis = item.autoCompleteJenis.text.toString()
-            val sampahId = namaToIdMap[jenis]
-            val jumlah = item.editTextJumlah.text.toString().toDoubleOrNull() ?: 0.0
-
-            if (sampahId != null && jumlah > 0) {
-                val detail = DetailTransaksi(
-                    dtlTskId = transaksiId,
-                    dtlSphId = sampahId,
-                    dtlJumlah = jumlah
-                )
-                SupabaseProvider.client.from("detail_transaksi").insert(detail)
-            }
+        binding.jenis1.setOnItemClickListener { _, _, position, _ ->
+            val selected = list[position]
+            binding.jumlahLabel1.text = "Jumlah Setor (${vm.getSatuan(selected)})"
+            updateAllAdapters()
         }
     }
 
     @SuppressLint("ClickableViewAccessibility", "SetTextI18n")
-    private fun loadJenisSampahDenganDataAwal() {
-        lifecycleScope.launch {
-            try {
-                val data = withContext(Dispatchers.IO) {
-                    SupabaseProvider.client
-                        .from("sampah")
-                        .select()
-                        .decodeList<Sampah>()
-                }
+    private fun setupAutoCompleteJenis(itemBinding: ItemSetorSampahBinding, index: Int, list: List<String>) {
+        itemBinding.jenisSampahLabel.text = "Jenis Sampah ${index + 2}"
+        itemBinding.jumlahSetorLabel.text = "Jumlah Setor ${index + 2}"
 
-                val namaList = data.mapNotNull { it.sphJenis?.takeIf { jenis -> jenis.isNotBlank() } }
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, list)
+        itemBinding.autoCompleteJenis.setAdapter(adapter)
 
-                namaToIdMap = data.associate { (it.sphJenis ?: "Unknown") to (it.sphId ?: 0L) }
-                jenisToSatuanMap = data.associate { (it.sphJenis ?: "Unknown") to (it.sphSatuan ?: "Unit") }
-                jenisList = namaList
+        itemBinding.autoCompleteJenis.inputType = InputType.TYPE_NULL
+        itemBinding.autoCompleteJenis.isFocusable = true
+        itemBinding.autoCompleteJenis.isFocusableInTouchMode = true
+        itemBinding.autoCompleteJenis.isClickable = true
 
-                withContext(Dispatchers.Main) {
-                    val adapter = ArrayAdapter(
-                        requireContext(),
-                        android.R.layout.simple_dropdown_item_1line,
-                        namaList
-                    )
-                    binding.jenis1.setAdapter(adapter)
-                    binding.jenis1.setOnTouchListener { _, _ ->
-                        binding.jenis1.showDropDown()
-                        false
-                    }
-                    binding.jenis1.setOnItemClickListener { _, _, position, _ ->
-                        val selectedJenis = namaList[position]
-                        val satuan = jenisToSatuanMap[selectedJenis] ?: "Unit"
-                        binding.jumlahLabel1.text = "Jumlah Setor ($satuan)"
-                    }
+        itemBinding.autoCompleteJenis.setOnTouchListener { _, _ ->
+            itemBinding.autoCompleteJenis.showDropDown()
+            true
+        }
 
-                    val riwayat = args.riwayat
-                    val enrichedList = args.enrichedList
-
-                    binding.judul.text = "Edit Menabung Sampah"
-                    binding.nama.setText(riwayat.nama)
-                    binding.keterangan.setText(riwayat.tskKeterangan)
-
-                    binding.nama.apply {
-                        isFocusable = false
-                        isFocusableInTouchMode = false
-                        isClickable = false
-                        isEnabled = false
-                    }
-
-                    selectedUserId = riwayat.tskIdPengguna
-
-                    if (enrichedList.isNotEmpty()) {
-                        val first = enrichedList[0]
-                        val jenisPertama = first.dtlSphId?.sphJenis.orEmpty()
-                        val jumlahPertama = first.dtlJumlah
-
-                        binding.jenis1.setText(jenisPertama, false)
-                        binding.jumlah1.setText(jumlahPertama.toString())
-
-                        val satuanPertama = jenisToSatuanMap[jenisPertama] ?: "Unit"
-                        binding.jumlahLabel1.text = "Jumlah Setor ($satuanPertama)"
-
-                        for (i in 1 until enrichedList.size) {
-                            val item = enrichedList[i]
-                            tambahInputSampah()
-
-                            val inputView = tambahanSampahList.last()
-                            val jenis = item.dtlSphId?.sphJenis.orEmpty()
-                            val jumlah = item.dtlJumlah
-
-                            inputView.autoCompleteJenis.post {
-                                inputView.autoCompleteJenis.setText(jenis, false)
-                                inputView.editTextJumlah.setText(jumlah.toString())
-                                updateAllAdapters()
-                            }
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Gagal memuat jenis transaksi",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
+        itemBinding.autoCompleteJenis.setOnItemClickListener { _, _, position, _ ->
+            val selected = list[position]
+            itemBinding.jumlahSetorLabel.text = "Jumlah Setor ${index + 2} (${vm.getSatuan(selected)})"
+            updateAllAdapters()
         }
     }
 
+    // --- Dynamic row ---
     @SuppressLint("ClickableViewAccessibility", "SetTextI18n")
     private fun tambahInputSampah() {
         val index = tambahanSampahList.size
         val itemBinding = ItemSetorSampahBinding.inflate(layoutInflater)
 
-        setupAutoCompleteJenis(itemBinding, index)
-
-        val dynamicId = View.generateViewId()
-        itemBinding.hapusTambahan.id = dynamicId
+        setupAutoCompleteJenis(itemBinding, index, vm.jenisList.value)
 
         itemBinding.hapusTambahan.setOnClickListener {
             binding.layoutKonten.removeView(itemBinding.root)
@@ -274,82 +228,88 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
 
     @SuppressLint("SetTextI18n")
     private fun perbaruiLabelInput() {
-        tambahanSampahList.forEachIndexed { index, itemBinding ->
-            itemBinding.jenisSampahLabel.text = "Jenis Sampah ${index + 2}"
-            itemBinding.jumlahSetorLabel.text = "Jumlah Setor ${index + 2}"
-            itemBinding.hapusTambahan.id = View.generateViewId()
+        tambahanSampahList.forEachIndexed { idx, item ->
+            item.jenisSampahLabel.text = "Jenis Sampah ${idx + 2}"
+            item.jumlahSetorLabel.text = "Jumlah Setor ${idx + 2}"
         }
     }
 
-
-    @SuppressLint("ClickableViewAccessibility", "SetTextI18n")
-    private fun setupAutoCompleteJenis(
-        itemBinding: ItemSetorSampahBinding,
-        index: Int
-    ) {
-        itemBinding.jenisSampahLabel.text = "Jenis Sampah ${index + 2}"
-        itemBinding.jumlahSetorLabel.text = "Jumlah Setor ${index + 2}"
-
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, jenisList)
-        itemBinding.autoCompleteJenis.setAdapter(adapter)
-
-        itemBinding.autoCompleteJenis.inputType = InputType.TYPE_NULL
-        itemBinding.autoCompleteJenis.isFocusable = true
-        itemBinding.autoCompleteJenis.isFocusableInTouchMode = true
-        itemBinding.autoCompleteJenis.isClickable = true
-
-        itemBinding.autoCompleteJenis.setOnTouchListener { _, _ ->
-            itemBinding.autoCompleteJenis.showDropDown()
-            true
-        }
-
-        itemBinding.autoCompleteJenis.setOnItemClickListener { _, _, position, _ ->
-            val selectedJenis = jenisList[position]
-            val satuan = jenisToSatuanMap[selectedJenis] ?: "Unit"
-            itemBinding.jumlahSetorLabel.text = "Jumlah Setor ${index + 2} ($satuan)"
-            updateAllAdapters()
-        }
-    }
-
-    private fun getAvailableJenis(currentJenis: String?): List<String> {
-        val selectedJenisList = mutableSetOf<String>()
-
-        binding.jenis1.text?.toString()?.takeIf { it.isNotEmpty() }?.let {
-            selectedJenisList.add(it)
-        }
-
-        tambahanSampahList.forEach { item ->
-            val jenis = item.autoCompleteJenis.text?.toString()
-            if (!jenis.isNullOrEmpty()) {
-                selectedJenisList.add(jenis)
-            }
-        }
-
-        currentJenis?.let {
-            selectedJenisList.remove(it)
-        }
-
-        return (jenisList
-            .filter { it.isNotBlank() && it !in selectedJenisList } +
-                listOfNotNull(currentJenis?.takeIf { it.isNotBlank() }))
-            .distinct()
-    }
-
+    // Hitung pilihan yang tersedia (anti-duplikasi) via ViewModel
     private fun updateAllAdapters() {
-        val jenisUtama = binding.jenis1.text.toString()
-        val availableJenisUtama = getAvailableJenis(jenisUtama)
-        binding.jenis1.setAdapter(ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, availableJenisUtama))
+        val selectedNow = buildSetSelectedJenis()
 
+        // utama
+        val currentMain = binding.jenis1.text?.toString()
+        val availMain = vm.getAvailableJenis(currentMain, selectedNow - currentMain.orEmpty())
+        binding.jenis1.setAdapter(ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, availMain))
+
+        // tambahan
         tambahanSampahList.forEach { item ->
-            val currentJenis = item.autoCompleteJenis.text.toString()
-            val availableJenis = getAvailableJenis(currentJenis)
-            item.autoCompleteJenis.setAdapter(ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, availableJenis))
+            val cur = item.autoCompleteJenis.text?.toString()
+            val avail = vm.getAvailableJenis(cur, selectedNow - cur.orEmpty())
+            item.autoCompleteJenis.setAdapter(
+                ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, avail)
+            )
         }
 
-        val semuaJenisTerpakai = getAvailableJenis(null).isEmpty()
-
-        binding.tambah.isEnabled = !semuaJenisTerpakai
+        // toggle tombol tambah
+        val noMore = vm.getAvailableJenis(null, selectedNow).isEmpty()
+        binding.tambah.isEnabled = !noMore
         binding.tambah.alpha = if (binding.tambah.isEnabled) 1f else 0.5f
+    }
+
+    private fun buildSetSelectedJenis(): Set<String> {
+        val set = mutableSetOf<String>()
+        binding.jenis1.text?.toString()?.takeIf { it.isNotBlank() }?.let { set += it }
+        tambahanSampahList.forEach { binding ->
+            binding.autoCompleteJenis.text?.toString()?.takeIf { it.isNotBlank() }?.let { set += it }
+        }
+        return set
+    }
+
+    // --- Submit ---
+    private fun onKonfirmasiClicked() {
+        val userId = selectedUserId
+        val keterangan = binding.keterangan.text.toString()
+
+        if (userId == null) {
+            requireContext().toast("Silakan pilih nama nasabah dari daftar")
+            return
+        }
+
+        val jenisUtama = binding.jenis1.text.toString()
+        if (jenisUtama.isBlank()) {
+            requireContext().toast("Jenis sampah tidak boleh kosong")
+            return
+        }
+        val jumlahUtama = binding.jumlah1.text.toString().toDoubleOrNull()
+        if (jumlahUtama == null || jumlahUtama <= 0.0) {
+            requireContext().toast("Jumlah sampah harus lebih dari 0")
+            return
+        }
+
+        val tambahan = mutableListOf<Pair<String, Double>>()
+        tambahanSampahList.forEachIndexed { idx, item ->
+            val jenis = item.autoCompleteJenis.text.toString()
+            if (jenis.isBlank()) {
+                requireContext().toast("Jenis sampah ${idx + 2} tidak boleh kosong")
+                return
+            }
+            val jumlah = item.editTextJumlah.text.toString().toDoubleOrNull()
+            if (jumlah == null || jumlah <= 0.0) {
+                requireContext().toast("Jumlah sampah ${idx + 2} harus lebih dari 0")
+                return
+            }
+            tambahan += jenis to jumlah
+        }
+
+        vm.submitEditTransaksiMasuk(
+            transaksiId = args.riwayat.tskId,
+            userId = userId,
+            keterangan = keterangan,
+            main = jenisUtama to jumlahUtama,
+            tambahan = tambahan
+        )
     }
 
     private fun updateInternetCard(): Boolean {
@@ -359,8 +319,20 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
         return isConnected
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+    private fun showLoading(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+        binding.konfirmasi.isEnabled = !isLoading
+        binding.tambah.isEnabled = !isLoading
     }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
+    }
+
+    private fun String?.orEmpty() = this ?: ""
+
+    private fun android.content.Context.toast(msg: String) =
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 }

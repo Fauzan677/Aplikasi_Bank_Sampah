@@ -8,9 +8,12 @@ import androidx.lifecycle.viewModelScope
 import com.gemahripah.banksampah.data.model.sampah.Kategori
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class JenisSampahViewModel : ViewModel() {
+
+    private val client get() = SupabaseProvider.client
 
     private val _kategoriList = MutableLiveData<List<Kategori>>()
     val kategoriList: LiveData<List<Kategori>> get() = _kategoriList
@@ -19,18 +22,17 @@ class JenisSampahViewModel : ViewModel() {
     val isLoading: LiveData<Boolean> get() = _isLoading
 
     fun loadKategori() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _isLoading.postValue(true)
             try {
-                val response = SupabaseProvider.client
+                val response = client
                     .from("kategori")
                     .select()
                     .decodeList<Kategori>()
-
                 _kategoriList.postValue(response)
             } catch (e: Exception) {
                 _kategoriList.postValue(emptyList())
-                Log.e("JenisSampahViewModel", "Gagal memuat kategori", e)
+                Log.e("JenisSampahVM", "Gagal memuat kategori", e)
             } finally {
                 _isLoading.postValue(false)
             }

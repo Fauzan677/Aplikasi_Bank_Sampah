@@ -88,7 +88,7 @@
 
     <fragment
         android:id="@+id/tambahKategoriFragment"
-        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.jenis.tambah.TambahKategoriFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.jenis.tambah.kategori.TambahKategoriFragment"
         android:label="fragment_tambah_kategori"
         tools:layout="@layout/fragment_tambah_kategori" >
         <action
@@ -98,7 +98,7 @@
 
     <fragment
         android:id="@+id/tambahJenisSampahFragment"
-        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.jenis.tambah.TambahJenisSampahFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.jenis.tambah.sampah.TambahJenisSampahFragment"
         android:label="tambah_jenis_sampah"
         tools:layout="@layout/fragment_tambah_jenis_sampah" >
         <action
@@ -109,7 +109,7 @@
 
     <fragment
         android:id="@+id/editJenisSampahFragment"
-        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.jenis.edit.EditJenisSampahFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.jenis.edit.sampah.EditJenisSampahFragment"
         android:label="EditJenisSampahFragment"
         tools:layout="@layout/fragment_tambah_jenis_sampah">
 
@@ -340,7 +340,7 @@
     </fragment>
     <fragment
         android:id="@+id/editKategoriFragment"
-        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.jenis.edit.EditKategoriFragment"
+        android:name="com.gemahripah.banksampah.ui.admin.pengaturan.jenis.edit.kategori.EditKategoriFragment"
         android:label="EditKategoriFragment"
         tools:layout="@layout/fragment_tambah_kategori">
 

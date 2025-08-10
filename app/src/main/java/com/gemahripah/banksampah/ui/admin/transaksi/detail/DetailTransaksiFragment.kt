@@ -63,7 +63,14 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
         binding.tanggal.text = riwayat.tanggal
         val formattedHarga = NumberFormat.getNumberInstance(Locale("in", "ID")).format(riwayat.totalHarga)
         binding.nominal.text = "Rp $formattedHarga"
-        binding.keterangan.text = riwayat.tskKeterangan
+
+        if (riwayat.tskKeterangan.isNullOrBlank()) {
+            binding.keterangan.visibility = View.GONE
+            binding.textKosongKeterangan.visibility = View.VISIBLE
+        } else {
+            binding.keterangan.text = riwayat.tskKeterangan
+            binding.keterangan.visibility = View.VISIBLE
+        }
 
         if (riwayat.tipe.lowercase() == "keluar") {
             binding.detail.visibility = View.GONE
@@ -116,6 +123,7 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
 
                         is DetailTransaksiUiState.Deleted -> {
                             binding.loading.visibility = View.GONE
+                            Toast.makeText(requireContext(), "Transaksi berhasil dihapus", Toast.LENGTH_SHORT).show()
                             findNavController().popBackStack()
                         }
 

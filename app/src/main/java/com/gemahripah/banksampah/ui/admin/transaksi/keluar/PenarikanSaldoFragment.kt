@@ -1,6 +1,7 @@
 package com.gemahripah.banksampah.ui.admin.transaksi.keluar
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,8 +9,12 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
@@ -33,9 +38,9 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
     private var _binding: FragmentPenarikanSaldoBinding? = null
     private val binding get() = _binding!!
 
-    private var selectedPgnId: String? = null
-    private val namaToPenggunaMap = mutableMapOf<String, Pengguna>()
-    private val supabaseClient get() = SupabaseProvider.client
+    private val vm: PenarikanSaldoViewModel by viewModels()
+
+    private val rupiah: NumberFormat = NumberFormat.getNumberInstance(Locale("in", "ID"))
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -45,187 +50,111 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
         return binding.root
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setupUiActions()
+        collectVm()
+
         if (!updateInternetCard()) return
-
-        val pengguna = arguments?.let { PenarikanSaldoFragmentArgs.fromBundle(it).pengguna }
-
-        pengguna?.let {
-            binding.nama.setText(it.pgnNama, false)
-            selectedPgnId = it.pgnId
-            tampilkanSaldoPengguna(it.pgnId)
-        }
-
-        fetchNamaPengguna()
-        setupKonfirmasiButton()
+        vm.loadPengguna()
     }
 
     override fun reloadData() {
         if (!updateInternetCard()) return
-        fetchNamaPengguna()
-        selectedPgnId?.let {
-            tampilkanSaldoPengguna(it)
-        }
+        vm.loadPengguna()
+        vm.selectedPgnId.value?.let { vm.fetchSaldo(it) }
     }
 
-    private fun fetchNamaPengguna() {
-        lifecycleScope.launch {
-            try {
-                val penggunaList = withContext(Dispatchers.IO) {
-                    supabaseClient
-                        .postgrest["pengguna"]
-                        .select()
-                        .decodeList<Pengguna>()
-                }
-
-                namaToPenggunaMap.clear()
-                penggunaList.forEach { pengguna ->
-                    pengguna.pgnNama?.let {
-                        namaToPenggunaMap[it] = pengguna
-                    }
-                }
-
-                val namaList = namaToPenggunaMap.keys.toList()
-                val adapter = ArrayAdapter(
-                    requireContext(),
-                    android.R.layout.simple_dropdown_item_1line,
-                    namaList
-                )
-
-                binding.nama.setAdapter(adapter)
-                binding.nama.threshold = 1
-
-                binding.nama.setOnItemClickListener { _: AdapterView<*>, _, position, _ ->
-                    val selectedNama = adapter.getItem(position)
-                    val penggunaTerpilih = namaToPenggunaMap[selectedNama]
-                    selectedPgnId = penggunaTerpilih?.pgnId
-
-                    if (selectedPgnId != null) {
-                        tampilkanSaldoPengguna(selectedPgnId!!)
-                    }
-                }
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private fun setupKonfirmasiButton() {
+    private fun setupUiActions() {
+        // Konfirmasi
         binding.konfirmasi.setOnClickListener {
-            val jumlahInput = binding.jumlah.text.toString().toDoubleOrNull()
+            val jumlah = binding.jumlah.text.toString().toDoubleOrNull()
             val keterangan = binding.keterangan.text.toString()
-
-            if (selectedPgnId.isNullOrEmpty()) {
-                binding.nama.error = "Silakan pilih nasabah"
-                return@setOnClickListener
-            }
-
-            if (jumlahInput == null || jumlahInput <= 0) {
-                binding.jumlah.error = "Jumlah penarikan tidak valid"
-                return@setOnClickListener
-            }
-
-            lifecycleScope.launch {
-                showLoading(true)
-                try {
-                    val saldo = withContext(Dispatchers.IO) {
-                        val rpcParams = buildJsonObject {
-                            put("pgn_id_input", selectedPgnId!!)
-                        }
-                        val response = supabaseClient.postgrest.rpc(
-                            "hitung_saldo_pengguna",
-                            rpcParams
-                        )
-                        response.decodeAs<Double>()
-                    }
-
-                    if (saldo < jumlahInput) {
-                        binding.jumlah.requestFocus()
-
-                        val formattedSaldo = NumberFormat.getNumberInstance(Locale("in", "ID")).format(saldo)
-                        binding.jumlah.error = "Saldo tidak mencukupi. Sisa saldo: Rp $formattedSaldo"
-                    } else {
-                        try {
-                            val transaksiResponse = withContext(Dispatchers.IO) {
-                                supabaseClient.postgrest["transaksi"]
-                                    .insert(
-                                        buildJsonObject {
-                                            put("tskIdPengguna", selectedPgnId!!)
-                                            put("tskKeterangan", keterangan)
-                                            put("tskTipe", "Keluar")
-                                        }
-                                    ) {
-                                        select()
-                                    }.decodeSingle<Transaksi>()
-                            }
-
-                            val transaksiId = transaksiResponse.tskId
-
-                            if (transaksiId != null) {
-                                withContext(Dispatchers.IO) {
-                                    supabaseClient.postgrest["detail_transaksi"]
-                                        .insert(
-                                            buildJsonObject {
-                                                put("dtlTskId", transaksiId)
-                                                put("dtlJumlah", jumlahInput)
-                                            }
-                                        )
-                                }
-
-                                Toast.makeText(requireContext(), "Penarikan saldo berhasil", Toast.LENGTH_SHORT).show()
-                                findNavController().navigate(R.id.action_penarikanSaldoFragment_to_navigation_transaksi)
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            Toast.makeText(requireContext(), "Penarikan saldo gagal, periksa koneksi internet", Toast.LENGTH_SHORT).show()
-                        } finally {
-                            showLoading(false)
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    Toast.makeText(requireContext(), "Penarikan saldo gagal, periksa koneksi internet", Toast.LENGTH_SHORT).show()
-                    showLoading(false)
-                }
-            }
+            vm.submitPenarikan(jumlah, keterangan)
         }
     }
 
-    @SuppressLint("SetTextI18n")
-    private fun tampilkanSaldoPengguna(pgnId: String?) {
+    private fun collectVm() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
 
-        if (!NetworkUtil.isInternetAvailable(requireContext())) {
-            updateInternetCard()
-            return
-        }
-
-        lifecycleScope.launch {
-            try {
-                val saldo = withContext(Dispatchers.IO) {
-                    supabaseClient.postgrest.rpc("hitung_saldo_pengguna",
-                        buildJsonObject { put("pgn_id_input", pgnId) }).data.toDoubleOrNull()
+                // Loading
+                launch {
+                    vm.isLoading.collect { showLoading(it) }
                 }
 
-                if (saldo != null) {
-                    val formattedSaldo = NumberFormat.getNumberInstance(Locale("in", "ID")).format(saldo)
-                    binding.saldo.text = "Rp $formattedSaldo"
-                } else {
-                    binding.saldo.text = "0"
+                // Daftar nama -> adapter (dengan dropdown saat mengetik)
+                launch {
+                    vm.penggunaList.collect { list ->
+                        val namaList = list.mapNotNull { it.pgnNama }.distinct()
+                        val adapter = ArrayAdapter(requireContext(),
+                            android.R.layout.simple_dropdown_item_1line, namaList)
+
+                        binding.nama.apply {
+                            setAdapter(adapter)
+                            threshold = 1
+
+                            // muncul saat mengetik
+                            setOnTouchListener(null)
+                            addTextChangedListener(onTextChanged = { text, _, _, _ ->
+                                if (hasFocus()) {
+                                    if (text.isNullOrEmpty()) dismissDropDown()
+                                    else if (!isPopupShowing) showDropDown()
+                                }
+                            })
+                            setOnFocusChangeListener { _, hasFocus ->
+                                if (hasFocus && !text.isNullOrEmpty()) post { showDropDown() }
+                            }
+
+                            setOnItemClickListener { _: AdapterView<*>, _, position, _ ->
+                                val selectedNama = adapter.getItem(position) ?: return@setOnItemClickListener
+                                vm.onNamaDipilih(selectedNama)
+                            }
+                        }
+                    }
                 }
 
-            } catch (e: Exception) {
-                e.printStackTrace()
+                // Saldo text
+                launch {
+                    vm.saldoText.collect { binding.saldo.text = it }
+                }
+
+                // Saldo kurang -> set error di jumlah
+                launch {
+                    vm.saldoKurang.collect { sisa ->
+                        val formatted = rupiah.format(sisa)
+                        binding.jumlah.requestFocus()
+                        binding.jumlah.error = "Saldo tidak mencukupi. Sisa saldo: Rp $formatted"
+                    }
+                }
+
+                // Toast
+                launch {
+                    vm.toast.collect { requireContext().toast(it) }
+                }
+
+                // Navigasi selesai + bersihkan back stack fragment ini
+                launch {
+                    vm.navigateBack.collect {
+                        findNavController().navigate(
+                            R.id.navigation_transaksi,
+                            null,
+                            NavOptions.Builder()
+                                .setPopUpTo(R.id.penarikanSaldoFragment, true)
+                                .setLaunchSingleTop(true)
+                                .build()
+                        )
+                    }
+                }
             }
         }
     }
 
     private fun updateInternetCard(): Boolean {
         val isConnected = NetworkUtil.isInternetAvailable(requireContext())
-        val showCard = !isConnected
-        (activity as? AdminActivity)?.showNoInternetCard(showCard)
+        (activity as? AdminActivity)?.showNoInternetCard(!isConnected)
         return isConnected
     }
 
@@ -236,7 +165,10 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         _binding = null
+        super.onDestroyView()
     }
+
+    private fun Context.toast(msg: String) =
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 }

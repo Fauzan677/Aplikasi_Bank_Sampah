@@ -34,18 +34,6 @@
                 />
 
             <TextView
-                android:id="@+id/sub_judul"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Masukkan Setor Sampah!"
-                android:fontFamily="@font/nunito_bold"
-                android:textColor="@color/black"
-                android:textSize="30sp"
-                android:layout_marginTop="20dp"
-                android:layout_gravity="center"
-                />
-
-            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/nunito_semibold"

@@ -9,7 +9,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.ui.MainActivity
 import com.gemahripah.banksampah.R
@@ -24,7 +27,11 @@ class PengaturanFragment : Fragment() {
     private var _binding: FragmentProfilBinding? = null
     private val binding get() = _binding!!
 
+    // Tetap pakai AdminViewModel untuk menampilkan nama/email (activity scope)
     private val adminViewModel: AdminViewModel by activityViewModels()
+
+    // ViewModel baru untuk handle logout + event
+    private val pengaturanViewModel: PengaturanViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,6 +46,7 @@ class PengaturanFragment : Fragment() {
 
         setupObserver()
         setupListeners()
+        collectVm()
     }
 
     private fun setupObserver() {
@@ -48,57 +56,70 @@ class PengaturanFragment : Fragment() {
         }
     }
 
+    private fun collectVm() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+
+                // Loading -> disable tombol keluar biar gak dobel klik
+                launch {
+                    pengaturanViewModel.isLoading.collect { loading ->
+                        showLoading(loading)
+                    }
+                }
+
+                // Toast
+                launch {
+                    pengaturanViewModel.toast.collect { msg ->
+                        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                // Sukses logout -> clear task dan buka MainActivity
+                launch {
+                    pengaturanViewModel.logoutSuccess.collect {
+                        val intent = Intent(requireContext(), MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                        startActivity(intent)
+                    }
+                }
+            }
+        }
+    }
+
     private fun setupListeners() {
         binding.btProfil.setOnClickListener {
             findNavController().navigate(R.id.action_navigation_pengaturan_to_editProfilFragment)
         }
-
         binding.btCetak.setOnClickListener {
             findNavController().navigate(R.id.action_navigation_pengaturan_to_laporanFragment)
         }
-
         binding.jenis.setOnClickListener {
             findNavController().navigate(R.id.action_navigation_pengaturan_to_jenisSampahFragment)
         }
-
         binding.nasabah.setOnClickListener {
             findNavController().navigate(R.id.action_navigation_pengaturan_to_penggunaFragment)
         }
-
-        binding.keluar.setOnClickListener {
-            tampilkanDialogKonfirmasiKeluar()
-        }
+        binding.keluar.setOnClickListener { tampilkanDialogKonfirmasiKeluar() }
     }
 
     private fun tampilkanDialogKonfirmasiKeluar() {
         AlertDialog.Builder(requireContext())
             .setTitle("Konfirmasi Keluar")
             .setMessage("Apakah Anda yakin ingin keluar?")
-            .setPositiveButton("Keluar") { _, _ -> keluar() }
+            .setPositiveButton("Keluar") { _, _ -> pengaturanViewModel.logout() }
             .setNegativeButton("Batal", null)
             .show()
     }
 
-    private fun keluar() {
-        lifecycleScope.launch {
-            try {
-                SupabaseProvider.client.auth.signOut()
-
-                val intent = Intent(requireContext(), MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                }
-                startActivity(intent)
-
-                Toast.makeText(requireContext(), "Logout berhasil", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Gagal logout, periksa koneksi internet", Toast
-                    .LENGTH_LONG).show()
-            }
-        }
+    private fun showLoading(isLoading: Boolean) {
+        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+        binding.keluar.isEnabled = !isLoading
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         _binding = null
+        super.onDestroyView()
     }
 }

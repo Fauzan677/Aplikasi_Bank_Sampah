@@ -2,12 +2,21 @@ package com.gemahripah.banksampah.ui.admin.beranda
 
 import android.util.Log
 import androidx.lifecycle.*
-import com.gemahripah.banksampah.data.model.pengguna.Pengguna
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.cachedIn
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
+import com.gemahripah.banksampah.ui.gabungan.paging.listNasabah.NasabahPagingSource
 import io.github.jan.supabase.postgrest.rpc
-import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
@@ -17,12 +26,6 @@ import java.text.NumberFormat
 import java.util.*
 
 class BerandaViewModel : ViewModel() {
-
-    private val _isLoadingNasabah = MutableLiveData<Boolean>()
-    val isLoadingNasabah: LiveData<Boolean> = _isLoadingNasabah
-
-    private val _nasabahList = MutableLiveData<List<Pengguna>>()
-    val nasabahList: LiveData<List<Pengguna>> = _nasabahList
 
     private val _totalSaldo = MutableLiveData<String>()
     val totalSaldo: LiveData<String> = _totalSaldo
@@ -36,32 +39,34 @@ class BerandaViewModel : ViewModel() {
     private val _totalSetoran = MutableLiveData<String>()
     val totalSetoran: LiveData<String> = _totalSetoran
 
-    private val formatter = NumberFormat.getNumberInstance(Locale("in", "ID"))
+    private val formatter = NumberFormat.getNumberInstance(Locale("id", "ID"))
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+    val pager = searchQuery
+        .debounce(300)
+        .distinctUntilChanged()
+        .flatMapLatest { query ->
+            Pager(PagingConfig(
+                pageSize = 5,
+                initialLoadSize = 5,
+                enablePlaceholders = false
+            )) {
+                NasabahPagingSource(query)
+            }.flow
+        }
+        .cachedIn(viewModelScope)
 
     fun fetchDashboardData() {
-        getPengguna()
         getTotalSaldo()
         getTotalNasabah()
         getTotalSetoran()
-    }
-
-    fun getPengguna() {
-        viewModelScope.launch(Dispatchers.IO) {
-            _isLoadingNasabah.postValue(true)
-            try {
-                val list = SupabaseProvider.client
-                    .from("pengguna")
-                    .select {
-                        filter { eq("pgnIsAdmin", "False") }
-                    }
-                    .decodeList<Pengguna>()
-                _nasabahList.postValue(list)
-            } catch (e: Exception) {
-                _nasabahList.postValue(emptyList())
-            } finally {
-                _isLoadingNasabah.postValue(false)
-            }
-        }
     }
 
     fun getTotalSaldo() {
