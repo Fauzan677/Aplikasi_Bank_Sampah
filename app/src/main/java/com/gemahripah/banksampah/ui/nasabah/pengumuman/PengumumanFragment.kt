@@ -6,7 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.GridLayoutManager
@@ -41,20 +43,44 @@ class PengumumanFragment : Fragment(), Reloadable {
 
         setupUI()
         setupRecyclerView()
-        setupLoadStateListener()
 
-        binding.swipeRefresh.setOnRefreshListener {
-            reloadData()
-        }
+        binding.swipeRefresh.setOnRefreshListener { reloadData() }
 
         if (!updateInternetCard()) return
-        observePagingData()
+
+        // Collect sekali saja, lifecycle-aware
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // 1) Listen loadState untuk state UI & swipeRefresh
+                launch {
+                    pagingAdapter.loadStateFlow.collectLatest { loadStates ->
+                        val isLoading = loadStates.refresh is LoadState.Loading
+                        val isError = loadStates.refresh is LoadState.Error
+                        val isEmpty = loadStates.refresh is LoadState.NotLoading && pagingAdapter.itemCount == 0
+
+                        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+                        binding.rvPengumuman.visibility = if (!isLoading && !isError) View.VISIBLE else View.GONE
+                        binding.pengumumanKosong.visibility = if (isEmpty) View.VISIBLE else View.GONE
+
+                        // hentikan animasi swipeRefresh ketika selesai refresh
+                        if (!isLoading) binding.swipeRefresh.isRefreshing = false
+                    }
+                }
+
+                // 2) Collect data paging dari ViewModel
+                launch {
+                    viewModel.pagingData().collectLatest { data ->
+                        pagingAdapter.submitData(data)
+                    }
+                }
+            }
+        }
     }
 
     override fun reloadData() {
         if (!updateInternetCard()) return
-        binding.swipeRefresh.isRefreshing = false
-        observePagingData()
+        // cukup refresh paging, jangan mulai collector baru
+        pagingAdapter.refresh()
     }
 
     private fun setupUI() {
@@ -68,32 +94,12 @@ class PengumumanFragment : Fragment(), Reloadable {
             findNavController().navigate(action)
         }
 
-        binding.rvPengumuman.layoutManager = GridLayoutManager(requireContext(), 2)
-        binding.rvPengumuman.adapter = pagingAdapter.withLoadStateHeaderAndFooter(
-            header = LoadingStateAdapter { pagingAdapter.retry() },
-            footer = LoadingStateAdapter { pagingAdapter.retry() }
-        )
-    }
-
-    private fun setupLoadStateListener() {
-        lifecycleScope.launch {
-            pagingAdapter.loadStateFlow.collectLatest { loadStates ->
-                val isLoading = loadStates.refresh is LoadState.Loading
-                val isError = loadStates.refresh is LoadState.Error
-                val isEmpty = loadStates.refresh is LoadState.NotLoading && pagingAdapter.itemCount == 0
-
-                binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
-                binding.rvPengumuman.visibility = if (!isLoading && !isError) View.VISIBLE else View.GONE
-                binding.pengumumanKosong.visibility = if (isEmpty) View.VISIBLE else View.GONE
-            }
-        }
-    }
-
-    private fun observePagingData() {
-        lifecycleScope.launch {
-            viewModel.pagingData().collectLatest {
-                pagingAdapter.submitData(it)
-            }
+        binding.rvPengumuman.apply {
+            layoutManager = GridLayoutManager(requireContext(), 2)
+            adapter = pagingAdapter.withLoadStateHeaderAndFooter(
+                header = LoadingStateAdapter { pagingAdapter.retry() },
+                footer = LoadingStateAdapter { pagingAdapter.retry() }
+            )
         }
     }
 

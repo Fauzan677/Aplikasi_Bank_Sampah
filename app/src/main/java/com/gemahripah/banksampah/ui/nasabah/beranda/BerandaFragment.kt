@@ -1,5 +1,6 @@
 package com.gemahripah.banksampah.ui.nasabah.beranda
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -16,16 +17,13 @@ import androidx.navigation.fragment.findNavController
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
-import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
 import com.gemahripah.banksampah.databinding.FragmentBerandaNasabahBinding
 import com.gemahripah.banksampah.ui.gabungan.adapter.common.LoadingStateAdapter
 import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatPagingAdapter
-import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatTransaksiAdapter
 import com.gemahripah.banksampah.ui.nasabah.NasabahActivity
 import com.gemahripah.banksampah.ui.nasabah.NasabahViewModel
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
-import com.gemahripah.banksampah.utils.getStatusBarHeight
 import com.google.android.material.datepicker.MaterialDatePicker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -36,6 +34,7 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.Job
 
 class BerandaFragment : Fragment(), Reloadable {
 
@@ -50,6 +49,7 @@ class BerandaFragment : Fragment(), Reloadable {
     private var selectedFilter: String = ""
 
     private lateinit var pagingAdapter: RiwayatPagingAdapter
+    private var pagingJob: Job? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -66,16 +66,13 @@ class BerandaFragment : Fragment(), Reloadable {
         observeViewModel()
         setupSpinner()
         setupDatePickers()
+        setupRecyclerView()
 
-        binding.swipeRefresh.setOnRefreshListener {
-            reloadData()
-        }
-
+        binding.swipeRefresh.setOnRefreshListener { reloadData() }
         binding.koneksiRiwayat.setOnClickListener {
             binding.koneksiRiwayat.visibility = View.GONE
             binding.loading.visibility = View.VISIBLE
-
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 delay(1000L)
                 pagingAdapter.retry()
             }
@@ -84,7 +81,6 @@ class BerandaFragment : Fragment(), Reloadable {
         if (!updateInternetCard()) return
         setupTransaksi()
         setupSetoran()
-        setupRecyclerView()
     }
 
     override fun reloadData() {
@@ -147,10 +143,14 @@ class BerandaFragment : Fragment(), Reloadable {
         }
     }
 
+    @SuppressLint("RepeatOnLifecycleWrongUsage")
     private fun observePaging(pgnId: String) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            berandaViewModel.pagingData(pgnId, startDate, endDate).collectLatest {
-                pagingAdapter.submitData(it)
+        pagingJob?.cancel()
+        pagingJob = viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                berandaViewModel
+                    .pagingData(pgnId, startDate, endDate)
+                    .collectLatest { pagingAdapter.submitData(it) }
             }
         }
     }
@@ -189,6 +189,7 @@ class BerandaFragment : Fragment(), Reloadable {
 
                 selectedFilter = items[position]
                 nasabahViewModel.pengguna.value?.pgnId?.let {
+                    if (!updateInternetCard()) return@onItemSelected
                     berandaViewModel.getTotalTransaksi(it, selectedFilter)
                 }
             }
@@ -258,16 +259,13 @@ class BerandaFragment : Fragment(), Reloadable {
                 showDateRangePicker { start, end ->
                     startDate = start.toString()
                     endDate = end.toString()
+
+                    if (!updateInternetCard()) return@showDateRangePicker
                     berandaViewModel.getTotalTransaksi(pgnId, selectedItem ?: "", start, end)
 
-                    val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id", "ID"))
-                    val startText = start.format(formatter)
-                    val endText = end.format(formatter)
-
-                    binding.tvTanggalTransaksi.apply {
-                        text = "($startText - $endText)"
-                        visibility = View.VISIBLE
-                    }
+                    val fmt = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id", "ID"))
+                    binding.tvTanggalTransaksi.text = "(${start.format(fmt)} - ${end.format(fmt)})"
+                    binding.tvTanggalTransaksi.visibility = View.VISIBLE
                 }
             }
         }
@@ -277,9 +275,10 @@ class BerandaFragment : Fragment(), Reloadable {
             nasabahViewModel.pengguna.value?.pgnId?.let { pgnId ->
                 startDate = null
                 endDate = null
+
+                if (!updateInternetCard()) return@let
                 berandaViewModel.getTotalTransaksi(pgnId, selectedItem ?: "")
             }
-
             binding.tvTanggalTransaksi.visibility = View.GONE
             true
         }
@@ -289,6 +288,7 @@ class BerandaFragment : Fragment(), Reloadable {
         binding.tanggalSetoran.setOnClickListener {
             showDateRangePicker { startDate, endDate ->
                 nasabahViewModel.pengguna.value?.pgnId?.let { pgnId ->
+                    if (!updateInternetCard()) return@let
                     berandaViewModel.getTotalSetoran(pgnId, startDate, endDate)
                 }
 
@@ -305,6 +305,7 @@ class BerandaFragment : Fragment(), Reloadable {
 
         binding.tanggalSetoran.setOnLongClickListener {
             nasabahViewModel.pengguna.value?.pgnId?.let { pgnId ->
+                if (!updateInternetCard()) return@let
                 berandaViewModel.getTotalSetoran(pgnId)
             }
 

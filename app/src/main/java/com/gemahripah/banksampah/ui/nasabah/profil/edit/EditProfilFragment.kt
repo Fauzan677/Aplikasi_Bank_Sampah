@@ -1,28 +1,33 @@
 package com.gemahripah.banksampah.ui.nasabah.profil.edit
 
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.os.Bundle
 import android.text.InputType
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.databinding.FragmentTambahPenggunaBinding
 import com.gemahripah.banksampah.ui.nasabah.NasabahViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class EditProfilFragment : Fragment() {
 
     private var _binding: FragmentTambahPenggunaBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: NasabahViewModel by activityViewModels()
+    private val nasabahViewModel: NasabahViewModel by activityViewModels()
     private val editViewModel: EditProfilViewModel by viewModels()
 
     private var isPasswordVisible = false
@@ -30,11 +35,12 @@ class EditProfilFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         _binding = FragmentTambahPenggunaBinding.inflate(inflater, container, false)
         return binding.root
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -49,34 +55,44 @@ class EditProfilFragment : Fragment() {
     }
 
     private fun observeViewModel() {
-        viewModel.pengguna.observe(viewLifecycleOwner) { pengguna ->
-            if (pengguna != null) {
-                binding.nama.setText(pengguna.pgnNama ?: "")
-                editViewModel.setInitialData(pengguna)
+        // Prefill data pengguna saat tersedia
+        nasabahViewModel.pengguna.observe(viewLifecycleOwner) { pengguna ->
+            pengguna?.let {
+                binding.nama.setText(it.pgnNama.orEmpty())
+                editViewModel.setInitialData(it)
             }
         }
 
-        editViewModel.toastMessage.observe(viewLifecycleOwner) { message ->
-            message?.let {
-                Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
+        // Collect state & event dengan lifecycle-aware
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Loading
+                launch {
+                    editViewModel.isLoading.collectLatest { loading ->
+                        binding.loading.visibility = if (loading) View.VISIBLE else View.GONE
+                        binding.layoutKonten.alpha = if (loading) 0.3f else 1f
+                        binding.konfirmasi.isEnabled = !loading
+                    }
+                }
+                // Toast event
+                launch {
+                    editViewModel.toast.collectLatest { msg ->
+                        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                    }
+                }
+                // Success event -> update VM bersama + navigate
+                launch {
+                    editViewModel.success.collectLatest {
+                        val current = nasabahViewModel.pengguna.value
+                        val namaBaru = binding.nama.text.toString().trim()
+                        nasabahViewModel.setPengguna(current?.copy(pgnNama = namaBaru))
+
+                        findNavController().navigate(
+                            R.id.action_editProfilFragment_to_navigation_notifications
+                        )
+                    }
+                }
             }
-        }
-
-        editViewModel.successUpdate.observe(viewLifecycleOwner) { success ->
-            if (success) {
-                val pengguna = viewModel.pengguna.value
-                val namaBaru = binding.nama.text.toString().trim()
-
-                viewModel.setPengguna(
-                    pengguna?.copy(pgnNama = namaBaru)
-                )
-
-                findNavController().navigate(R.id.action_editProfilFragment_to_navigation_notifications)
-            }
-        }
-
-        editViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            showLoading(isLoading)
         }
     }
 
@@ -86,8 +102,7 @@ class EditProfilFragment : Fragment() {
             val passwordBaru = binding.password.text.toString().trim()
 
             if (namaBaru.isEmpty()) {
-                Toast.makeText(requireContext(), "Nama tidak boleh kosong", Toast.LENGTH_SHORT)
-                    .show()
+                Toast.makeText(requireContext(), "Nama tidak boleh kosong", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -104,13 +119,13 @@ class EditProfilFragment : Fragment() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupPasswordToggle() {
+        binding.password.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.visibility_off, 0)
         binding.password.setOnTouchListener { v, event ->
             if (event.action == MotionEvent.ACTION_UP) {
-                val drawableEnd = 2
-
-                val drawable = binding.password.compoundDrawables[drawableEnd]
-                if (drawable != null && event.rawX >= (binding.password.right - drawable.bounds
-                        .width() - binding.password.paddingEnd)) {
+                val drawableEndIndex = 2
+                val drawable = binding.password.compoundDrawables[drawableEndIndex]
+                val tapped = event.rawX >= (binding.password.right - drawable.bounds.width() - binding.password.paddingEnd)
+                if (drawable != null && tapped) {
                     togglePasswordVisibility()
                     return@setOnTouchListener true
                 }
@@ -122,23 +137,14 @@ class EditProfilFragment : Fragment() {
     private fun togglePasswordVisibility() {
         val selection = binding.password.selectionEnd
         if (isPasswordVisible) {
-            binding.password.inputType = InputType.TYPE_CLASS_TEXT or InputType
-                .TYPE_TEXT_VARIATION_PASSWORD
+            binding.password.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
             binding.password.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.visibility_off, 0)
         } else {
-            binding.password.inputType = InputType.TYPE_CLASS_TEXT or InputType
-                .TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-            binding.password.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable
-                .visibility_on, 0)
+            binding.password.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            binding.password.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.visibility_on, 0)
         }
         isPasswordVisible = !isPasswordVisible
         binding.password.setSelection(selection)
-    }
-
-    private fun showLoading(isLoading: Boolean) {
-        binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
-        binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
-        binding.konfirmasi.isEnabled = !isLoading
     }
 
     override fun onDestroyView() {

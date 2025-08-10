@@ -10,7 +10,9 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.ui.MainActivity
@@ -19,6 +21,7 @@ import com.gemahripah.banksampah.databinding.FragmentProfilBinding
 import com.gemahripah.banksampah.ui.nasabah.NasabahViewModel
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.exceptions.RestException
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class ProfilFragment : Fragment() {
@@ -50,24 +53,39 @@ class ProfilFragment : Fragment() {
 
     private fun observeViewModel() {
         nasabahViewModel.pengguna.observe(viewLifecycleOwner) { pengguna ->
-            if (pengguna != null) {
-                binding.nama.text = pengguna.pgnNama ?: "Nama tidak tersedia"
-                binding.email.text = pengguna.pgnEmail ?: "Email tidak tersedia"
+            pengguna?.let {
+                binding.nama.text = it.pgnNama ?: "Nama tidak tersedia"
+                binding.email.text = it.pgnEmail ?: "Email tidak tersedia"
             }
         }
 
-        profilViewModel.logoutStatus.observe(viewLifecycleOwner) { status ->
-            if (status == true) {
-                val intent = Intent(requireContext(), MainActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                Toast.makeText(requireContext(), "Berhasil Keluar", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        profilViewModel.logoutError.observe(viewLifecycleOwner) { errorMessage ->
-            errorMessage?.let {
-                Toast.makeText(requireContext(), "Gagal keluar, periksa koneksi internet", Toast.LENGTH_LONG).show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Loading state
+                launch {
+                    profilViewModel.isLoading.collectLatest { loading ->
+                        binding.keluar.isEnabled = !loading
+                        binding.loading.visibility = if (loading) View.VISIBLE else View.GONE
+                        binding.layoutKonten.alpha = if (loading) 0.3f else 1f
+                        binding.keluar.isEnabled = !loading
+                    }
+                }
+                // Success event
+                launch {
+                    profilViewModel.logoutSuccess.collectLatest {
+                        Toast.makeText(requireContext(), "Berhasil Keluar", Toast.LENGTH_SHORT).show()
+                        val intent = Intent(requireContext(), MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                        startActivity(intent)
+                    }
+                }
+                // Error event
+                launch {
+                    profilViewModel.logoutError.collectLatest { msg ->
+                        Toast.makeText(requireContext(), msg, Toast.LENGTH_LONG).show()
+                    }
+                }
             }
         }
     }
@@ -81,9 +99,7 @@ class ProfilFragment : Fragment() {
             AlertDialog.Builder(requireContext())
                 .setTitle("Konfirmasi Keluar")
                 .setMessage("Apakah Anda yakin ingin keluar?")
-                .setPositiveButton("Keluar") { _, _ ->
-                    profilViewModel.logout()
-                }
+                .setPositiveButton("Keluar") { _, _ -> profilViewModel.logout() }
                 .setNegativeButton("Batal", null)
                 .show()
         }

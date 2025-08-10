@@ -11,10 +11,13 @@ import com.gemahripah.banksampah.ui.gabungan.paging.pengumuman.PengumumanPagingS
 import kotlinx.coroutines.flow.Flow
 
 class PengumumanViewModel : ViewModel() {
-    fun pagingData(): Flow<PagingData<Pengumuman>> {
-        return Pager(
-            config = PagingConfig(pageSize = 5, initialLoadSize = 5, enablePlaceholders = false),
+    fun pagingData(): Flow<PagingData<Pengumuman>> =
+        Pager(
+            config = PagingConfig(
+                pageSize = 5,
+                initialLoadSize = 5,
+                enablePlaceholders = false
+            ),
             pagingSourceFactory = { PengumumanPagingSource() }
         ).flow.cachedIn(viewModelScope)
-    }
 }

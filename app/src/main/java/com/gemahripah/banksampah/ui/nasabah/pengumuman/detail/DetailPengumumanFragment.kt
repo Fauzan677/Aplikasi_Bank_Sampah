@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import androidx.fragment.app.viewModels
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -30,6 +31,8 @@ class DetailPengumumanFragment : Fragment(), Reloadable {
     private var _binding: FragmentDetailPengumumanBinding? = null
     private val binding get() = _binding!!
 
+    private val viewModel: DetailPengumumanViewModel by viewModels()
+
     private var imageUrlWithUpdatedAt: String? = null
 
     override fun onCreateView(
@@ -47,62 +50,57 @@ class DetailPengumumanFragment : Fragment(), Reloadable {
         binding.hapus.visibility = View.GONE
 
         showLoading(true)
-
         reloadData()
     }
 
     override fun reloadData() {
         if (!updateInternetCard()) return
 
-        val pengumuman = arguments?.let {
-            DetailPengumumanFragmentArgs.fromBundle(it).pengumuman
-        }
+        val pengumuman: Pengumuman? =
+            arguments?.let { DetailPengumumanFragmentArgs.fromBundle(it).pengumuman }
 
-        pengumuman?.let {
-            tampilkanDetailPengumuman(it)
-            setupImageClick(it)
-        }
+        pengumuman?.let { showDetail(it) }
     }
 
-    private fun tampilkanDetailPengumuman(pengumuman: Pengumuman) {
-        binding.judul.text = pengumuman.pmnJudul
-        binding.isiPengumuman.text = pengumuman.pmnIsi
+    private fun showDetail(p: Pengumuman) {
+        // Teks dasar
+        binding.judul.text = p.pmnJudul
+        binding.isiPengumuman.text = p.pmnIsi
 
-        if (!pengumuman.updated_at.isNullOrBlank()) {
-            binding.update.text = formatTanggalUpdate(pengumuman.updated_at)
-            binding.update.visibility = View.VISIBLE
-        } else {
+        // Tanggal update (tanpa state)
+        val formatted = viewModel.formatUpdatedAt(p.updated_at)
+        if (formatted.isNullOrBlank()) {
             binding.update.visibility = View.GONE
+        } else {
+            binding.update.text = formatted
+            binding.update.visibility = View.VISIBLE
         }
 
-        if (!pengumuman.pmnGambar.isNullOrBlank()) {
-            imageUrlWithUpdatedAt = "${pengumuman.pmnGambar}?v=${pengumuman.updated_at}"
+        // Gambar (tanpa state)
+        imageUrlWithUpdatedAt = viewModel.buildImageUrlWithVersion(p.pmnGambar, p.updated_at)
+        val url = imageUrlWithUpdatedAt
+
+        if (url.isNullOrBlank()) {
+            binding.gambar.visibility = View.GONE
+            binding.teksErrorGambar.visibility = View.GONE
+            showLoading(false)
+        } else {
             binding.gambar.visibility = View.VISIBLE
-            binding.gambar.loadImageNoCache(imageUrlWithUpdatedAt!!) {
+            binding.gambar.loadImageNoCache(url) {
                 showLoading(false)
             }
-        } else {
-            binding.gambar.visibility = View.GONE
-            showLoading(false)
+            binding.gambar.setOnClickListener { showZoomDialog(url) }
         }
     }
 
-    private fun setupImageClick(pengumuman: Pengumuman) {
-        binding.gambar.setOnClickListener {
-            pengumuman.pmnGambar?.let {
-                tampilkanDialogZoomGambar()
-            }
-        }
-    }
-
-    private fun tampilkanDialogZoomGambar() {
-        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout
-            .dialog_zoom_image, null)
-        val photoView = dialogView.findViewById<com.github.chrisbanes.photoview.PhotoView>(R.id
-            .photo_view)
+    private fun showZoomDialog(imageUrl: String) {
+        val dialogView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_zoom_image, null)
+        val photoView =
+            dialogView.findViewById<com.github.chrisbanes.photoview.PhotoView>(R.id.photo_view)
 
         Glide.with(requireContext())
-            .load(imageUrlWithUpdatedAt)
+            .load(imageUrl)
             .into(photoView)
 
         val dialog = AlertDialog.Builder(requireContext())
@@ -114,20 +112,9 @@ class DetailPengumumanFragment : Fragment(), Reloadable {
         dialog.show()
     }
 
-    private fun formatTanggalUpdate(updatedAt: String): String {
-        return try {
-            val zonedDateTime = ZonedDateTime.parse(updatedAt)
-            val formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale("id", "ID"))
-            "Terakhir Diupdate: ${zonedDateTime.format(formatter)}"
-        } catch (e: Exception) {
-            ""
-        }
-    }
-
     private fun ImageView.loadImageNoCache(url: String, onImageFinished: () -> Unit) {
         val teksError = binding.teksErrorGambar
         val progress = binding.loading
-
         teksError.visibility = View.GONE
 
         Glide.with(this.context)
@@ -165,15 +152,14 @@ class DetailPengumumanFragment : Fragment(), Reloadable {
 
     private fun updateInternetCard(): Boolean {
         val isConnected = NetworkUtil.isInternetAvailable(requireContext())
-        val showCard = !isConnected
-        (activity as? NasabahActivity)?.showNoInternetCard(showCard)
+        (activity as? NasabahActivity)?.showNoInternetCard(!isConnected)
         return isConnected
     }
 
     private fun showLoading(isLoading: Boolean) {
-        _binding?.let { binding ->
-            binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
-            binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
+        _binding?.let { b ->
+            b.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
+            b.layoutKonten.alpha = if (isLoading) 0.3f else 1f
         }
     }
 

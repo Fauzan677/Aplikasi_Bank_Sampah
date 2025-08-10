@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
@@ -28,6 +29,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import androidx.core.view.isVisible
 
 class DetailTransaksiFragment : Fragment(), Reloadable {
 
@@ -51,9 +53,7 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
         setupUI()
         observeViewModel()
 
-        binding.swipeRefresh.setOnRefreshListener {
-            reloadData()
-        }
+        binding.swipeRefresh.setOnRefreshListener { reloadData() }
 
         if (!updateInternetCard()) return
         loadData()
@@ -73,19 +73,26 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
 
         binding.nama.text = riwayat.nama
         binding.tanggal.text = riwayat.tanggal
-        binding.nominal.text = riwayat.totalHarga.toString()
+        binding.nominal.text = riwayat.totalHarga?.toString() ?: "0"
         binding.keterangan.text = riwayat.tskKeterangan
 
         when (riwayat.tipe.lowercase()) {
             "masuk" -> {
-                binding.jenis.setCardBackgroundColor(resources.getColor(R.color.hijau, null))
+                binding.jenis.setCardBackgroundColor(
+                    ContextCompat.getColor(requireContext(), R.color.hijau)
+                )
                 binding.transaksi.text = "Transaksi Masuk"
+                binding.detail.visibility = View.VISIBLE
+                binding.rvDetail.visibility = View.VISIBLE
             }
             "keluar" -> {
+                binding.jenis.setCardBackgroundColor(
+                    ContextCompat.getColor(requireContext(), R.color.merah)
+                )
+                binding.transaksi.text = "Transaksi Keluar"
+                // Sembunyikan daftar detail untuk transaksi keluar
                 binding.detail.visibility = View.GONE
                 binding.rvDetail.visibility = View.GONE
-                binding.jenis.setCardBackgroundColor(resources.getColor(R.color.merah, null))
-                binding.transaksi.text = "Transaksi Keluar"
             }
         }
     }
@@ -94,15 +101,19 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
             showLoading(isLoading)
         }
-
         viewModel.detailList.observe(viewLifecycleOwner) { list ->
-            setupRecyclerView(list)
+            // Pasang/refresh RV hanya saat memang ditampilkan
+            if (binding.rvDetail.isVisible) {
+                setupRecyclerView(list)
+            }
         }
     }
 
     private fun loadData() {
-        val idTransaksi = args.riwayat.tskId
-        viewModel.loadDetailTransaksi(idTransaksi)
+        val riwayat = args.riwayat
+        val idTransaksi = riwayat.tskId
+        val skip = riwayat.tipe.equals("keluar", ignoreCase = true)
+        viewModel.loadDetailTransaksi(idTransaksi, skipFetch = skip)
     }
 
     private fun setupRecyclerView(detailList: List<DetailTransaksiRelasi>) {

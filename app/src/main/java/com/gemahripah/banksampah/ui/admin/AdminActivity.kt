@@ -17,6 +17,7 @@ import com.gemahripah.banksampah.utils.Reloadable
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.gemahripah.banksampah.utils.NetworkUtil
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class AdminActivity : AppCompatActivity() {
@@ -86,48 +87,36 @@ class AdminActivity : AppCompatActivity() {
                     !isConnected && !isNoConnectionVisible -> {
                         showNoInternetCard(true)
                     }
-
                     isConnected && !isNoConnectionVisible -> {
-                        // Ada koneksi & card belum ditampilkan → langsung reload
-                        val currentFragment = navHostFragment.childFragmentManager.primaryNavigationFragment
-                        if (currentFragment is Reloadable) {
-                            currentFragment.reloadData()
-                        }
+                        (navHostFragment.childFragmentManager.primaryNavigationFragment as? Reloadable)
+                            ?.reloadData()
                     }
-
                     isConnected && isNoConnectionVisible -> {
-                        // Ada koneksi & card sedang ditampilkan → loading → reload → sembunyikan card
                         binding.noConnectionCard.visibility = View.GONE
                         showLoading(true)
-
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            val currentFragment = navHostFragment.childFragmentManager.primaryNavigationFragment
-                            if (currentFragment is Reloadable) {
-                                currentFragment.reloadData()
-                            }
+                        lifecycleScope.launch {
+                            delay(1000)
+                            (navHostFragment.childFragmentManager.primaryNavigationFragment as? Reloadable)
+                                ?.reloadData()
                             showNoInternetCard(false)
                             showLoading(false)
-                        }, 1000)
+                        }
                     }
-
                     !isConnected && isNoConnectionVisible -> {
-                        // Tidak ada koneksi & card sudah ditampilkan → loading sebentar
                         binding.noConnectionCard.visibility = View.GONE
                         showLoading(true)
-
-                        Handler(Looper.getMainLooper()).postDelayed({
+                        lifecycleScope.launch {
+                            delay(1000)
                             showNoInternetCard(true)
                             showLoading(false)
-                        }, 1000)
+                        }
                     }
                 }
-
                 return@setOnItemSelectedListener true
             }
 
             navController.popBackStack(navController.graph.startDestinationId, false)
             navController.navigate(destinationId)
-
             true
         }
     }

@@ -1,0 +1,221 @@
+package com.gemahripah.banksampah.ui.admin.pengaturan.jenis.edit.sampah
+
+import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.gemahripah.banksampah.data.model.sampah.Kategori
+import com.gemahripah.banksampah.data.model.sampah.Sampah
+import com.gemahripah.banksampah.data.supabase.SupabaseProvider
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+class EditJenisSampahViewModel : ViewModel() {
+
+    private val client get() = SupabaseProvider.client
+
+    // UI state
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _kategoriList = MutableStateFlow<List<Kategori>>(emptyList())
+    val kategoriList: StateFlow<List<Kategori>> = _kategoriList
+
+    private val _satuanList = MutableStateFlow<List<String>>(emptyList())
+    val satuanList: StateFlow<List<String>> = _satuanList
+
+    private val _selectedKategoriId = MutableStateFlow<Long?>(null)
+    val selectedKategoriId: StateFlow<Long?> = _selectedKategoriId
+
+    // Events
+    private val _toast = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val toast: SharedFlow<String> = _toast
+
+    private val _navigateBack = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val navigateBack: SharedFlow<Unit> = _navigateBack
+
+    // Data awal untuk perbandingan
+    private var originalSampah: Sampah? = null
+    private var originalKategoriName: String? = null
+
+    fun initFromArgs(sampah: Sampah, namaKategori: String) {
+        originalSampah = sampah
+        originalKategoriName = namaKategori
+        // gunakan id asli jika ada sebagai default pilihan
+        _selectedKategoriId.value = sampah.sphKtgId
+    }
+
+    fun setSelectedKategoriId(id: Long?) {
+        _selectedKategoriId.value = id
+    }
+
+    fun loadKategori() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLoading.value = true
+            try {
+                val result = client.postgrest["kategori"]
+                    .select()
+                    .decodeList<Kategori>()
+                _kategoriList.value = result
+
+                // sinkronkan pilihan berdasarkan nama kategori awal bila id belum ada
+                if (_selectedKategoriId.value == null && !originalKategoriName.isNullOrBlank()) {
+                    val match = result.find { it.ktgNama == originalKategoriName }
+                    _selectedKategoriId.value = match?.ktgId
+                }
+            } catch (e: Exception) {
+                Log.e("EditJenisVM", "loadKategori gagal: ${e.message}", e)
+                _toast.tryEmit("Gagal memuat kategori")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun loadDistinctSatuan() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val result = client
+                    .from("sampah")
+                    .select(columns = Columns.list("sphSatuan"))
+                    .decodeList<Sampah>()
+                    .mapNotNull { it.sphSatuan }
+                    .distinct()
+
+                _satuanList.value = result
+            } catch (e: Exception) {
+                Log.e("EditJenisVM", "loadDistinctSatuan gagal: ${e.message}", e)
+                _toast.tryEmit("Gagal memuat data satuan")
+            }
+        }
+    }
+
+    fun submitUpdate(
+        inputJenis: String,
+        inputSatuan: String,
+        inputHarga: Long?,
+        inputKeterangan: String
+    ) {
+        val old = originalSampah ?: run {
+            _toast.tryEmit("Data tidak ditemukan")
+            return
+        }
+        val id = old.sphId ?: run {
+            _toast.tryEmit("ID tidak ditemukan")
+            return
+        }
+        val kategoriIdBaru = _selectedKategoriId.value
+        val jenisBaru = inputJenis.trim()
+        val satuanBaru = inputSatuan.trim()
+        val hargaBaru = inputHarga
+        val ketBaru = inputKeterangan.trim()
+
+        if (kategoriIdBaru == null || jenisBaru.isEmpty() || satuanBaru.isEmpty() || hargaBaru == null) {
+            _toast.tryEmit("Isi semua data dengan benar")
+            return
+        }
+
+        // Tidak ada perubahan?
+        val noChange =
+            (kategoriIdBaru == (old.sphKtgId ?: kategoriIdBaru)) &&
+                    (jenisBaru == (old.sphJenis ?: "")) &&
+                    (satuanBaru == (old.sphSatuan ?: "")) &&
+                    (hargaBaru == (old.sphHarga?.toLong() ?: -1L)) &&
+                    (ketBaru == (old.sphKeterangan ?: ""))
+
+        if (noChange) {
+            _toast.tryEmit("Tidak ada perubahan data")
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLoading.value = true
+            try {
+                // cek duplikat hanya bila jenis berubah
+                if (jenisBaru != old.sphJenis && isJenisSampahDipakai(jenisBaru)) {
+                    _toast.emit("Jenis sampah sudah digunakan, gunakan nama lain")
+                    _isLoading.value = false
+                    return@launch
+                }
+
+                client.from("sampah").update({
+                    set("sphKtgId", kategoriIdBaru)
+                    set("sphJenis", jenisBaru)
+                    set("sphSatuan", satuanBaru)
+                    set("sphHarga", hargaBaru)
+                    set("sphKeterangan", ketBaru)
+                }) {
+                    filter { eq("sphId", id) }
+                }
+
+                // update cache lokal
+                originalSampah = old.copy(
+                    sphKtgId = kategoriIdBaru,
+                    sphJenis = jenisBaru,
+                    sphSatuan = satuanBaru,
+                    sphHarga = hargaBaru.toDouble(),
+                    sphKeterangan = ketBaru.ifEmpty { null }
+                )
+
+                _toast.emit("Data berhasil diperbarui")
+                _navigateBack.emit(Unit)
+
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (e: Exception) {
+                Log.e("EditJenisVM", "update gagal: ${e.message}", e)
+                _toast.emit("Gagal memperbarui data, periksa koneksi internet")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun deleteCurrent() {
+        val id = originalSampah?.sphId ?: run {
+            _toast.tryEmit("ID tidak ditemukan")
+            return
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLoading.value = true
+            try {
+                client.from("sampah").delete {
+                    filter { eq("sphId", id) }
+                }
+                _toast.emit("Data berhasil dihapus")
+                _navigateBack.emit(Unit)
+            } catch (e: Exception) {
+                Log.e("EditJenisVM", "delete gagal: ${e.message}", e)
+                _toast.emit("Gagal menghapus data, periksa koneksi internet")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    private suspend fun isJenisSampahDipakai(jenis: String): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                val normalized = jenis.trim()
+                val list = client
+                    .from("sampah")
+                    .select(columns = Columns.list("sphJenis")) {
+                        filter { ilike("sphJenis", normalized) } // exact, case-insensitive
+                    }
+                    .decodeList<Sampah>()
+                list.isNotEmpty()
+            } catch (e: Exception) {
+                Log.e("EditJenisVM", "cek duplikat gagal: ${e.message}", e)
+                false
+            }
+        }
+}
