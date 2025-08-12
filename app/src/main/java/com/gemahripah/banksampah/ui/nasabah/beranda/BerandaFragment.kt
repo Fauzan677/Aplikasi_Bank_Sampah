@@ -106,6 +106,8 @@ class BerandaFragment : Fragment(), Reloadable {
             berandaViewModel.getSaldo(pgnId)
             berandaViewModel.getTotalSetoran(pgnId)
             berandaViewModel.getTotalTransaksi(pgnId, selectedFilter)
+
+            observePaging(pgnId)
         }
     }
 

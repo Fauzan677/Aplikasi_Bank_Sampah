@@ -1,0 +1,20 @@
+<resources>
+    <style name="Base.Theme.BankSampah" parent="Theme.Material3.Light.NoActionBar">
+        <!-- tetap TERANG walau device night -->
+        <item name="android:windowBackground">@color/white</item>
+
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="android:statusBarColor">@color/light_gray</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="Theme.BankSampah" parent="Base.Theme.BankSampah"/>
+
+    <style name="Theme.BankSampah.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/white</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/logobanksampah_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.BankSampah</item>
+        <item name="android:windowBackground">@color/white</item>
+    </style>
+</resources>
