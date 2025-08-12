@@ -6,6 +6,9 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
 import com.gemahripah.banksampah.databinding.ItemDetailTransaksiBinding
+import java.util.Locale
+import kotlin.math.roundToLong
+import java.text.NumberFormat
 
 class DetailTransaksiAdapter(
     private val detailList: List<DetailTransaksiRelasi>
@@ -31,7 +34,9 @@ class DetailTransaksiAdapter(
         fun bind(detail: DetailTransaksiRelasi) {
             binding.berat.text = "${detail.dtlJumlah ?: 0.0} kg"
             binding.jenis.text = detail.dtlSphId?.sphJenis ?: "-"
-            binding.harga.text = detail.hargaDetail?.toString() ?: "0.0"
+
+            val intHarga = detail.hargaDetail?.roundToLong() ?: 0L
+            binding.harga.text = NumberFormat.getIntegerInstance(Locale("id","ID")).format(intHarga)
         }
     }
 }

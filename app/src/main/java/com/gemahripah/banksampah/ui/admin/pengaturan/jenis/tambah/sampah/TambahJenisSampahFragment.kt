@@ -15,19 +15,11 @@ import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.sampah.Kategori
-import com.gemahripah.banksampah.data.model.sampah.Sampah
-import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentTambahJenisSampahBinding
 import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Columns
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class TambahJenisSampahFragment :
     Fragment(R.layout.fragment_tambah_jenis_sampah), Reloadable {

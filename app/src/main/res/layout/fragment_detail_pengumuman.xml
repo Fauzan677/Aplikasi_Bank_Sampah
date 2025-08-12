@@ -21,7 +21,7 @@
 
             <TextView
                 style="@style/TextJudulHalaman"
-                android:text="Detail Pengumuman"
+                android:text="@string/detail_pengumuman"
                 />
 
             <View
@@ -48,13 +48,13 @@
                 android:layout_width="300dp"
                 android:layout_height="300dp"
                 android:layout_marginTop="20dp"
-                />
+                android:contentDescription="@string/gambar_pengumuman" />
 
             <TextView
                 android:id="@+id/teksErrorGambar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tidak dapat menampilkan gambar"
+                android:text="@string/tidak_dapat_menampilkan_gambar"
                 android:textColor="@color/black"
                 android:textSize="14sp"
                 android:layout_marginTop="10dp"
@@ -110,7 +110,7 @@
                 android:id="@+id/edit"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Edit"
+                android:text="@string/edit"
                 android:backgroundTint="@color/secondary"
                 android:textColor="@color/black"
                 android:layout_marginTop="20dp"
@@ -121,7 +121,7 @@
                 android:id="@+id/hapus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Hapus"
+                android:text="@string/hapus"
                 android:textColor="@color/white"
                 android:backgroundTint="@color/merah"
                 android:layout_marginVertical="20dp"

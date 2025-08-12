@@ -1,7 +1,7 @@
 package com.gemahripah.banksampah.ui.nasabah.beranda.detail
 
+import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -12,24 +12,15 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
-import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentDetailTransaksiBinding
 import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.DetailTransaksiAdapter
 import com.gemahripah.banksampah.ui.admin.transaksi.detail.DetailTransaksiFragmentArgs
 import com.gemahripah.banksampah.ui.nasabah.NasabahActivity
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Columns
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import androidx.core.view.isVisible
+import java.text.NumberFormat
+import java.util.Locale
 
 class DetailTransaksiFragment : Fragment(), Reloadable {
 
@@ -65,6 +56,7 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
         loadData()
     }
 
+    @SuppressLint("SetTextI18n")
     private fun setupUI() {
         val riwayat = args.riwayat
 
@@ -73,8 +65,20 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
 
         binding.nama.text = riwayat.nama
         binding.tanggal.text = riwayat.tanggal
-        binding.nominal.text = riwayat.totalHarga?.toString() ?: "0"
-        binding.keterangan.text = riwayat.tskKeterangan
+
+        val amount = riwayat.totalHarga?.toLong() ?: 0L
+        val formatted = NumberFormat.getNumberInstance(Locale("id", "ID")).format(amount)
+        binding.nominal.text = "Rp $formatted"
+
+        val ket = riwayat.tskKeterangan?.trim()
+        if (ket.isNullOrBlank()) {
+            binding.keterangan.visibility = View.GONE
+            binding.textKosongKeterangan.visibility = View.VISIBLE
+        } else {
+            binding.keterangan.text = ket
+            binding.keterangan.visibility = View.VISIBLE
+            binding.textKosongKeterangan.visibility = View.GONE
+        }
 
         when (riwayat.tipe.lowercase()) {
             "masuk" -> {

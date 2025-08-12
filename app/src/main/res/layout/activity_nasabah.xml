@@ -38,7 +38,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="16dp"
-                android:text="Periksa koneksi internet Anda dan coba lagi"
+                android:text="@string/periksa_koneksi_internet_card"
                 android:textAlignment="center" />
 
         </androidx.cardview.widget.CardView>

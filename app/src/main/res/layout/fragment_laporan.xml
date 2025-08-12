@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -8,7 +7,7 @@
 
     <TextView
         style="@style/TextJudulHalaman"
-        android:text="Cetak Laporan"
+        android:text="@string/cetak_laporan"
         />
 
     <View
@@ -39,6 +38,7 @@
             <ImageView
                 android:layout_width="40dp"
                 android:layout_height="40dp"
+                android:contentDescription="@string/transaksi"
                 android:src="@drawable/money"
                 app:tint="@color/white"
                 />
@@ -46,10 +46,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Laporan Transaksi"
+                android:text="@string/laporan_transaksi"
                 android:fontFamily="@font/nunito_bold"
                 android:textColor="@color/white"
-                android:textSize="18dp"
+                android:textSize="18sp"
                 android:layout_marginTop="10dp"
                 />
 
@@ -78,6 +78,7 @@
             <ImageView
                 android:layout_width="40dp"
                 android:layout_height="40dp"
+                android:contentDescription="@string/setoran"
                 android:src="@drawable/sampah"
                 app:tint="@color/white"
                 />
@@ -85,10 +86,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Laporan Setoran"
+                android:text="@string/laporan_setoran"
                 android:fontFamily="@font/nunito_bold"
                 android:textColor="@color/white"
-                android:textSize="18dp"
+                android:textSize="18sp"
                 android:layout_marginTop="10dp"
                 />
 
@@ -117,6 +118,7 @@
             <ImageView
                 android:layout_width="40dp"
                 android:layout_height="40dp"
+                android:contentDescription="@string/nasabah"
                 android:src="@drawable/profil"
                 app:tint="@color/white"
                 />
@@ -124,10 +126,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Laporan Nasabah"
+                android:text="@string/laporan_nasabah"
                 android:fontFamily="@font/nunito_bold"
                 android:textColor="@color/white"
-                android:textSize="18dp"
+                android:textSize="18sp"
                 android:layout_marginTop="10dp"
                 />
 
@@ -156,6 +158,7 @@
             <ImageView
                 android:layout_width="40dp"
                 android:layout_height="40dp"
+                android:contentDescription="@string/sampah"
                 android:src="@drawable/jenis"
                 app:tint="@color/white"
                 />
@@ -163,10 +166,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Laporan Jenis Sampah"
+                android:text="@string/laporan_jenis_sampah"
                 android:fontFamily="@font/nunito_bold"
                 android:textColor="@color/white"
-                android:textSize="18dp"
+                android:textSize="18sp"
                 android:layout_marginTop="10dp"
                 />
 

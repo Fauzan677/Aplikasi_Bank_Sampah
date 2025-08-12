@@ -30,7 +30,7 @@
 
                 <TextView
                     android:id="@+id/judul"
-                    android:text="Detail Transaksi"
+                    android:text="@string/detail_transaksi"
                     style="@style/TextJudulHalaman"
                     />
 
@@ -65,7 +65,7 @@
                     android:id="@+id/tanggal"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Tanggal"
+                    android:text="@string/tanggal"
                     android:fontFamily="@font/nunito_regular"
                     android:textColor="@color/black"
                     android:textSize="14sp"
@@ -77,7 +77,7 @@
                     android:id="@+id/nama"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Nama"
+                    android:text="@string/nama"
                     android:fontFamily="@font/nunito_semibold"
                     android:textColor="@color/black"
                     android:textSize="24sp"
@@ -108,7 +108,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/nunito_medium"
-                            android:text="000"
+                            android:text="@string/_0"
                             android:textColor="@color/black"
                             android:textSize="24sp"
                             android:layout_marginStart="5dp"
@@ -121,7 +121,7 @@
                 <TextView
                     android:id="@+id/detail"
                     style="@style/TextSubJudul"
-                    android:text="Detail Transaksi"
+                    android:text="@string/detail_transaksi"
                     />
 
                 <androidx.recyclerview.widget.RecyclerView
@@ -135,14 +135,14 @@
                 <TextView
                     android:id="@+id/keterangan_label"
                     style="@style/TextSubJudul"
-                    android:text="Keterangan"
+                    android:text="@string/keterangan"
                     />
 
                 <TextView
                     android:id="@+id/keterangan"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="keterangan transaksi"
+                    android:text="@string/keterangan_transaksi"
                     android:fontFamily="@font/nunito_medium"
                     android:textColor="@color/black"
                     android:textSize="16sp"
@@ -154,7 +154,7 @@
                     android:id="@+id/textKosongKeterangan"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Tidak ada keterangan"
+                    android:text="@string/tidak_ada_keterangan"
                     android:textSize="16sp"
                     android:textColor="@color/black"
                     android:textAlignment="center"
@@ -167,7 +167,7 @@
                     android:id="@+id/edit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Edit"
+                    android:text="@string/edit"
                     android:fontFamily="@font/nunito_bold"
                     android:textColor="@color/black"
                     android:backgroundTint="@color/secondary"
@@ -179,7 +179,7 @@
                     android:id="@+id/hapus"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Hapus"
+                    android:text="@string/hapus"
                     android:fontFamily="@font/nunito_bold"
                     android:textColor="@color/white"
                     android:backgroundTint="@color/merah"

@@ -106,7 +106,6 @@ class BerandaFragment : Fragment(), Reloadable {
             berandaViewModel.getSaldo(pgnId)
             berandaViewModel.getTotalSetoran(pgnId)
             berandaViewModel.getTotalTransaksi(pgnId, selectedFilter)
-            observePaging(pgnId)
         }
     }
 
@@ -122,10 +121,6 @@ class BerandaFragment : Fragment(), Reloadable {
             header = LoadingStateAdapter { pagingAdapter.retry() },
             footer = LoadingStateAdapter { pagingAdapter.retry() }
         )
-
-        nasabahViewModel.pengguna.observe(viewLifecycleOwner) { pengguna ->
-            pengguna?.pgnId?.let { observePaging(it) }
-        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -160,17 +155,26 @@ class BerandaFragment : Fragment(), Reloadable {
             val pgnId = pengguna?.pgnId ?: return@observe
             if (!updateInternetCard()) return@observe
 
+            // Pastikan filter punya nilai default
+            if (selectedFilter.isBlank()) {
+                selectedFilter = resources.getStringArray(R.array.filter_transaksi)[0]
+            }
+
+            // Muat semua ringkasan di header begitu pgnId tersedia
             berandaViewModel.getSaldo(pgnId)
+            berandaViewModel.getTotalSetoran(pgnId)                       // <-- ini yang hilang
+            berandaViewModel.getTotalTransaksi(pgnId, selectedFilter)     // <-- panggil juga
+
+            // Mulai/refresh paging
+            observePaging(pgnId)
         }
 
         berandaViewModel.saldo.observe(viewLifecycleOwner) {
             binding.nominal.text = it
         }
-
         berandaViewModel.totalTransaksi.observe(viewLifecycleOwner) {
             binding.transaksi.text = it
         }
-
         berandaViewModel.setoran.observe(viewLifecycleOwner) {
             binding.setoran.text = it
         }

@@ -7,6 +7,7 @@ import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.supabase.SupabaseAdminProvider
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.exception.AuthWeakPasswordException
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 class EditPenggunaViewModel : ViewModel() {
 
@@ -48,6 +50,7 @@ class EditPenggunaViewModel : ViewModel() {
 
         val namaTrim = namaBaru.trim()
         val emailTrim = emailBaru.trim()
+        val emailLower = emailTrim.lowercase(Locale.ROOT)
         val pwdTrim = passwordBaru.trim()
 
         if (namaTrim.isEmpty() || emailTrim.isEmpty()) {
@@ -64,6 +67,14 @@ class EditPenggunaViewModel : ViewModel() {
             return
         }
 
+        // Validasi awal: format email & panjang password
+        if (isEmailBerubah) {
+            val emailOk = android.util.Patterns.EMAIL_ADDRESS.matcher(emailTrim).matches()
+            if (!emailOk) {
+                _toast.tryEmit("Format email tidak valid")
+                return
+            }
+        }
         if (isPasswordBerubah && pwdTrim.length < 6) {
             _toast.tryEmit("Password minimal 6 karakter")
             return
@@ -75,33 +86,47 @@ class EditPenggunaViewModel : ViewModel() {
                 // Cek unik hanya saat berubah; case-insensitive, exclude diri sendiri
                 if (isNamaBerubah && isNamaDipakai(namaTrim, current.pgnId!!)) {
                     _toast.emit("Nama sudah digunakan, gunakan nama lain")
+                    _isLoading.value = false
                     return@launch
                 }
-                if (isEmailBerubah && isEmailDipakai(emailTrim, current.pgnId!!)) {
+                if (isEmailBerubah && isEmailDipakai(emailLower, current.pgnId!!)) {
                     _toast.emit("Email sudah digunakan, gunakan email lain")
+                    _isLoading.value = false
                     return@launch
                 }
 
-                // Update row aplikasi
-                if (isNamaBerubah || isEmailBerubah) {
-                    client.from("pengguna").update({
-                        if (isNamaBerubah) set("pgnNama", namaTrim)
-                        if (isEmailBerubah) set("pgnEmail", emailTrim)
-                    }) {
-                        filter { eq("pgnId", current.pgnId!!) }
-                    }
-                }
-
-                // Update Auth (email/password)
-                if (isEmailBerubah || isPasswordBerubah) {
+                // --- UPDATE AUTH DULU (email/password) ---
+                if ((isEmailBerubah || isPasswordBerubah)) {
                     try {
                         admin.auth.admin.updateUserById(uid = current.pgnId!!) {
-                            if (isEmailBerubah) email = emailTrim
+                            if (isEmailBerubah) email = emailLower
                             if (isPasswordBerubah) password = pwdTrim
                         }
                     } catch (e: AuthWeakPasswordException) {
                         _toast.emit("Password minimal 6 karakter")
+                        _isLoading.value = false
                         return@launch
+                    } catch (e: AuthRestException) {
+                        // Tangani invalid email dari Supabase Admin API
+                        val msg = e.message?.lowercase().orElseEmpty()
+                        val invalidEmail =
+                            e.error == "validation_failed" ||
+                                    msg.contains("unable to validate email address") ||
+                                    msg.contains("invalid format")
+                        Log.e("EditPenggunaVM", "Admin API error: ${e.message}", e)
+                        _toast.emit(if (invalidEmail) "Format email tidak valid" else "Gagal memperbarui email atau password")
+                        _isLoading.value = false
+                        return@launch
+                    }
+                }
+
+                // --- BARU UPDATE TABEL aplikasi: "pengguna" ---
+                if (isNamaBerubah || isEmailBerubah) {
+                    client.from("pengguna").update({
+                        if (isNamaBerubah) set("pgnNama", namaTrim)
+                        if (isEmailBerubah) set("pgnEmail", emailLower)
+                    }) {
+                        filter { eq("pgnId", current.pgnId!!) }
                     }
                 }
 
@@ -136,11 +161,10 @@ class EditPenggunaViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
             try {
-                // Hapus row di tabel aplikasi
+                // (opsional) bisa Auth dulu, lalu tabel — tergantung kebijakan bisnis
                 client.from("pengguna").delete {
                     filter { eq("pgnId", id) }
                 }
-                // Hapus akun di Auth
                 admin.auth.admin.deleteUser(uid = id)
 
                 _toast.emit("Pengguna berhasil dihapus")
@@ -180,7 +204,7 @@ class EditPenggunaViewModel : ViewModel() {
                 .from("pengguna")
                 .select(columns = Columns.list("pgnId")) {
                     filter {
-                        eq("pgnEmail", email.trim())   // exact match
+                        ilike("pgnEmail", email.trim())   // exact match
                         neq("pgnId", excludeId)        // exclude diri sendiri
                     }
                 }
@@ -192,3 +216,5 @@ class EditPenggunaViewModel : ViewModel() {
         }
     }
 }
+
+private fun String?.orElseEmpty(): String = this ?: ""

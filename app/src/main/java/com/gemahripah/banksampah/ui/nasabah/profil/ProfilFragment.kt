@@ -16,15 +16,15 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.ui.MainActivity
-import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentProfilBinding
+import com.gemahripah.banksampah.ui.nasabah.NasabahActivity
 import com.gemahripah.banksampah.ui.nasabah.NasabahViewModel
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.exceptions.RestException
+import com.gemahripah.banksampah.utils.NetworkUtil
+import com.gemahripah.banksampah.utils.Reloadable
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-class ProfilFragment : Fragment() {
+class ProfilFragment : Fragment(), Reloadable {
 
     private var _binding: FragmentProfilBinding? = null
     private val binding get() = _binding!!
@@ -49,6 +49,33 @@ class ProfilFragment : Fragment() {
 
         observeViewModel()
         setupListeners()
+        setupSwipeRefresh()
+
+        // Tampilkan/ sembunyikan kartu internet, lalu muat data awal
+        reloadData()
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefresh.setOnRefreshListener {
+            reloadData()
+        }
+    }
+
+    override fun reloadData() {
+        // Cek koneksi. Jika offline: tampilkan kartu & hentikan animasi swipe
+        if (!updateInternetCard()) {
+            binding.swipeRefresh.isRefreshing = false
+            return
+        }
+
+        // Online: minta data terbaru
+        val id = nasabahViewModel.pengguna.value?.pgnId
+        if (id != null) {
+            nasabahViewModel.loadPenggunaById(id)
+        } else {
+            // Tidak ada id -> hentikan swipe supaya tidak muter terus
+            binding.swipeRefresh.isRefreshing = false
+        }
     }
 
     private fun observeViewModel() {
@@ -57,20 +84,21 @@ class ProfilFragment : Fragment() {
                 binding.nama.text = it.pgnNama ?: "Nama tidak tersedia"
                 binding.email.text = it.pgnEmail ?: "Email tidak tersedia"
             }
+            // Hentikan animasi swipe ketika ada respons (sukses/empty)
+            binding.swipeRefresh.isRefreshing = false
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // Loading state
+                // Loading state logout
                 launch {
                     profilViewModel.isLoading.collectLatest { loading ->
-                        binding.keluar.isEnabled = !loading
                         binding.loading.visibility = if (loading) View.VISIBLE else View.GONE
                         binding.layoutKonten.alpha = if (loading) 0.3f else 1f
                         binding.keluar.isEnabled = !loading
                     }
                 }
-                // Success event
+                // Event sukses logout
                 launch {
                     profilViewModel.logoutSuccess.collectLatest {
                         Toast.makeText(requireContext(), "Berhasil Keluar", Toast.LENGTH_SHORT).show()
@@ -80,7 +108,7 @@ class ProfilFragment : Fragment() {
                         startActivity(intent)
                     }
                 }
-                // Error event
+                // Event error logout
                 launch {
                     profilViewModel.logoutError.collectLatest { msg ->
                         Toast.makeText(requireContext(), msg, Toast.LENGTH_LONG).show()
@@ -103,6 +131,18 @@ class ProfilFragment : Fragment() {
                 .setNegativeButton("Batal", null)
                 .show()
         }
+    }
+
+    private fun updateInternetCard(): Boolean {
+        val isConnected = NetworkUtil.isInternetAvailable(requireContext())
+        val showCard = !isConnected
+        (activity as? NasabahActivity)?.showNoInternetCard(showCard)
+        return isConnected
+    }
+
+    override fun onResume() {
+        super.onResume()
+        reloadData()
     }
 
     override fun onDestroyView() {

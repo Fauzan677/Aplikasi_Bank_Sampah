@@ -44,6 +44,7 @@
                     <ImageView
                         android:layout_width="50dp"
                         android:layout_height="50dp"
+                        android:contentDescription="@string/menabung_sampah"
                         android:src="@drawable/sampah"
                         android:layout_marginBottom="10dp"
                         app:tint="@color/white"
@@ -52,7 +53,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Menabung Sampah"
+                        android:text="@string/menabung_sampah"
                         android:textColor="@color/white"
                         android:textSize="16sp"
                         android:fontFamily="@font/nunito_bold"
@@ -76,6 +77,7 @@
                     <ImageView
                         android:layout_width="50dp"
                         android:layout_height="50dp"
+                        android:contentDescription="@string/menarik_saldo"
                         android:src="@drawable/money"
                         android:layout_marginBottom="10dp"
                         app:tint="@color/white"
@@ -84,7 +86,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Menarik Saldo"
+                        android:text="@string/menarik_saldo"
                         android:textColor="@color/white"
                         android:textSize="16sp"
                         android:fontFamily="@font/nunito_bold"
@@ -99,7 +101,7 @@
                 android:id="@+id/riwayat_transaksi"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Riwayat Transaksi"
+                android:text="@string/riwayat_transaksi"
                 android:layout_marginTop="10dp"
                 android:fontFamily="@font/nunito_bold"
                 android:textColor="@color/black"
@@ -111,7 +113,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="20dp"
-                android:hint="Cari data riwayat"
+                android:hint="@string/cari_data_riwayat"
                 app:boxStrokeColor="@color/primary"
                 app:hintTextColor="@color/primary"
                 app:boxBackgroundMode="outline"
@@ -140,7 +142,7 @@
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:layout_marginEnd="8dp"
-                    android:hint="Tanggal Awal">
+                    android:hint="@string/tanggal_awal">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/startDateEditText"
@@ -156,7 +158,7 @@
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:layout_marginStart="8dp"
-                    android:hint="Tanggal Akhir">
+                    android:hint="@string/tanggal_akhir">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/endDateEditText"
@@ -205,7 +207,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="16dp"
-                        android:text="Periksa koneksi internet Anda dan coba lagi"
+                        android:text="@string/periksa_koneksi_internet_card"
                         android:textAlignment="center" />
 
                 </androidx.cardview.widget.CardView>
@@ -214,7 +216,7 @@
                     android:id="@+id/riwayat_kosong"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Data tidak ditemukan"
+                    android:text="@string/data_tidak_ditemukan"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="10dp"
                     android:fontFamily="@font/nunito_regular"

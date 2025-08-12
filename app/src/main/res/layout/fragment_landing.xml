@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/light_gray"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context=".ui.welcome.LandingFragment">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/half_screen"
@@ -18,6 +16,7 @@
         android:id="@+id/gambar_landing"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:contentDescription="@string/gambar_welcome"
         android:src="@drawable/gambar_landing"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/half_screen"
@@ -41,6 +40,7 @@
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:contentDescription="@string/logo"
             android:src="@mipmap/logobanksampah_round"
             />
 
@@ -50,7 +50,7 @@
         android:id="@+id/masuk"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Masuk"
+        android:text="@string/masuk"
         android:textColor="@color/white"
         android:layout_marginTop="40dp"
         android:layout_marginHorizontal="30dp"
@@ -63,7 +63,7 @@
         android:id="@+id/daftar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Daftar"
+        android:text="@string/daftar"
         android:layout_marginTop="30dp"
         android:layout_marginHorizontal="30dp"
         android:backgroundTint="@color/secondary"

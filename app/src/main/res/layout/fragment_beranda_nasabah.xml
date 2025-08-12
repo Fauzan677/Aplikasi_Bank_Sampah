@@ -44,17 +44,17 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
                         android:fontFamily="@font/nunito_semibold"
-                        android:text="Total Saldo"
-                        android:textColor="@color/white"
+                        android:text="@string/total_saldo"
+                        android:textColor="@color/black"
                         android:textSize="20sp" />
 
                     <TextView
                         android:id="@+id/nominal"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0000"
+                        android:text="@string/_0"
                         android:fontFamily="@font/nunito_extrabold"
-                        android:textColor="@color/white"
+                        android:textColor="@color/black"
                         android:layout_marginTop="10dp"
                         android:layout_marginBottom="20dp"
                         android:textSize="30sp"
@@ -128,6 +128,7 @@
                             android:id="@+id/tanggal_transaksi"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/tanggal"
                             android:src="@drawable/baseline_date_range_24"
                             android:layout_marginTop="10dp"
                             />
@@ -159,7 +160,7 @@
                             android:id="@+id/tv_setoran"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Total Setoran"
+                            android:text="@string/total_setoran"
                             android:fontFamily="@font/nunito_semibold"
                             android:textSize="15sp"
                             android:textColor="@color/black"
@@ -189,6 +190,7 @@
                             android:id="@+id/tanggal_setoran"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/tanggal"
                             android:src="@drawable/baseline_date_range_24"
                             android:layout_marginTop="10dp"
                             />
@@ -203,7 +205,7 @@
                 android:id="@+id/riwayat_transaksi"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Riwayat Transaksi"
+                android:text="@string/riwayat_transaksi"
                 android:layout_marginTop="10dp"
                 android:fontFamily="@font/nunito_bold"
                 android:textColor="@color/black"
@@ -223,7 +225,7 @@
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:layout_marginEnd="8dp"
-                    android:hint="Tanggal Awal">
+                    android:hint="@string/tanggal_awal">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/startDateEditText"
@@ -239,7 +241,7 @@
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:layout_marginStart="8dp"
-                    android:hint="Tanggal Akhir">
+                    android:hint="@string/tanggal_akhir">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/endDateEditText"
@@ -253,7 +255,7 @@
             <FrameLayout
                 android:id="@+id/riwayatContainer"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="600dp"
                 android:layout_marginHorizontal="5dp"
                 android:layout_marginBottom="20dp"
                 android:layout_marginTop="5dp"
@@ -262,8 +264,7 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rv_riwayat"
                     android:layout_width="match_parent"
-                    android:layout_height="600dp"
-                    android:nestedScrollingEnabled="false"
+                    android:layout_height="wrap_content"
                     />
 
                 <com.google.android.material.progressindicator.CircularProgressIndicator
@@ -291,7 +292,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="16dp"
-                        android:text="Periksa koneksi internet Anda dan coba lagi"
+                        android:text="@string/periksa_koneksi_internet_card"
                         android:textAlignment="center" />
 
                 </androidx.cardview.widget.CardView>
@@ -300,7 +301,7 @@
                     android:id="@+id/riwayat_kosong"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Data tidak ditemukan"
+                    android:text="@string/data_tidak_ditemukan"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="10dp"
                     android:fontFamily="@font/nunito_regular"

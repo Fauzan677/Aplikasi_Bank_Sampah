@@ -17,14 +17,14 @@
         <TextView
             android:id="@+id/terbaru"
             style="@style/TextJudulHalaman"
-            android:text="Pengumuman Terbaru"
+            android:text="@string/pengumuman_terbaru"
             />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/tambah"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Tambah"
+            android:text="@string/tambah"
             android:textColor="@color/hijau"
             android:layout_marginHorizontal="50dp"
             android:layout_marginTop="20dp"
@@ -62,7 +62,7 @@
                 android:id="@+id/pengumuman_kosong"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Data tidak ditemukan"
+                android:text="@string/data_tidak_ditemukan"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="10dp"
                 android:fontFamily="@font/nunito_regular"

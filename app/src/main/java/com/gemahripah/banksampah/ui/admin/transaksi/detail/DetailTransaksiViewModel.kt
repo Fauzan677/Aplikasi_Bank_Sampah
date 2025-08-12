@@ -1,6 +1,5 @@
 package com.gemahripah.banksampah.ui.admin.transaksi.detail
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi

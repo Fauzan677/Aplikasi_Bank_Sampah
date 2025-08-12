@@ -14,7 +14,6 @@ import androidx.paging.LoadState
 import androidx.recyclerview.widget.GridLayoutManager
 import com.gemahripah.banksampah.databinding.FragmentPengumumanBinding
 import com.gemahripah.banksampah.ui.gabungan.adapter.common.LoadingStateAdapter
-import com.gemahripah.banksampah.ui.gabungan.adapter.pengumuman.PengumumanAdapter
 import com.gemahripah.banksampah.ui.gabungan.adapter.pengumuman.PengumumanPagingAdapter
 import com.gemahripah.banksampah.ui.nasabah.NasabahActivity
 import com.gemahripah.banksampah.utils.NetworkUtil
@@ -46,9 +45,6 @@ class PengumumanFragment : Fragment(), Reloadable {
 
         binding.swipeRefresh.setOnRefreshListener { reloadData() }
 
-        if (!updateInternetCard()) return
-
-        // Collect sekali saja, lifecycle-aware
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 // 1) Listen loadState untuk state UI & swipeRefresh
@@ -75,11 +71,12 @@ class PengumumanFragment : Fragment(), Reloadable {
                 }
             }
         }
+
+        updateInternetCard()
     }
 
     override fun reloadData() {
         if (!updateInternetCard()) return
-        // cukup refresh paging, jangan mulai collector baru
         pagingAdapter.refresh()
     }
 

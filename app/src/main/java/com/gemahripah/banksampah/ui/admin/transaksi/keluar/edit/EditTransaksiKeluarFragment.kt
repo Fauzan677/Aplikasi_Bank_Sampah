@@ -16,20 +16,11 @@ import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.gemahripah.banksampah.R
-import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
-import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
-import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentPenarikanSaldoBinding
 import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import java.text.NumberFormat
 import java.util.Locale
 

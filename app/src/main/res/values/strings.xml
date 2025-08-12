@@ -1,27 +1,132 @@
 <resources>
+
+    <!-- ===================== App & Activity Titles ===================== -->
     <string name="app_name">Gemah Ripah</string>
     <string name="title_activity_nasabah">NasabahActivity</string>
+    <string name="title_activity_admin">AdminActivity</string>
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
-    <string name="title_activity_admin">AdminActivity</string>
 
+    <!-- ===================== Common / Shared ===================== -->
+    <string name="back">back</string>
     <string name="failed_to_load">Gagal memuat</string>
+    <string name="periksa_koneksi_internet_card">Periksa koneksi internet Anda dan coba lagi</string>
+    <string name="sedang_memproses">Sedang memproses...</string>
+    <string name="data_tidak_ditemukan">Data tidak ditemukan</string>
+    <string name="_0">0</string>
+    <string name="tanggal">tanggal</string>
+    <string name="edit">Edit</string>
+    <string name="hapus">Hapus</string>
+    <string name="keluar">Keluar</string>
+    <string name="add">add</string>
+    <string name="gambar">Gambar</string>
+    <string name="logo">logo</string>
+    <string name="gambar_welcome">gambar_welcome</string>
+    <string name="coba_lagi">Coba Lagi</string>
 
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <!-- ===================== Auth ===================== -->
+    <string name="selamat_datang_silahkan_masuk">Selamat Datang, Silahkan Masuk</string>
+    <string name="masuk">Masuk</string>
+    <string name="daftar">Daftar</string>
+    <string name="silahkan_mendaftar_terlebih_dahulu">Silahkan Mendaftar Terlebih Dahulu</string>
+    <string name="masukkan_nama_lengkap">Masukkan Nama Lengkap</string>
+    <string name="masukkan_email">Masukkan Email</string>
+    <string name="masukkan_kata_sandi">Masukkan Kata Sandi</string>
+    <string name="password">Password</string>
+    <string name="kata_sandi">Kata Sandi</string>
 
+    <!-- ===================== Home / Dashboard ===================== -->
+    <string name="total_saldo">Total Saldo</string>
+    <string name="nasabah">Nasabah</string>
+    <string name="total_setoran">Total Setoran</string>
+    <string name="list_nasabah">List Nasabah</string>
+    <string name="cari_nama_nasabah">Cari nama nasabah</string>
+    <string name="riwayat_transaksi">Riwayat Transaksi</string>
+    <string name="tanggal_awal">Tanggal Awal</string>
+    <string name="tanggal_akhir">Tanggal Akhir</string>
+    <string name="tidak_ada_data_total_setoran">Tidak ada data total setoran</string>
+    <string name="tidak_ada_riwayat_transaksi">Tidak ada riwayat transaksi</string>
+    <string name="pengumuman_terbaru">Pengumuman Terbaru</string>
+
+    <!-- ===================== Transaksi ===================== -->
+    <string name="menabung_sampah">Menabung Sampah</string>
+    <string name="menarik_saldo">Menarik Saldo</string>
+    <string name="detail_transaksi">Detail Transaksi</string>
+    <string name="detail_setor_sampah">Detail Setor Sampah</string>
+    <string name="sampah_masuk">Sampah Masuk</string>
+    <string name="penarikan_saldo">Penarikan Saldo</string>
+    <string name="saldo">Saldo</string>
+    <string name="jumlah_penarikan">Jumlah Penarikan</string>
+    <string name="masukkan_jumlah_penarikan">Masukkan Jumlah Penarikan</string>
+    <string name="keterangan">Keterangan</string>
+    <string name="masukkan_keterangan">Masukkan Keterangan</string>
+    <string name="cari_data_riwayat">Cari data riwayat</string>
+    <string name="gagal_memuat_data">Gagal memuat data</string>
+
+    <!-- ===================== Pengumuman ===================== -->
+    <string name="detail_pengumuman">Detail Pengumuman</string>
+    <string name="gambar_pengumuman">Gambar Pengumuman</string>
+    <string name="tidak_dapat_menampilkan_gambar">Tidak dapat menampilkan gambar</string>
+    <string name="tambah_pengumuman">Tambah Pengumuman</string>
+    <string name="tambah">Tambah</string>
+    <string name="judul_pengumuman">Judul Pengumuman</string>
+    <string name="masukkan_judul_pengumuman">Masukkan Judul Pengumuman</string>
+    <string name="isi_pengumuman">Isi Pengumuman</string>
+    <string name="masukkan_isi_pengumuman">Masukkan Isi Pengumuman</string>
+    <string name="pilih_file_untuk_diupload">Pilih File Untuk Diupload</string>
+
+    <!-- ===================== Pengguna / Profil ===================== -->
+    <string name="data_nasabah">Data Nasabah</string>
+    <string name="pengguna">Pengguna</string>
+    <string name="total_pengguna">Total Pengguna</string>
+    <string name="list_pengguna">List Pengguna</string>
+    <string name="total_nasabah">Total Nasabah</string>
+    <string name="tambah_pengguna">Tambah Pengguna</string>
+    <string name="edit_pengguna">Edit Pengguna</string>
+    <string name="edit_informasi_profil">Edit Informasi Profil</string>
+    <string name="nama_nasabah">Nama Nasabah</string>
+    <string name="masukkan_nama_nasabah">Masukkan Nama Nasabah</string>
+    <string name="email_nasabah">Email Nasabah</string>
+    <string name="masukkan_email_nasabah">Masukkan Email Nasabah</string>
+    <string name="detail_pengguna">Detail Pengguna</string>
+
+    <!-- ===================== Sampah / Kategori ===================== -->
+    <string name="sampah">Sampah</string>
+    <string name="jenis_sampah">Jenis Sampah</string>
+    <string name="masukkan_jenis_sampah">Masukkan Jenis Sampah</string>
+    <string name="harga">Harga</string>
+    <string name="masukkan_harga_sampah">Masukkan Harga Sampah</string>
+    <string name="pilih_jenis_sampah">Pilih Jenis Sampah</string>
+    <string name="jumlah_setor">Jumlah Setor</string>
+    <string name="masukkan_jumlah_setor">Masukkan Jumlah Setor</string>
+    <string name="kategori_sampah">Kategori Sampah</string>
+    <string name="pilih_kategori_sampah">Pilih Kategori Sampah</string>
+    <string name="satuan">Satuan</string>
+    <string name="masukkan_satuan_kilogram_biji">Masukkan Satuan (Kilogram / Biji)</string>
+    <string name="tambah_kategori">Tambah Kategori</string>
+    <string name="tambah_jenis_sampah">Tambah Jenis Sampah</string>
+    <string name="konfirmasi">Konfirmasi</string>
+    <string name="detail_jenis_sampah">Detail Jenis Sampah</string>
+
+    <!-- ===================== Laporan ===================== -->
+    <string name="cetak_laporan">Cetak Laporan</string>
+    <string name="laporan_transaksi">Laporan Transaksi</string>
+    <string name="laporan_setoran">Laporan Setoran</string>
+    <string name="laporan_nasabah">Laporan Nasabah</string>
+    <string name="laporan_jenis_sampah">Laporan Jenis Sampah</string>
+
+    <!-- Kata kunci generik untuk label/icon -->
+    <string name="transaksi">transaksi</string>
+    <string name="setoran">Setoran</string>
+    <string name="keterangan_transaksi">keterangan transaksi</string>
+    <string name="nama">nama</string>
+    <string name="tidak_ada_keterangan">Tidak ada keterangan</string>
+
+    <!-- ===================== Arrays ===================== -->
     <string-array name="filter_transaksi">
         <item>Transaksi Masuk</item>
         <item>Transaksi Keluar</item>
     </string-array>
-
-    <string-array name="filter_setoran">
-        <item>Total Setoran</item>
-        <item>Hari Ini</item>
-        <item>Minggu Ini</item>
-        <item>Bulan Ini</item>
-        <item>3 Bulan Terakhir</item>
-    </string-array>
-
 
 </resources>

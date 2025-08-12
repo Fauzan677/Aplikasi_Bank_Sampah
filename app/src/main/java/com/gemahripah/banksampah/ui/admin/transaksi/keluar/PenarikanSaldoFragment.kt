@@ -16,20 +16,14 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
-import com.gemahripah.banksampah.data.model.transaksi.Transaksi
-import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentPenarikanSaldoBinding
 import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
-import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -39,6 +33,7 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
     private val binding get() = _binding!!
 
     private val vm: PenarikanSaldoViewModel by viewModels()
+    private val args: PenarikanSaldoFragmentArgs by navArgs()
 
     private val rupiah: NumberFormat = NumberFormat.getNumberInstance(Locale("in", "ID"))
 
@@ -59,6 +54,12 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
 
         if (!updateInternetCard()) return
         vm.loadPengguna()
+
+        args.pengguna?.let { p ->
+            binding.nama.setText(p.pgnNama.orEmpty(), false)
+            // beritahu VM supaya set pgnId terpilih & fetch saldo
+            vm.preselectPengguna(p)
+        }
     }
 
     override fun reloadData() {
@@ -84,6 +85,8 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
                 launch {
                     vm.isLoading.collect { showLoading(it) }
                 }
+
+                vm.selectedPgnId.value?.let { vm.fetchSaldo(it) }
 
                 // Daftar nama -> adapter (dengan dropdown saat mengetik)
                 launch {

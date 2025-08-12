@@ -17,7 +17,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Sedang memproses..."
+        android:text="@string/sedang_memproses"
         android:textColor="@color/black"
         android:textSize="16sp"
         android:layout_marginStart="16dp"/>

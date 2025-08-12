@@ -14,22 +14,15 @@ import androidx.paging.CombinedLoadStates
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.GridLayoutManager
 import com.gemahripah.banksampah.R
-import com.gemahripah.banksampah.data.model.pengumuman.Pengumuman
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentPengumumanBinding
 import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.ui.gabungan.adapter.common.LoadingStateAdapter
-import com.gemahripah.banksampah.ui.gabungan.adapter.pengumuman.PengumumanAdapter
 import com.gemahripah.banksampah.ui.gabungan.adapter.pengumuman.PengumumanPagingAdapter
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.postgrest.query.Order
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class PengumumanFragment : Fragment(), Reloadable {
 

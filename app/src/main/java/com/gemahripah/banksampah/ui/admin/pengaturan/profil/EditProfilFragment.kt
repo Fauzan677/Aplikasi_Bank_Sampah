@@ -3,7 +3,6 @@ package com.gemahripah.banksampah.ui.admin.pengaturan.profil
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.text.InputType
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -17,19 +16,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
-import androidx.navigation.fragment.navArgs
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
-import com.gemahripah.banksampah.data.supabase.SupabaseAdminProvider
-import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentTambahPenggunaBinding
 import com.gemahripah.banksampah.ui.admin.AdminViewModel
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Columns
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class EditProfilFragment : Fragment() {
 

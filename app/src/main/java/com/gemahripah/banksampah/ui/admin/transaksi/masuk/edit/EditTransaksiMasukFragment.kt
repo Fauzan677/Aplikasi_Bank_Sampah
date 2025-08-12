@@ -3,14 +3,12 @@ package com.gemahripah.banksampah.ui.admin.transaksi.masuk.edit
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.text.InputType
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -18,19 +16,12 @@ import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.gemahripah.banksampah.R
-import com.gemahripah.banksampah.data.model.pengguna.Pengguna
-import com.gemahripah.banksampah.data.model.sampah.Sampah
-import com.gemahripah.banksampah.data.model.transaksi.DetailTransaksi
-import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentSetorSampahBinding
 import com.gemahripah.banksampah.databinding.ItemSetorSampahBinding
 import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
-import io.github.jan.supabase.postgrest.from
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class EditTransaksiMasukFragment : Fragment(), Reloadable {
 

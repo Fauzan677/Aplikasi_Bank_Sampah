@@ -1,7 +1,5 @@
 package com.gemahripah.banksampah.utils
 
-import android.annotation.SuppressLint
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
@@ -48,10 +46,4 @@ fun File.reduceFileImage(): File {
 
     bitmap?.compress(Bitmap.CompressFormat.JPEG, compressQuality, FileOutputStream(this))
     return this
-}
-
-@SuppressLint("InternalInsetResource")
-fun Context.getStatusBarHeight(): Int {
-    val resId = resources.getIdentifier("status_bar_height", "dimen", "android")
-    return if (resId > 0) resources.getDimensionPixelSize(resId) else 0
 }

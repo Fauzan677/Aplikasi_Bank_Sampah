@@ -1,12 +1,14 @@
 package com.gemahripah.banksampah.ui.admin.pengaturan.nasabah.tambah
 
 import android.util.Log
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.supabase.SupabaseAdminProvider
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.exception.AuthWeakPasswordException
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.put
+import java.util.Locale
 
 class TambahPenggunaViewModel : ViewModel() {
 
@@ -37,11 +40,25 @@ class TambahPenggunaViewModel : ViewModel() {
     /** Submit tambah pengguna. Validasi, cek unik, buat akun auth, lalu insert row `pengguna`. */
     fun submit(nama: String, email: String, password: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            if (nama.isBlank() || email.isBlank() || password.isBlank()) {
+            val namaTrim = nama.trim()
+            val emailTrim = email.trim()
+            val emailLower = emailTrim.lowercase(Locale.ROOT)
+            val pwdTrim   = password.trim()
+
+            // Validasi kosong
+            if (namaTrim.isBlank() || emailLower.isBlank() || pwdTrim.isBlank()) {
                 _toast.emit("Semua isian wajib diisi")
                 return@launch
             }
-            if (password.length < 6) {
+
+            // **Validasi format email lebih dulu**
+            if (!Patterns.EMAIL_ADDRESS.matcher(emailLower).matches()) {
+                _toast.emit("Format email tidak valid")
+                return@launch
+            }
+
+            // Validasi password
+            if (pwdTrim.length < 6) {
                 _toast.emit("Password minimal 6 karakter")
                 return@launch
             }
@@ -49,35 +66,45 @@ class TambahPenggunaViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 // Cek unik (case-insensitive)
-                if (isNamaDipakai(nama)) {
+                if (isNamaDipakai(namaTrim)) {
                     _toast.emit("Nama sudah digunakan, gunakan nama lain")
                     return@launch
                 }
-                if (isEmailDipakai(email)) {
+                if (isEmailDipakai(emailLower)) {
                     _toast.emit("Email sudah digunakan, gunakan email lain")
                     return@launch
                 }
 
                 // Buat user di Auth (autoConfirm) + metadata
                 val created = admin.auth.admin.createUserWithEmail {
-                    this.email = email
-                    this.password = password
-                    userMetadata { put("name", nama) }
+                    this.email = emailTrim
+                    this.password = pwdTrim
+                    userMetadata { put("name", namaTrim) }
                     autoConfirm = true
                 }
 
                 // Insert ke tabel aplikasi
                 val penggunaBaru = Pengguna(
                     pgnId = created.id,
-                    pgnNama = nama,
-                    pgnEmail = email
+                    pgnNama = namaTrim,
+                    pgnEmail = emailLower
                 )
                 client.from("pengguna").insert(penggunaBaru)
 
                 _toast.emit("Pengguna berhasil dibuat")
                 _navigateBack.emit(Unit)
+
             } catch (e: AuthWeakPasswordException) {
                 _toast.emit("Password minimal 6 karakter")
+            } catch (e: AuthRestException) {
+                // Guard tambahan kalau Supabase menolak email walau sudah kita validasi
+                val msg = e.message?.lowercase().orEmpty()
+                val invalidEmail =
+                    e.error == "validation_failed" ||
+                            msg.contains("unable to validate email address") ||
+                            msg.contains("invalid format")
+                _toast.emit(if (invalidEmail) "Format email tidak valid" else "Gagal membuat pengguna, periksa koneksi internet")
+                Log.e("TambahPenggunaVM", "Auth error: ${e.message}", e)
             } catch (ce: CancellationException) {
                 throw ce
             } catch (e: Exception) {
@@ -111,7 +138,7 @@ class TambahPenggunaViewModel : ViewModel() {
             client
                 .from("pengguna")
                 .select(columns = Columns.list("pgnEmail")) {
-                    filter { ilike("pgnEmail", email.trim()) } // exact match, ignore case
+                    filter { ilike("pgnEmail", email.trim()) }
                 }
                 .decodeList<Pengguna>()
                 .isNotEmpty()

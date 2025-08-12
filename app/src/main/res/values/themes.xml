@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <style name="Base.Theme.BankSampah" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorSecondary">@color/secondary</item>
@@ -15,10 +15,15 @@
 
     <style name="Theme.BankSampah" parent="Base.Theme.BankSampah" />
 
+    <!-- values/themes.xml -->
     <style name="Theme.BankSampah.Splash" parent="Theme.SplashScreen">
+        <!-- WAJIB untuk Android 12+ -->
         <item name="windowSplashScreenBackground">@color/white</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/logobanksampah_foreground</item>
         <item name="postSplashScreenTheme">@style/Theme.BankSampah</item>
+
+        <item name="android:windowBackground">@color/white</item>
     </style>
+
 
 </resources>

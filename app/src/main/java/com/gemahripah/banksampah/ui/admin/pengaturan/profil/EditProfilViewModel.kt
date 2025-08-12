@@ -7,6 +7,7 @@ import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.supabase.SupabaseAdminProvider
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.exception.AuthWeakPasswordException
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.Locale
 import kotlin.coroutines.cancellation.CancellationException
 
 class EditProfilViewModel : ViewModel() {
@@ -41,11 +43,15 @@ class EditProfilViewModel : ViewModel() {
         emailBaru: String,
         passwordBaru: String
     ) {
-        val isNamaBerubah = namaBaru != (pengguna.pgnNama ?: "")
-        val isEmailBerubah = emailBaru != (pengguna.pgnEmail ?: "")
+        val namaTrim   = namaBaru.trim()
+        val emailTrim  = emailBaru.trim()
+        val emailLower = emailTrim.lowercase(Locale.ROOT)            // ← normalisasi
+        val oldEmailLower = (pengguna.pgnEmail ?: "").lowercase(Locale.ROOT)
+        val isNamaBerubah = namaTrim != (pengguna.pgnNama ?: "")
+        val isEmailBerubah = emailLower != oldEmailLower             // ← bandingkan lowercase
         val isPasswordBerubah = passwordBaru.isNotEmpty()
 
-        if (namaBaru.isBlank() || emailBaru.isBlank()) {
+        if (namaTrim.isBlank() || emailLower.isBlank()) {
             _toast.tryEmit("Nama dan Email tidak boleh kosong")
             return
         }
@@ -54,16 +60,25 @@ class EditProfilViewModel : ViewModel() {
             return
         }
 
+        // Pre-validasi email jika berubah
+        if (isEmailBerubah) {
+            val emailOk = android.util.Patterns.EMAIL_ADDRESS.matcher(emailBaru.trim()).matches()
+            if (!emailOk) {
+                _toast.tryEmit("Format email tidak valid")
+                return
+            }
+        }
+
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
             try {
-                // Cek unik bila berubah
-                if (isNamaBerubah && isNamaDipakai(namaBaru)) {
+                // Cek unik bila berubah (di tabel app)
+                if (isNamaBerubah && isNamaDipakai(namaTrim)) {
                     _toast.emit("Nama sudah digunakan, gunakan nama lain")
                     _isLoading.value = false
                     return@launch
                 }
-                if (isEmailBerubah && isEmailDipakai(emailBaru)) {
+                if (isEmailBerubah && isEmailDipakai(emailLower)) {
                     _toast.emit("Email sudah digunakan, gunakan email lain")
                     _isLoading.value = false
                     return@launch
@@ -71,21 +86,11 @@ class EditProfilViewModel : ViewModel() {
 
                 val userId = pengguna.pgnId
 
-                // Update tabel "pengguna" (profil app)
-                if (isNamaBerubah || isEmailBerubah) {
-                    client.from("pengguna").update({
-                        if (isNamaBerubah) set("pgnNama", namaBaru)
-                        if (isEmailBerubah) set("pgnEmail", emailBaru)
-                    }) {
-                        filter { userId?.let { eq("pgnId", it) } }
-                    }
-                }
-
-                // Update auth (email/password) via Admin API
+                // 1) UPDATE AUTH DULU (email/password) — jika ada perubahan auth
                 if ((isEmailBerubah || isPasswordBerubah) && userId != null) {
                     try {
                         adminClient.auth.admin.updateUserById(uid = userId) {
-                            if (isEmailBerubah) email = emailBaru
+                            if (isEmailBerubah) email = emailLower
                             if (isPasswordBerubah) password = passwordBaru
                         }
                     } catch (e: AuthWeakPasswordException) {
@@ -93,11 +98,26 @@ class EditProfilViewModel : ViewModel() {
                         _toast.emit("Password minimal 6 karakter")
                         _isLoading.value = false
                         return@launch
-                    } catch (e: Exception) {
-                        Log.e("EditProfilVM", "Gagal update email/password via admin API: ${e.message}", e)
-                        _toast.emit("Gagal memperbarui email atau password")
+                    } catch (e: AuthRestException) {
+                        val msg = e.message?.lowercase().orEmpty()
+                        val isInvalidEmail =
+                            e.error == "validation_failed" ||
+                                    msg.contains("unable to validate email address") ||
+                                    msg.contains("invalid format")
+                        Log.e("EditProfilVM", "Admin API error: ${e.message}", e)
+                        _toast.emit(if (isInvalidEmail) "Format email tidak valid" else "Gagal memperbarui email atau password")
                         _isLoading.value = false
                         return@launch
+                    }
+                }
+
+                // 2) BARU UPDATE TABEL `pengguna` (nama/email di profil app)
+                if (isNamaBerubah || isEmailBerubah) {
+                    client.from("pengguna").update({
+                        if (isNamaBerubah) set("pgnNama", namaBaru)
+                        if (isEmailBerubah) set("pgnEmail", emailLower)
+                    }) {
+                        filter { userId?.let { eq("pgnId", it) } }
                     }
                 }
 
@@ -138,7 +158,7 @@ class EditProfilViewModel : ViewModel() {
             val response = client
                 .from("pengguna")
                 .select(columns = Columns.list("pgnEmail")) {
-                    filter { eq("pgnEmail", email.trim()) }
+                    filter { ilike("pgnEmail", email.trim()) }
                 }
                 .decodeList<Pengguna>()
             response.isNotEmpty()

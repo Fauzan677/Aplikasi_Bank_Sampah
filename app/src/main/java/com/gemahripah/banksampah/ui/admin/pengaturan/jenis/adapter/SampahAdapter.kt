@@ -2,7 +2,6 @@ package com.gemahripah.banksampah.ui.admin.pengaturan.jenis.adapter
 
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.gemahripah.banksampah.data.model.sampah.Sampah
 import com.gemahripah.banksampah.databinding.ItemTotalSampahBinding
 import android.view.LayoutInflater
 import com.gemahripah.banksampah.data.model.sampah.KategoridanSampah

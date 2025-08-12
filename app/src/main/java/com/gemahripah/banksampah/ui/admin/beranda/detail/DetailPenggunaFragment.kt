@@ -21,7 +21,6 @@ import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.ui.admin.beranda.adapter.TotalSampahAdapter
 import com.gemahripah.banksampah.ui.gabungan.adapter.common.LoadingStateAdapter
 import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatPagingAdapter
-import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.RiwayatTransaksiAdapter
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
 import kotlinx.coroutines.flow.collectLatest
@@ -62,17 +61,17 @@ class DetailPenggunaFragment : Fragment(), Reloadable {
             reloadData()
         }
 
-        if (!updateInternetCard()) return
-        pengguna?.pgnId?.let {
-            viewModel.loadData(it)
-            viewModel.loadPagingRiwayat(it)
+        pengguna?.pgnId?.let { id -> viewModel.loadPagingRiwayat(id) }
+
+        if (updateInternetCard()) {
+            pengguna?.pgnId?.let { viewModel.loadData(it) }
         }
     }
 
     override fun reloadData() {
         if (!updateInternetCard()) return
-        pengguna?.pgnId?.let {
-            viewModel.loadData(it)
+        pengguna?.pgnId?.let { id ->
+            viewModel.loadData(id)
             pagingAdapter.refresh()
         }
         binding.swipeRefresh.isRefreshing = false
@@ -115,14 +114,6 @@ class DetailPenggunaFragment : Fragment(), Reloadable {
             header = LoadingStateAdapter { pagingAdapter.retry() },
             footer = LoadingStateAdapter { pagingAdapter.retry() }
         )
-
-        binding.rvRiwayat.post {
-            val maxHeight = resources.getDimensionPixelSize(R.dimen.recycler_max_height)
-            if (binding.rvRiwayat.height > maxHeight) {
-                binding.rvRiwayat.layoutParams.height = maxHeight
-                binding.rvRiwayat.requestLayout()
-            }
-        }
     }
 
     @SuppressLint("SetTextI18n")

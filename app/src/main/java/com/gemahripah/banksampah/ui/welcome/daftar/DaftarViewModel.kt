@@ -15,6 +15,7 @@ import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 class DaftarViewModel : ViewModel() {
 
@@ -48,11 +49,12 @@ class DaftarViewModel : ViewModel() {
 
     /** Insert ke tabel pengguna (IO) */
     private suspend fun insertUserToDatabase(nama: String, email: String) = withContext(Dispatchers.IO) {
+        val emailNormalized = email.trim().lowercase(Locale.ROOT)
         try {
             client.from("pengguna").insert(
                 mapOf(
                     "pgnNama" to nama.trim(),
-                    "pgnEmail" to email
+                    "pgnEmail" to emailNormalized
                 )
             )
         } catch (e: RestException) {
@@ -98,7 +100,7 @@ class DaftarViewModel : ViewModel() {
             } catch (e: AuthRestException) {
                 val msg = e.error.lowercase()
                 if (msg.contains("already_exists")) {
-                    _toast.postValue("Email sudah digunakan")
+                    _toast.postValue("Email sudah digunakan, gunakan email lain")
                 } else {
                     _toast.postValue("Gagal daftar, periksa koneksi internet")
                 }

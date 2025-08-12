@@ -91,9 +91,8 @@ class EditPengumumanViewModel : ViewModel() {
                         imageChanged
 
                 if (!needsUpdate) {
-                    _toast.emit("Tidak ada perubahan yang disimpan")
+                    _toast.emit("Tidak ada perubahan data")
                     _isLoading.value = false
-                    _navigateBack.emit(Unit)
                     return@launch
                 }
 

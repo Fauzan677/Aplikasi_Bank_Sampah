@@ -20,7 +20,7 @@
 
             <TextView
                 android:id="@+id/judul"
-                android:text="Jenis Sampah"
+                android:text="@string/jenis_sampah"
                 style="@style/TextJudulHalaman"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -47,7 +47,7 @@
                 app:strokeWidth="2dp"
                 app:cornerRadius="10dp"
                 android:backgroundTint="@android:color/transparent"
-                android:text="Tambah Kategori"
+                android:text="@string/tambah_kategori"
                 android:textColor="@color/black"
                 app:layout_constraintEnd_toStartOf="@+id/tambah_jenis"
                 app:layout_constraintStart_toStartOf="parent"
@@ -62,7 +62,7 @@
                 app:strokeWidth="2dp"
                 app:cornerRadius="10dp"
                 android:backgroundTint="@android:color/transparent"
-                android:text="Tambah Jenis Sampah"
+                android:text="@string/tambah_jenis_sampah"
                 android:textColor="@color/black"
                 app:layout_constraintStart_toEndOf="@+id/tambah_kategori"
                 app:layout_constraintEnd_toEndOf="parent"

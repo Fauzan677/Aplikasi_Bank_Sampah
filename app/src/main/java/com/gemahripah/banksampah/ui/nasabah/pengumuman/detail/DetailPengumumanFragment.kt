@@ -22,9 +22,6 @@ import com.gemahripah.banksampah.ui.admin.pengumuman.detail.DetailPengumumanFrag
 import com.gemahripah.banksampah.ui.nasabah.NasabahActivity
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 class DetailPengumumanFragment : Fragment(), Reloadable {
 

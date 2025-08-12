@@ -6,17 +6,13 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.gemahripah.banksampah.data.model.beranda.TotalSampahPerJenis
-import com.gemahripah.banksampah.data.model.pengguna.Pengguna
-import com.gemahripah.banksampah.data.model.transaksi.DetailTransaksi
 import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
-import com.gemahripah.banksampah.data.model.transaksi.Transaksi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.ui.gabungan.paging.riwayatTransaksi.RiwayatTransaksiPagingSource
 import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
@@ -24,8 +20,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.text.NumberFormat
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 import java.util.*
 
 class DetailPenggunaViewModel : ViewModel() {
@@ -45,6 +39,7 @@ class DetailPenggunaViewModel : ViewModel() {
         pgnIdFlow.value = pgnId
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     val pagingData: Flow<PagingData<RiwayatTransaksi>> =
         pgnIdFlow.filterNotNull()
             .distinctUntilChanged()

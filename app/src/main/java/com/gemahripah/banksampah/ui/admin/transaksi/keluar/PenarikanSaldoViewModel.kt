@@ -70,15 +70,15 @@ class PenarikanSaldoViewModel : ViewModel() {
         }
     }
 
+    fun preselectPengguna(p: Pengguna) {
+        val id = p.pgnId ?: return
+        _selectedPgnId.value = id
+        fetchSaldo(id)
+    }
+
     /** Dipanggil saat user dipilih dari AutoComplete (berdasarkan NAMA). */
     fun onNamaDipilih(nama: String) {
         val id = _penggunaList.value.firstOrNull { it.pgnNama == nama }?.pgnId
-        _selectedPgnId.value = id
-        if (id != null) fetchSaldo(id)
-    }
-
-    /** Kalau datang dari argumen (detail nasabah), set langsung berdasarkan ID. */
-    fun setSelectedUserId(id: String?) {
         _selectedPgnId.value = id
         if (id != null) fetchSaldo(id)
     }
@@ -106,6 +106,7 @@ class PenarikanSaldoViewModel : ViewModel() {
             _toast.tryEmit("Silakan pilih nasabah terlebih dahulu")
             return
         }
+
         if (jumlah == null || jumlah <= 0.0) {
             _toast.tryEmit("Jumlah penarikan tidak valid")
             return

@@ -3,10 +3,8 @@ package com.gemahripah.banksampah.ui.admin.pengaturan.jenis.adapter
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.GridLayout
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.gemahripah.banksampah.data.model.sampah.Kategori
 import com.gemahripah.banksampah.data.model.sampah.KategoridanSampah
@@ -15,7 +13,6 @@ import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.ItemJenisSampahBinding
 import com.gemahripah.banksampah.ui.admin.pengaturan.jenis.JenisSampahFragmentDirections
 import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
