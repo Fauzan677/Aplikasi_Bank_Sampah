@@ -278,6 +278,7 @@ class BerandaFragment : Fragment(), Reloadable {
         return parsed.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id")))
     }
 
+    @SuppressLint("SetTextI18n")
     private fun setupTransaksi() {
         binding.tanggalTransaksi.setOnClickListener {
             val selectedItem = binding.spinnerFilterTransaksi.selectedItem?.toString()
@@ -310,6 +311,7 @@ class BerandaFragment : Fragment(), Reloadable {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private fun setupSetoran() {
         binding.tanggalSetoran.setOnClickListener {
             showDateRangePicker { startDate, endDate ->

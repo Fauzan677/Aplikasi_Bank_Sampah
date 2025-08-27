@@ -17,7 +17,6 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.sampah.Kategori
-import com.gemahripah.banksampah.data.model.sampah.Sampah
 import com.gemahripah.banksampah.data.model.sampah.gabungan.SampahRelasi
 import com.gemahripah.banksampah.databinding.FragmentTambahJenisSampahBinding
 import com.gemahripah.banksampah.ui.admin.AdminActivity

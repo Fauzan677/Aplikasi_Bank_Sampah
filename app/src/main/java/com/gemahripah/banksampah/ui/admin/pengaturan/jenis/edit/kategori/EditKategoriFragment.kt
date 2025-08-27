@@ -1,5 +1,6 @@
 package com.gemahripah.banksampah.ui.admin.pengaturan.jenis.edit.kategori
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -50,6 +51,7 @@ class EditKategoriFragment : Fragment() {
         vm.checkRelasiSampah()
     }
 
+    @SuppressLint("SetTextI18n")
     private fun setupUI() {
         binding.judul.text = "Edit Kategori Sampah"
         binding.kategori.setText(kategori.ktgNama)

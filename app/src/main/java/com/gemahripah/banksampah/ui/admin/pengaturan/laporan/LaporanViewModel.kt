@@ -642,9 +642,9 @@ class LaporanViewModel : ViewModel() {
       <body>$body</body></html>
     """.trimIndent()
 
-    private fun parseInstantOrMax(s: String?): java.time.Instant =
-        try { java.time.ZonedDateTime.parse(s).toInstant() }
-        catch (_: Exception) { java.time.Instant.ofEpochMilli(Long.MAX_VALUE) } // yang gagal parse taruh di bawah
+    private fun parseInstantOrMax(s: String?): Instant =
+        try { ZonedDateTime.parse(s).toInstant() }
+        catch (_: Exception) { Instant.ofEpochMilli(Long.MAX_VALUE) } // yang gagal parse taruh di bawah
 
     private fun String?.orDashIfBlank(): String =
         if (this == null || this.isBlank() || this.equals("EMPTY", true)) "-" else this

@@ -30,12 +30,6 @@ class LandingFragment : Fragment() {
                 R.id.action_landingFragment_to_masukFragment
             )
         }
-
-        binding.daftar.setOnClickListener {
-            findNavController().navigate(
-                R.id.action_landingFragment_to_daftarFragment
-            )
-        }
     }
 
     override fun onDestroyView() {

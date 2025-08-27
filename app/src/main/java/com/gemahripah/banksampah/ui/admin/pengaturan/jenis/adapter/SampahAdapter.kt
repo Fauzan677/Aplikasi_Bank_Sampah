@@ -1,5 +1,6 @@
 package com.gemahripah.banksampah.ui.admin.pengaturan.jenis.adapter
 
+import android.annotation.SuppressLint
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.gemahripah.banksampah.databinding.ItemTotalSampahBinding
@@ -18,6 +19,7 @@ class SampahAdapter(
     inner class SampahViewHolder(private val binding: ItemTotalSampahBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
+        @SuppressLint("SetTextI18n")
         fun bind(data: SampahRelasi) {
             binding.jenis.text   = data.sphJenis ?: "-"
             binding.kode.text    = data.sphKode?.takeIf { it.isNotBlank() } ?: "-"

@@ -16,7 +16,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
-import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.model.sampah.Sampah
 import com.gemahripah.banksampah.databinding.FragmentSetorSampahBinding
@@ -299,6 +298,7 @@ class SetorSampahFragment : Fragment(), Reloadable {
         updateAllAdapters()
     }
 
+    @SuppressLint("SetTextI18n")
     private fun perbaruiLabelInput() {
         tambahanSampahList.forEachIndexed { idx, item ->
             item.jenisSampahLabel.text = "Jenis Sampah ${idx + 2}"

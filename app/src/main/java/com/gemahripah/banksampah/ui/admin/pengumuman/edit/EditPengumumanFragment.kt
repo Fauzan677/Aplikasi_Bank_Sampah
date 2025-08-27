@@ -224,7 +224,7 @@ class EditPengumumanFragment : Fragment(), Reloadable {
         ) {
             launchCamera()
         } else {
-            requestCameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 

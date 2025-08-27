@@ -129,6 +129,7 @@
     <string name="masukkan_alamat_nasabah">Masukkan Alamat Nasabah</string>
     <string name="masukkan_kode_sampah">Masukkan Kode Sampah</string>
     <string name="kode">Kode</string>
+    <string name="selamat_datang">Selamat Datang</string>
 
     <!-- ===================== Arrays ===================== -->
     <string-array name="filter_transaksi">

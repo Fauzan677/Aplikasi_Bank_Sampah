@@ -99,6 +99,7 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {

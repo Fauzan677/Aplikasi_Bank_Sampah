@@ -68,7 +68,7 @@ class DetailTransaksiViewModel : ViewModel() {
 
                     val tipe       = trx.tskTipe?.trim().orEmpty()          // "Masuk" / "Keluar"
                     val userId     = trx.tskIdPengguna?.pgnId ?: error("Pengguna tidak ditemukan")
-                    val saldoLama  = trx.tskIdPengguna?.pgnSaldo ?: BigDecimal.ZERO
+                    val saldoLama  = trx.tskIdPengguna.pgnSaldo ?: BigDecimal.ZERO
 
                     // 2) Hitung total nominal detail transaksi
                     val details = SupabaseProvider.client
