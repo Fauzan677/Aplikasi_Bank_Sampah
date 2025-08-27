@@ -46,6 +46,10 @@ class DetailPengumumanFragment : Fragment(), Reloadable {
 
         observeViewModel()
 
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
         val pengumuman = arguments?.let {
             DetailPengumumanFragmentArgs.fromBundle(it).pengumuman
         }

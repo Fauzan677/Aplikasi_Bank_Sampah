@@ -114,8 +114,8 @@
         tools:layout="@layout/fragment_tambah_jenis_sampah">
 
         <argument
-            android:name="kategoridanSampah"
-            app:argType="com.gemahripah.banksampah.data.model.sampah.KategoridanSampah" />
+            android:name="SampahRelasi"
+            app:argType="com.gemahripah.banksampah.data.model.sampah.gabungan.SampahRelasi" />
 
         <action
             android:id="@+id/action_editJenisSampahFragment_to_jenisSampahFragment"

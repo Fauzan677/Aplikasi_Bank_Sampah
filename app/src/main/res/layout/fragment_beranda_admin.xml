@@ -1,54 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/swipeRefresh"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/light_gray"
-    >
+    android:background="@color/light_gray">
 
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/scrollView"
+    <!-- HEADER yang bisa collapse + sticky title -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appbar"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true"
-        >
+        android:layout_height="wrap_content"
+        android:background="@color/light_gray"
+        app:liftOnScroll="true">
 
+        <!-- Bagian header yang ikut "menghilang" saat discroll -->
         <LinearLayout
+            android:id="@+id/header_scrollable"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            >
+            android:background="@color/light_gray"
+            app:layout_scrollFlags="scroll|enterAlways">
 
+            <!-- ===== Card Saldo ===== -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="10dp"
                 android:layout_marginTop="10dp"
-                app:cardCornerRadius="10dp"
-                >
+                app:cardCornerRadius="10dp">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/gradient_kuning_biru"
-                    android:padding="10dp"
-                    >
+                    android:padding="10dp">
 
                     <TextView
                         android:id="@+id/tv_saldo"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
                         android:text="@string/total_saldo"
                         android:textColor="@color/black"
                         android:fontFamily="@font/nunito_bold"
                         android:textSize="20sp"
                         android:layout_marginStart="10sp"
                         android:layout_marginTop="10dp"
-                        />
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <TextView
                         android:id="@+id/nominal"
@@ -56,13 +57,12 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/nunito_extrabold"
                         android:textColor="@color/black"
-                        android:textSize="40sp"
-                        app:layout_constraintTop_toBottomOf="@+id/tv_saldo"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintBottom_toTopOf="@id/tv_nasabah"
+                        android:textSize="25sp"
                         android:layout_marginEnd="10dp"
                         android:layout_marginBottom="10dp"
-                        />
+                        app:layout_constraintTop_toBottomOf="@+id/tv_saldo"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintBottom_toTopOf="@id/tv_nasabah" />
 
                     <TextView
                         android:id="@+id/tv_nasabah"
@@ -72,11 +72,10 @@
                         android:fontFamily="@font/nunito_bold"
                         android:textColor="@color/black"
                         android:textSize="20sp"
-                        app:layout_constraintTop_toBottomOf="@+id/nominal"
-                        app:layout_constraintStart_toStartOf="parent"
                         android:layout_marginStart="10dp"
                         android:layout_marginTop="10dp"
-                        />
+                        app:layout_constraintTop_toBottomOf="@+id/nominal"
+                        app:layout_constraintStart_toStartOf="parent" />
 
                     <TextView
                         android:id="@+id/nasabah"
@@ -84,28 +83,26 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/nunito_extrabold"
                         android:textColor="@color/black"
-                        android:textSize="24sp"
+                        android:textSize="25sp"
                         android:layout_marginTop="5dp"
                         app:layout_constraintTop_toBottomOf="@+id/tv_nasabah"
                         app:layout_constraintStart_toStartOf="@id/tv_nasabah"
-                        app:layout_constraintEnd_toEndOf="@+id/tv_nasabah"
-                        />
-
+                        app:layout_constraintEnd_toEndOf="@+id/tv_nasabah" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
-
             </androidx.cardview.widget.CardView>
 
+            <!-- ===== Grid Transaksi/Setoran ===== -->
             <GridLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:layout_marginHorizontal="10dp"
                 android:columnCount="2"
-                android:orientation="horizontal"
                 android:columnOrderPreserved="false"
                 android:useDefaultMargins="true"
-                >
+                android:orientation="horizontal">
 
+                <!-- Kartu Transaksi -->
                 <androidx.cardview.widget.CardView
                     android:id="@+id/card_transaksi"
                     android:layout_width="0dp"
@@ -113,8 +110,7 @@
                     android:layout_columnWeight="1"
                     android:layout_rowWeight="1"
                     android:layout_margin="5dp"
-                    app:cardCornerRadius="10dp"
-                    >
+                    app:cardCornerRadius="10dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -122,8 +118,7 @@
                         android:background="@drawable/border_biru"
                         android:paddingBottom="20dp"
                         android:orientation="vertical"
-                        android:gravity="center"
-                        >
+                        android:gravity="center">
 
                         <Spinner
                             android:id="@+id/spinner_filter_transaksi"
@@ -132,18 +127,16 @@
                             android:entries="@array/filter_transaksi"
                             android:layout_marginTop="15dp"
                             android:paddingStart="10dp"
-                            android:paddingEnd="0dp"
-                            />
+                            android:paddingEnd="0dp" />
 
                         <TextView
                             android:id="@+id/transaksi"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
                             android:fontFamily="@font/nunito_extrabold"
                             android:textColor="@color/black"
-                            android:layout_marginTop="10dp"
-                            android:textSize="20sp"
-                            />
+                            android:textSize="15sp" />
 
                         <TextView
                             android:id="@+id/tv_tanggal_transaksi"
@@ -151,8 +144,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="5dp"
                             android:layout_marginHorizontal="2dp"
-                            android:visibility="gone"
-                            />
+                            android:visibility="gone" />
 
                         <ImageView
                             android:id="@+id/tanggal_transaksi"
@@ -160,13 +152,11 @@
                             android:layout_height="wrap_content"
                             android:contentDescription="@string/tanggal"
                             android:src="@drawable/baseline_date_range_24"
-                            android:layout_marginTop="10dp"
-                            />
-
+                            android:layout_marginTop="10dp" />
                     </LinearLayout>
-
                 </androidx.cardview.widget.CardView>
 
+                <!-- Kartu Setoran -->
                 <androidx.cardview.widget.CardView
                     android:id="@+id/card_setoran"
                     android:layout_width="0dp"
@@ -174,8 +164,7 @@
                     android:layout_columnWeight="1"
                     android:layout_rowWeight="1"
                     android:layout_margin="5dp"
-                    app:cardCornerRadius="10dp"
-                    >
+                    app:cardCornerRadius="10dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -183,8 +172,7 @@
                         android:background="@drawable/border_kuning"
                         android:paddingBottom="20dp"
                         android:orientation="vertical"
-                        android:gravity="center"
-                        >
+                        android:gravity="center">
 
                         <TextView
                             android:id="@+id/tv_setoran"
@@ -193,17 +181,18 @@
                             android:layout_marginTop="15dp"
                             android:text="@string/total_setoran"
                             android:textColor="@color/black"
-                            />
+                            android:fontFamily="@font/nunito_semibold"
+                            android:textSize="16sp"
+                            android:padding="2dp" />
 
                         <TextView
                             android:id="@+id/setoran"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/nunito_extrabold"
-                            android:textColor="@color/black"
                             android:layout_marginTop="10dp"
-                            android:textSize="20sp"
-                            />
+                            android:textColor="@color/black"
+                            android:fontFamily="@font/nunito_extrabold"
+                            android:textSize="15sp" />
 
                         <TextView
                             android:id="@+id/tv_tanggal_setoran"
@@ -211,8 +200,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="5dp"
                             android:layout_marginHorizontal="2dp"
-                            android:visibility="gone"
-                            />
+                            android:visibility="gone" />
 
                         <ImageView
                             android:id="@+id/tanggal_setoran"
@@ -220,36 +208,43 @@
                             android:layout_height="wrap_content"
                             android:contentDescription="@string/tanggal"
                             android:src="@drawable/baseline_date_range_24"
-                            android:layout_marginTop="10dp"
-                            />
-
+                            android:layout_marginTop="10dp" />
                     </LinearLayout>
-
                 </androidx.cardview.widget.CardView>
-
             </GridLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/light_gray"
+            >
 
             <TextView
                 android:id="@+id/list_Nasabah"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/list_nasabah"
-                android:layout_marginTop="10dp"
-                android:fontFamily="@font/nunito_bold"
                 android:textColor="@color/black"
                 android:textSize="24sp"
+                android:fontFamily="@font/nunito_bold"
                 android:layout_marginStart="20dp"
-                />
+                android:layout_marginTop="10dp" />
 
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_search"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="20dp"
+                android:layout_marginVertical="5dp"
                 android:hint="@string/cari_nama_nasabah"
+                app:boxBackgroundMode="outline"
                 app:boxStrokeColor="@color/primary"
                 app:hintTextColor="@color/primary"
-                app:boxBackgroundMode="outline"
-                android:layout_marginVertical="5dp"
+                app:endIconMode="clear_text"
+                app:endIconTint="@color/primary"
                 >
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -257,70 +252,74 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="text"
-                    android:imeOptions="actionSearch"
-                    />
-
+                    android:imeOptions="actionSearch"/>
             </com.google.android.material.textfield.TextInputLayout>
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="600dp"
-                android:layout_marginVertical="5dp"
-                android:layout_marginHorizontal="5dp">
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rv_list_nasabah"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:contentDescription="@string/list_nasabah"/>
-
-                <com.google.android.material.progressindicator.CircularProgressIndicator
-                    android:id="@+id/loading"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    app:trackColor="@color/primary"
-                    app:trackThickness="4dp"
-                    android:indeterminate="true"
-                    android:layout_marginTop="10dp"
-                    />
-
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/koneksi_nasabah"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="30dp"
-                    app:cardElevation="4dp"
-                    app:cardCornerRadius="8dp"
-                    android:layout_gravity="center_horizontal"
-                    android:visibility="gone">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="16dp"
-                        android:text="@string/periksa_koneksi_internet_card"
-                        android:textAlignment="center" />
-
-                </androidx.cardview.widget.CardView>
-
-                <TextView
-                    android:id="@+id/nasabah_kosong"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/data_tidak_ditemukan"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="10dp"
-                    android:fontFamily="@font/nunito_regular"
-                    android:textColor="@color/black"
-                    android:textSize="14sp"
-                    android:visibility="gone"
-                    />
-
-            </FrameLayout>
 
         </LinearLayout>
 
-    </androidx.core.widget.NestedScrollView>
+        <!-- Tidak diberi layout_scrollFlags agar PINNED -->
+    </com.google.android.material.appbar.AppBarLayout>
 
-</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+    <!-- LIST (scrolling view) + Pull-to-refresh -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <!-- Tumpuk RV + overlay di dalam satu container -->
+        <FrameLayout
+            android:id="@+id/list_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_list_nasabah"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingBottom="16dp"
+                android:contentDescription="@string/list_nasabah"/>
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/loading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                app:trackColor="@color/primary"
+                app:trackThickness="4dp"
+                android:indeterminate="true"
+                android:visibility="gone"/>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/koneksi_nasabah"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="30dp"
+                android:visibility="gone"
+                android:layout_gravity="center"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp"
+                    android:text="@string/periksa_koneksi_internet_card"
+                    android:textAlignment="center"/>
+            </androidx.cardview.widget.CardView>
+
+            <TextView
+                android:id="@+id/nasabah_kosong"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/data_tidak_ditemukan"
+                android:textColor="@color/black"
+                android:textSize="14sp"
+                android:fontFamily="@font/nunito_regular"
+                android:visibility="gone"
+                android:layout_gravity="center_horizontal|top"
+                android:layout_marginTop="16dp"/>
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

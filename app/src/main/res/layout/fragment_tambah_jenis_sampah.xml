@@ -18,19 +18,43 @@
             android:orientation="vertical"
             >
 
-            <TextView
-                android:id="@+id/judul"
-                android:text="@string/tambah_jenis_sampah"
-                style="@style/TextJudulHalaman"
-                />
-
-            <View
-                android:id="@+id/garis_judul"
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="2dp"
-                android:background="@color/black"
-                android:layout_marginTop="10dp"
-                />
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/judul"
+                    style="@style/TextJudulHalaman"
+                    android:text="@string/tambah_jenis_sampah"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintBottom_toTopOf="@+id/garis_judul"
+                    />
+
+                <ImageView
+                    android:id="@+id/btnBack"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/back"
+                    android:layout_marginStart="30dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toTopOf="@+id/garis_judul"
+                    />
+
+                <View
+                    android:id="@+id/garis_judul"
+                    android:layout_width="0dp"
+                    android:layout_height="2dp"
+                    android:background="@color/black"
+                    android:layout_marginTop="10dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/judul"
+                    />
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             <TextView
                 android:layout_width="wrap_content"
@@ -77,6 +101,29 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="30dp"
                 android:hint="@string/masukkan_jenis_sampah"
+                android:inputType="text"
+                android:background="@drawable/et_border"
+                android:padding="20dp"
+                android:layout_marginTop="10dp"
+                />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/nunito_semibold"
+                android:text="@string/kode"
+                android:textSize="20sp"
+                android:textColor="@color/black"
+                android:layout_marginStart="30dp"
+                android:layout_marginTop="10dp"
+                />
+
+            <EditText
+                android:id="@+id/kode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="30dp"
+                android:hint="@string/masukkan_kode_sampah"
                 android:inputType="text"
                 android:background="@drawable/et_border"
                 android:padding="20dp"

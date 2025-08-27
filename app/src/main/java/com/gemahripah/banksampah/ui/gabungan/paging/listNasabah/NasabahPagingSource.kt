@@ -5,6 +5,7 @@ import androidx.paging.PagingState
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
 
 class NasabahPagingSource(private val query: String) : PagingSource<Int, Pengguna>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Pengguna> {
@@ -13,24 +14,26 @@ class NasabahPagingSource(private val query: String) : PagingSource<Int, Penggun
         val offset = page * pageSize
 
         return try {
-            val builder = SupabaseProvider.client
+            val response = SupabaseProvider.client
                 .from("pengguna")
                 .select {
                     filter {
                         eq("pgnIsAdmin", false)
                         if (query.isNotBlank()) {
                             val q = query.trim()
-                            // escape wildcard agar pencarian aman
                             val esc = q.replace("\\", "\\\\")
                                 .replace("%", "\\%")
                                 .replace("_", "\\_")
                             ilike("pgnNama", "%$esc%")
                         }
                     }
+                    // ⬇⬇ Urutkan alfabetis berdasarkan pgnNama
+                    order("pgnNama", order = Order.ASCENDING)
+                    // ⬇⬇ Lakukan pagination setelah order
                     range(offset.toLong(), (offset + pageSize - 1).toLong())
                 }
+                .decodeList<Pengguna>()
 
-            val response = builder.decodeList<Pengguna>()
             val nextKey = if (response.size < pageSize) null else page + 1
 
             LoadResult.Page(

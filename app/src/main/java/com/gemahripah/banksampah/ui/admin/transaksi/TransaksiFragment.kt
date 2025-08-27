@@ -139,11 +139,22 @@ class TransaksiFragment : Fragment(), Reloadable {
 
         binding.searchRiwayat.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
-                binding.scrollView.post {
-                    binding.scrollView.scrollTo(0, binding.riwayatTransaksi.top)
-                }
+                binding.rvRiwayat.smoothScrollToPosition(0)
+                binding.appbar.setExpanded(true, true) // opsional, buka appbar penuh
             }
             false
+        }
+
+        binding.searchContainer.setEndIconOnClickListener {
+            binding.searchRiwayat.text?.clear()
+            binding.searchRiwayat.clearFocus()
+            val imm = requireContext()
+                .getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(binding.searchRiwayat.windowToken, 0)
+            // (opsional) scroll ke atas list
+            binding.rvRiwayat.smoothScrollToPosition(0)
+            binding.appbar.setExpanded(true, true) // opsional, buka appbar penuh
+
         }
     }
 
@@ -184,6 +195,7 @@ class TransaksiFragment : Fragment(), Reloadable {
     private fun showDatePicker(onDateSelected: (OffsetDateTime) -> Unit) {
         val datePicker = MaterialDatePicker.Builder.datePicker()
             .setTitleText("Pilih Tanggal")
+            .setTheme(R.style.ThemeOverlay_App_DatePicker)
             .build()
 
         datePicker.addOnPositiveButtonClickListener { selection ->
@@ -201,7 +213,8 @@ class TransaksiFragment : Fragment(), Reloadable {
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
             if (binding.searchRiwayat.hasFocus()) {
                 binding.searchRiwayat.clearFocus()
-                binding.scrollView.scrollTo(0, 0)
+                binding.rvRiwayat.smoothScrollToPosition(0)
+                binding.appbar.setExpanded(true, true) // opsional, buka appbar penuh
 
                 val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                 imm.hideSoftInputFromWindow(binding.searchRiwayat.windowToken, 0)
@@ -227,7 +240,8 @@ class TransaksiFragment : Fragment(), Reloadable {
         viewModel.setEndDate(null)
         pagingAdapter.refresh()
 
-        binding.scrollView.post { binding.scrollView.scrollTo(0, 0) }
+        binding.rvRiwayat.smoothScrollToPosition(0)
+        binding.appbar.setExpanded(true, true) // opsional, buka appbar penuh
 
         binding.searchRiwayat.setText("")
         binding.searchRiwayat.clearFocus()

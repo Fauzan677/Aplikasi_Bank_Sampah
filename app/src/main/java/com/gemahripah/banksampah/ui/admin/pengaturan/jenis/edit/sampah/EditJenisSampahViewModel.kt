@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gemahripah.banksampah.data.model.sampah.Kategori
 import com.gemahripah.banksampah.data.model.sampah.Sampah
+import com.gemahripah.banksampah.data.model.sampah.gabungan.SampahRelasi
+import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -35,6 +38,9 @@ class EditJenisSampahViewModel : ViewModel() {
     private val _selectedKategoriId = MutableStateFlow<Long?>(null)
     val selectedKategoriId: StateFlow<Long?> = _selectedKategoriId
 
+    private val _usedInDetail = MutableStateFlow<Boolean?>(null)   // null = gagal cek/belum
+    val usedInDetail: StateFlow<Boolean?> = _usedInDetail.asStateFlow()
+
     // Events
     private val _toast = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val toast: SharedFlow<String> = _toast
@@ -43,14 +49,11 @@ class EditJenisSampahViewModel : ViewModel() {
     val navigateBack: SharedFlow<Unit> = _navigateBack
 
     // Data awal untuk perbandingan
-    private var originalSampah: Sampah? = null
-    private var originalKategoriName: String? = null
+    private var originalRelasi: SampahRelasi? = null
 
-    fun initFromArgs(sampah: Sampah, namaKategori: String) {
-        originalSampah = sampah
-        originalKategoriName = namaKategori
-        // gunakan id asli jika ada sebagai default pilihan
-        _selectedKategoriId.value = sampah.sphKtgId
+    fun initFromArgs(relasi: SampahRelasi) {
+        originalRelasi = relasi
+        _selectedKategoriId.value = relasi.sphKtgId?.ktgId
     }
 
     fun setSelectedKategoriId(id: Long?) {
@@ -66,10 +69,10 @@ class EditJenisSampahViewModel : ViewModel() {
                     .decodeList<Kategori>()
                 _kategoriList.value = result
 
-                // sinkronkan pilihan berdasarkan nama kategori awal bila id belum ada
-                if (_selectedKategoriId.value == null && !originalKategoriName.isNullOrBlank()) {
-                    val match = result.find { it.ktgNama == originalKategoriName }
-                    _selectedKategoriId.value = match?.ktgId
+                if (_selectedKategoriId.value == null) {
+                    originalRelasi?.sphKtgId?.ktgNama?.let { nama ->
+                        _selectedKategoriId.value = result.find { it.ktgNama == nama }?.ktgId
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("EditJenisVM", "loadKategori gagal: ${e.message}", e)
@@ -100,35 +103,38 @@ class EditJenisSampahViewModel : ViewModel() {
 
     fun submitUpdate(
         inputJenis: String,
+        inputKode: String,
         inputSatuan: String,
         inputHarga: Long?,
         inputKeterangan: String
     ) {
-        val old = originalSampah ?: run {
-            _toast.tryEmit("Data tidak ditemukan")
-            return
+        val old = originalRelasi ?: run {
+            _toast.tryEmit("Data tidak ditemukan"); return
         }
         val id = old.sphId ?: run {
-            _toast.tryEmit("ID tidak ditemukan")
-            return
+            _toast.tryEmit("ID tidak ditemukan"); return
         }
+
         val kategoriIdBaru = _selectedKategoriId.value
         val jenisBaru = inputJenis.trim()
+        val kodeBaru  = inputKode.trim()
         val satuanBaru = inputSatuan.trim()
         val hargaBaru = inputHarga
         val ketBaru = inputKeterangan.trim()
 
-        if (kategoriIdBaru == null || jenisBaru.isEmpty() || satuanBaru.isEmpty() || hargaBaru == null) {
+        if (kategoriIdBaru == null || jenisBaru.isEmpty() || kodeBaru.isEmpty() ||
+            satuanBaru.isEmpty() || hargaBaru == null) {
             _toast.tryEmit("Isi semua data dengan benar")
             return
         }
 
         // Tidak ada perubahan?
         val noChange =
-            (kategoriIdBaru == (old.sphKtgId ?: kategoriIdBaru)) &&
+            (kategoriIdBaru == (old.sphKtgId?.ktgId)) &&
                     (jenisBaru == (old.sphJenis ?: "")) &&
+                    (kodeBaru  == (old.sphKode  ?: "")) &&
                     (satuanBaru == (old.sphSatuan ?: "")) &&
-                    (hargaBaru == (old.sphHarga?.toLong() ?: -1L)) &&
+                    (hargaBaru == (old.sphHarga ?: -1L)) &&
                     (ketBaru == (old.sphKeterangan ?: ""))
 
         if (noChange) {
@@ -139,29 +145,34 @@ class EditJenisSampahViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
             try {
-                // cek duplikat hanya bila jenis berubah
-                if (jenisBaru != old.sphJenis && isJenisSampahDipakai(jenisBaru)) {
+                // Cek duplikat ketika berubah
+                if (jenisBaru != old.sphJenis && isJenisSampahDipakai(jenisBaru, id)) {
                     _toast.emit("Jenis sampah sudah digunakan, gunakan nama lain")
-                    _isLoading.value = false
-                    return@launch
+                    _isLoading.value = false; return@launch
+                }
+                if (kodeBaru != (old.sphKode ?: "") && isKodeDipakai(kodeBaru, id)) {
+                    _toast.emit("Kode sampah sudah digunakan, gunakan kode lain")
+                    _isLoading.value = false; return@launch
                 }
 
                 client.from("sampah").update({
                     set("sphKtgId", kategoriIdBaru)
                     set("sphJenis", jenisBaru)
+                    set("sphKode",  kodeBaru)
                     set("sphSatuan", satuanBaru)
-                    set("sphHarga", hargaBaru)
-                    set("sphKeterangan", ketBaru)
+                    set("sphHarga",  hargaBaru)
+                    set("sphKeterangan", ketBaru.ifEmpty { null })
                 }) {
                     filter { eq("sphId", id) }
                 }
 
-                // update cache lokal
-                originalSampah = old.copy(
-                    sphKtgId = kategoriIdBaru,
+                // Perbarui cache lokal
+                originalRelasi = old.copy(
+                    sphKtgId = old.sphKtgId?.copy(ktgId = kategoriIdBaru) ?: old.sphKtgId,
                     sphJenis = jenisBaru,
+                    sphKode  = kodeBaru,
                     sphSatuan = satuanBaru,
-                    sphHarga = hargaBaru.toDouble(),
+                    sphHarga  = hargaBaru,
                     sphKeterangan = ketBaru.ifEmpty { null }
                 )
 
@@ -180,9 +191,8 @@ class EditJenisSampahViewModel : ViewModel() {
     }
 
     fun deleteCurrent() {
-        val id = originalSampah?.sphId ?: run {
-            _toast.tryEmit("ID tidak ditemukan")
-            return
+        val id = originalRelasi?.sphId ?: run {
+            _toast.tryEmit("ID tidak ditemukan"); return
         }
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -202,20 +212,61 @@ class EditJenisSampahViewModel : ViewModel() {
         }
     }
 
-    private suspend fun isJenisSampahDipakai(jenis: String): Boolean =
+    // --- Cek unik (case-insensitive) + exclude current row ---
+    private suspend fun isJenisSampahDipakai(jenis: String, excludeId: Long): Boolean =
         withContext(Dispatchers.IO) {
             try {
-                val normalized = jenis.trim()
                 val list = client
                     .from("sampah")
-                    .select(columns = Columns.list("sphJenis")) {
-                        filter { ilike("sphJenis", normalized) } // exact, case-insensitive
+                    .select(columns = Columns.list("sphId")) {
+                        filter {
+                            ilike("sphJenis", jenis.trim())   // exact, case-insensitive
+                            neq("sphId", excludeId)
+                        }
                     }
                     .decodeList<Sampah>()
                 list.isNotEmpty()
             } catch (e: Exception) {
-                Log.e("EditJenisVM", "cek duplikat gagal: ${e.message}", e)
+                Log.e("EditJenisVM", "cek jenis unik gagal: ${e.message}", e)
                 false
             }
         }
+
+    private suspend fun isKodeDipakai(kode: String, excludeId: Long): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                val list = client
+                    .from("sampah")
+                    .select(columns = Columns.list("sphId")) {
+                        filter {
+                            ilike("sphKode", kode.trim())     // exact, case-insensitive
+                            neq("sphId", excludeId)
+                        }
+                    }
+                    .decodeList<Sampah>()
+                list.isNotEmpty()
+            } catch (e: Exception) {
+                Log.e("EditJenisVM", "cek kode unik gagal: ${e.message}", e)
+                false
+            }
+        }
+
+    fun checkUsedInDetail(sphId: Long?) {
+        if (sphId == null) { _usedInDetail.value = null; return }
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val list = client
+                    .from("detail_transaksi")
+                    .select(columns = Columns.list("dtlId")) {
+                        filter { eq("dtlSphId", sphId) }
+                        limit(1)
+                    }
+                    .decodeList<DetailTransaksiRelasi>()   // cukup dtlId saja
+
+                _usedInDetail.value = list.isNotEmpty()
+            } catch (e: Exception) {
+                _usedInDetail.value = null
+            }
+        }
+    }
 }

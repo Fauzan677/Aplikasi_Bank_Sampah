@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.buildJsonObject
+import org.apache.logging.log4j.CloseableThreadContext.put
 import java.util.Locale
 
 class EditPenggunaViewModel : ViewModel() {
@@ -41,33 +43,59 @@ class EditPenggunaViewModel : ViewModel() {
         original = pengguna
     }
 
-    fun submitEdit(namaBaru: String, emailBaru: String, passwordBaru: String) {
+    fun submitEdit(
+        namaBaru: String,
+        emailBaru: String,
+        passwordBaru: String,
+        rekeningBaru: String?,
+        alamatBaru: String?,
+        saldoInputBaru: String
+    ) {
         val current = original
         if (current == null) {
             _toast.tryEmit("Data pengguna tidak tersedia")
             return
         }
 
-        val namaTrim = namaBaru.trim()
-        val emailTrim = emailBaru.trim()
+        val namaTrim   = namaBaru.trim()
+        val emailTrim  = emailBaru.trim()
         val emailLower = emailTrim.lowercase(Locale.ROOT)
-        val pwdTrim = passwordBaru.trim()
+        val pwdTrim    = passwordBaru.trim()
+        val rekTrim    = rekeningBaru?.trim().orEmpty()
+        val alamatTrim = alamatBaru?.trim().orEmpty()
 
         if (namaTrim.isEmpty() || emailTrim.isEmpty()) {
             _toast.tryEmit("Nama dan Email tidak boleh kosong")
             return
         }
 
-        val isNamaBerubah = namaTrim != (current.pgnNama ?: "")
-        val isEmailBerubah = emailTrim != (current.pgnEmail ?: "")
+        // Apakah ada perubahan?
+        val isNamaBerubah     = namaTrim   != (current.pgnNama ?: "")
+        val isEmailBerubah    = emailTrim  != (current.pgnEmail ?: "")
         val isPasswordBerubah = pwdTrim.isNotEmpty()
+        val isRekBerubah      = rekTrim    != (current.pgnRekening ?: "")
+        val isAlamatBerubah   = alamatTrim != (current.pgnAlamat ?: "")
 
-        if (!isNamaBerubah && !isEmailBerubah && !isPasswordBerubah) {
+        // Saldo: kosong = tidak diubah. Kalau diisi -> parse & bandingkan.
+        val saldoParsedBaru = parseDecimalOrNull(saldoInputBaru)
+        if (saldoInputBaru.isNotBlank() && saldoParsedBaru == null) {
+            _toast.tryEmit("Saldo tidak valid")
+            return
+        }
+        val isSaldoBerubah = when {
+            saldoInputBaru.isBlank() -> false // user tidak mengubah saldo
+            current.pgnSaldo == null && saldoParsedBaru != null -> true
+            current.pgnSaldo != null && saldoParsedBaru == null -> true
+            else -> current.pgnSaldo?.compareTo(saldoParsedBaru) != 0
+        }
+
+        if (!isNamaBerubah && !isEmailBerubah && !isPasswordBerubah &&
+            !isRekBerubah && !isAlamatBerubah && !isSaldoBerubah) {
             _toast.tryEmit("Tidak ada perubahan data")
             return
         }
 
-        // Validasi awal: format email & panjang password
+        // Validasi format bila perlu
         if (isEmailBerubah) {
             val emailOk = android.util.Patterns.EMAIL_ADDRESS.matcher(emailTrim).matches()
             if (!emailOk) {
@@ -83,31 +111,33 @@ class EditPenggunaViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
             try {
-                // Cek unik hanya saat berubah; case-insensitive, exclude diri sendiri
+                // Cek unik saat berubah (exclude diri sendiri)
                 if (isNamaBerubah && isNamaDipakai(namaTrim, current.pgnId!!)) {
                     _toast.emit("Nama sudah digunakan, gunakan nama lain")
-                    _isLoading.value = false
-                    return@launch
+                    _isLoading.value = false; return@launch
                 }
                 if (isEmailBerubah && isEmailDipakai(emailLower, current.pgnId!!)) {
                     _toast.emit("Email sudah digunakan, gunakan email lain")
-                    _isLoading.value = false
-                    return@launch
+                    _isLoading.value = false; return@launch
                 }
 
-                // --- UPDATE AUTH DULU (email/password) ---
-                if ((isEmailBerubah || isPasswordBerubah)) {
+                // 1) Update Auth (email/password) bila perlu
+                // 1) Update Auth (email/password) bila perlu
+                if (isEmailBerubah || isPasswordBerubah) {
                     try {
                         admin.auth.admin.updateUserById(uid = current.pgnId!!) {
                             if (isEmailBerubah) email = emailLower
                             if (isPasswordBerubah) password = pwdTrim
+                            userMetadata = buildJsonObject {
+                                put("name", namaTrim)
+                                if (rekTrim.isNotBlank()) put("rekening", rekTrim)
+                                if (alamatTrim.isNotBlank()) put("alamat", alamatTrim)
+                            }
                         }
                     } catch (e: AuthWeakPasswordException) {
                         _toast.emit("Password minimal 6 karakter")
-                        _isLoading.value = false
-                        return@launch
+                        _isLoading.value = false; return@launch
                     } catch (e: AuthRestException) {
-                        // Tangani invalid email dari Supabase Admin API
                         val msg = e.message?.lowercase().orElseEmpty()
                         val invalidEmail =
                             e.error == "validation_failed" ||
@@ -115,25 +145,28 @@ class EditPenggunaViewModel : ViewModel() {
                                     msg.contains("invalid format")
                         Log.e("EditPenggunaVM", "Admin API error: ${e.message}", e)
                         _toast.emit(if (invalidEmail) "Format email tidak valid" else "Gagal memperbarui email atau password")
-                        _isLoading.value = false
-                        return@launch
+                        _isLoading.value = false; return@launch
                     }
                 }
 
-                // --- BARU UPDATE TABEL aplikasi: "pengguna" ---
-                if (isNamaBerubah || isEmailBerubah) {
-                    client.from("pengguna").update({
-                        if (isNamaBerubah) set("pgnNama", namaTrim)
-                        if (isEmailBerubah) set("pgnEmail", emailLower)
-                    }) {
-                        filter { eq("pgnId", current.pgnId!!) }
-                    }
+                // 2) Update tabel aplikasi "pengguna" hanya pada field yang berubah
+                client.from("pengguna").update({
+                    if (isNamaBerubah)   set("pgnNama", namaTrim)
+                    if (isEmailBerubah)  set("pgnEmail", emailLower)
+                    if (isRekBerubah)    set("pgnRekening", if (rekTrim.isBlank()) null else rekTrim)
+                    if (isAlamatBerubah) set("pgnAlamat",   if (alamatTrim.isBlank()) null else alamatTrim)
+                    if (isSaldoBerubah)  set("pgnSaldo",    saldoParsedBaru) // boleh null / BigDecimal
+                }) {
+                    filter { eq("pgnId", current.pgnId!!) }
                 }
 
-                // Simpan state baru
+                // Simpan state baru untuk VM
                 original = current.copy(
-                    pgnNama = namaTrim,
-                    pgnEmail = emailTrim
+                    pgnNama     = namaTrim,
+                    pgnEmail    = emailTrim,
+                    pgnRekening = if (rekTrim.isBlank()) null else rekTrim,
+                    pgnAlamat   = if (alamatTrim.isBlank()) null else alamatTrim,
+                    pgnSaldo    = if (isSaldoBerubah) saldoParsedBaru else current.pgnSaldo
                 )
 
                 _toast.emit("Pengguna berhasil diperbarui")
@@ -148,6 +181,29 @@ class EditPenggunaViewModel : ViewModel() {
                 _isLoading.value = false
             }
         }
+    }
+
+    private fun parseDecimalOrNull(input: String): java.math.BigDecimal? {
+        val s = input.trim()
+        if (s.isBlank()) return null
+        val hasComma = s.contains(',')
+        val hasDot   = s.contains('.')
+        val normalized = when {
+            hasComma && hasDot -> {
+                val lastComma = s.lastIndexOf(',')
+                val lastDot   = s.lastIndexOf('.')
+                if (lastComma > lastDot) {
+                    // 1.234,56 -> hapus titik pemisah ribuan, ganti koma ke titik
+                    s.replace(".", "").replace(',', '.')
+                } else {
+                    // 1,234.56 -> hapus koma pemisah ribuan
+                    s.replace(",", "")
+                }
+            }
+            hasComma -> s.replace(',', '.')
+            else     -> s
+        }
+        return runCatching { java.math.BigDecimal(normalized) }.getOrNull()
     }
 
     fun deleteUser() {

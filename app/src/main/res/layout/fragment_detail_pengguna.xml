@@ -12,7 +12,7 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-
+        android:fillViewport="true"
         >
 
         <FrameLayout
@@ -26,19 +26,43 @@
                 android:orientation="vertical"
                 >
 
-                <TextView
-                    android:id="@+id/judul"
-                    android:text="@string/detail_pengguna"
-                    style="@style/TextJudulHalaman"
-                    />
-
-                <View
-                    android:id="@+id/garis_judul"
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="2dp"
-                    android:background="@color/black"
-                    android:layout_marginTop="10dp"
-                    />
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/judul"
+                        style="@style/TextJudulHalaman"
+                        android:text="@string/detail_pengguna"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintBottom_toTopOf="@+id/garis_judul"
+                        />
+
+                    <ImageView
+                        android:id="@+id/btnBack"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/back"
+                        android:layout_marginStart="30dp"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toTopOf="@+id/garis_judul"
+                        />
+
+                    <View
+                        android:id="@+id/garis_judul"
+                        android:layout_width="0dp"
+                        android:layout_height="2dp"
+                        android:background="@color/black"
+                        android:layout_marginTop="10dp"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/judul"
+                        />
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <TextView
                     android:id="@+id/nama"
@@ -73,7 +97,7 @@
                             android:fontFamily="@font/nunito_medium"
                             android:text=""
                             android:textColor="@color/black"
-                            android:textSize="24sp" />
+                            android:textSize="25sp" />
 
                     </LinearLayout>
 

@@ -35,8 +35,6 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
     private val vm: PenarikanSaldoViewModel by viewModels()
     private val args: PenarikanSaldoFragmentArgs by navArgs()
 
-    private val rupiah: NumberFormat = NumberFormat.getNumberInstance(Locale("in", "ID"))
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -52,13 +50,25 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
         setupUiActions()
         collectVm()
 
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
         if (!updateInternetCard()) return
         vm.loadPengguna()
 
+        // di onViewCreated, setelah vm.loadPengguna()
         args.pengguna?.let { p ->
             binding.nama.setText(p.pgnNama.orEmpty(), false)
-            // beritahu VM supaya set pgnId terpilih & fetch saldo
             vm.preselectPengguna(p)
+
+            // Kunci input karena sudah diisi dari preselect
+            binding.nama.apply {
+                isEnabled = false
+                isFocusable = false
+                isFocusableInTouchMode = false
+                isClickable = false
+            }
         }
     }
 
@@ -127,9 +137,8 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
                 // Saldo kurang -> set error di jumlah
                 launch {
                     vm.saldoKurang.collect { sisa ->
-                        val formatted = rupiah.format(sisa)
                         binding.jumlah.requestFocus()
-                        binding.jumlah.error = "Saldo tidak mencukupi. Sisa saldo: Rp $formatted"
+                        binding.jumlah.error = "Saldo tidak mencukupi"
                     }
                 }
 
@@ -141,14 +150,11 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
                 // Navigasi selesai + bersihkan back stack fragment ini
                 launch {
                     vm.navigateBack.collect {
-                        findNavController().navigate(
-                            R.id.navigation_transaksi,
-                            null,
-                            NavOptions.Builder()
-                                .setPopUpTo(R.id.penarikanSaldoFragment, true)
-                                .setLaunchSingleTop(true)
-                                .build()
-                        )
+                        // kunci tombol dulu biar nggak double submit
+                        binding.konfirmasi.isEnabled = false
+
+                        // balik ke layar sebelumnya & hapus fragment ini dari back stack
+                        findNavController().popBackStack()
                     }
                 }
             }

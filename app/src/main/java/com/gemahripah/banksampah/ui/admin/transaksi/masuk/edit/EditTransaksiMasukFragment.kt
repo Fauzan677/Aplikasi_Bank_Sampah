@@ -8,7 +8,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.Toast
+import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -22,6 +24,7 @@ import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
 
 class EditTransaksiMasukFragment : Fragment(), Reloadable {
 
@@ -76,6 +79,11 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
             isClickable = false
             isEnabled = false
         }
+
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
         selectedUserId = riwayat.tskIdPengguna
     }
 
@@ -98,13 +106,8 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
 
                 launch {
                     vm.navigateBack.collect {
-                        findNavController().navigate(
-                            R.id.navigation_transaksi, null,
-                            NavOptions.Builder()
-                                .setPopUpTo(R.id.editTransaksiMasukFragment, true)
-                                .setLaunchSingleTop(true)
-                                .build()
-                        )
+                        binding.konfirmasi.isEnabled = false
+                        findNavController().popBackStack()
                     }
                 }
 
@@ -158,40 +161,65 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
     // --- Adapters ---
     @SuppressLint("ClickableViewAccessibility", "SetTextI18n")
     private fun setAdapterJenisUtama(list: List<String>) {
-        binding.jenis1.setAdapter(ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, list))
-        binding.jenis1.setOnTouchListener { _, _ ->
-            binding.jenis1.showDropDown()
-            false
-        }
-        binding.jenis1.setOnItemClickListener { _, _, position, _ ->
-            val selected = list[position]
-            binding.jumlahLabel1.text = "Jumlah Setor (${vm.getSatuan(selected)})"
-            updateAllAdapters()
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, list)
+
+        binding.jenis1.apply {
+            setAdapter(adapter)
+            threshold = 1
+            setOnTouchListener(null) // biar mirip field 'nama'
+
+            addTextChangedListener(onTextChanged = { text, _, _, _ ->
+                if (hasFocus()) {
+                    if (text.isNullOrEmpty()) dismissDropDown()
+                    else if (!isPopupShowing) showDropDown()
+                }
+            })
+            setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus && !text.isNullOrEmpty()) post { showDropDown() }
+            }
+
+            setOnItemClickListener { parent, _, position, _ ->
+                // PENTING: ambil dari adapter aktif
+                val selected = parent.getItemAtPosition(position) as String
+                binding.jumlahLabel1.text = "Jumlah Setor (${vm.getSatuan(selected)})"
+                updateAllAdapters()
+            }
         }
     }
 
     @SuppressLint("ClickableViewAccessibility", "SetTextI18n")
-    private fun setupAutoCompleteJenis(itemBinding: ItemSetorSampahBinding, index: Int, list: List<String>) {
+    private fun setupAutoCompleteJenis(
+        itemBinding: ItemSetorSampahBinding,
+        index: Int,
+        list: List<String>
+    ) {
         itemBinding.jenisSampahLabel.text = "Jenis Sampah ${index + 2}"
         itemBinding.jumlahSetorLabel.text = "Jumlah Setor ${index + 2}"
 
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, list)
-        itemBinding.autoCompleteJenis.setAdapter(adapter)
 
-        itemBinding.autoCompleteJenis.inputType = InputType.TYPE_NULL
-        itemBinding.autoCompleteJenis.isFocusable = true
-        itemBinding.autoCompleteJenis.isFocusableInTouchMode = true
-        itemBinding.autoCompleteJenis.isClickable = true
+        with(itemBinding.autoCompleteJenis) {
+            setAdapter(adapter)
+            threshold = 1
+            setOnTouchListener(null) // izinkan ketik & biarkan dropdown by typing
 
-        itemBinding.autoCompleteJenis.setOnTouchListener { _, _ ->
-            itemBinding.autoCompleteJenis.showDropDown()
-            true
-        }
+            addTextChangedListener(onTextChanged = { text, _, _, _ ->
+                if (hasFocus()) {
+                    if (text.isNullOrEmpty()) dismissDropDown()
+                    else if (!isPopupShowing) showDropDown()
+                }
+            })
+            setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus && !text.isNullOrEmpty()) post { showDropDown() }
+            }
 
-        itemBinding.autoCompleteJenis.setOnItemClickListener { _, _, position, _ ->
-            val selected = list[position]
-            itemBinding.jumlahSetorLabel.text = "Jumlah Setor ${index + 2} (${vm.getSatuan(selected)})"
-            updateAllAdapters()
+            setOnItemClickListener { parent, _, position, _ ->
+                // PENTING: ambil dari adapter aktif
+                val selected = parent.getItemAtPosition(position) as String
+                itemBinding.jumlahSetorLabel.text =
+                    "Jumlah Setor ${index + 2} (${vm.getSatuan(selected)})"
+                updateAllAdapters()
+            }
         }
     }
 
@@ -269,25 +297,26 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
         }
 
         val jenisUtama = binding.jenis1.text.toString()
-        if (jenisUtama.isBlank()) {
-            requireContext().toast("Jenis sampah tidak boleh kosong")
+        if (jenisUtama.isBlank() || !isInAdapter(binding.jenis1, jenisUtama)) {
+            requireContext().toast("Pilih jenis sampah dari daftar")
             return
         }
-        val jumlahUtama = binding.jumlah1.text.toString().toDoubleOrNull()
-        if (jumlahUtama == null || jumlahUtama <= 0.0) {
+
+        val jumlahUtama = binding.jumlah1.text.toString().toBigDecimalFlexible()
+        if (jumlahUtama == null || jumlahUtama.compareTo(BigDecimal.ZERO) <= 0) {
             requireContext().toast("Jumlah sampah harus lebih dari 0")
             return
         }
 
-        val tambahan = mutableListOf<Pair<String, Double>>()
+        val tambahan = mutableListOf<Pair<String, BigDecimal>>()
         tambahanSampahList.forEachIndexed { idx, item ->
             val jenis = item.autoCompleteJenis.text.toString()
-            if (jenis.isBlank()) {
-                requireContext().toast("Jenis sampah ${idx + 2} tidak boleh kosong")
+            if (jenis.isBlank() || !isInAdapter(item.autoCompleteJenis, jenis)) {
+                requireContext().toast("Jenis sampah ${idx + 2} tidak valid. Pilih dari daftar")
                 return
             }
-            val jumlah = item.editTextJumlah.text.toString().toDoubleOrNull()
-            if (jumlah == null || jumlah <= 0.0) {
+            val jumlah = item.editTextJumlah.text.toString().toBigDecimalFlexible()
+            if (jumlah == null || jumlah.compareTo(BigDecimal.ZERO) <= 0) {
                 requireContext().toast("Jumlah sampah ${idx + 2} harus lebih dari 0")
                 return
             }
@@ -326,4 +355,20 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
 
     private fun android.content.Context.toast(msg: String) =
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+
+    // Cek apakah value ada di adapter aktif
+    private fun isInAdapter(view: AutoCompleteTextView, value: String): Boolean {
+        val a = view.adapter ?: return false
+        val v = value.trim()
+        for (i in 0 until a.count) {
+            val item = a.getItem(i)?.toString() ?: continue
+            if (item.equals(v, ignoreCase = true)) return true
+        }
+        return false
+    }
+
+    private fun String.toBigDecimalFlexible(): BigDecimal? =
+        this.trim()
+            .replace(",", ".")           // terima koma sebagai desimal
+            .toBigDecimalOrNull()
 }

@@ -56,7 +56,7 @@ class DetailPenggunaViewModel : ViewModel() {
             supervisorScope {
                 val saldoJob = async { getSaldo(pgnId) }
                 val totalJob = async { getTotalSampah(pgnId) }
-                // biar dua-duanya tetap jalan walau salah satu error (error ditangani di dalam fungsinya)
+
                 saldoJob.await()
                 totalJob.await()
             }

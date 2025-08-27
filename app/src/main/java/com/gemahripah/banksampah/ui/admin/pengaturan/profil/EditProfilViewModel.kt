@@ -1,6 +1,7 @@
 package com.gemahripah.banksampah.ui.admin.pengaturan.profil
 
 import android.util.Log
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gemahripah.banksampah.data.model.pengguna.Pengguna
@@ -41,28 +42,33 @@ class EditProfilViewModel : ViewModel() {
         pengguna: Pengguna,
         namaBaru: String,
         emailBaru: String,
-        passwordBaru: String
+        passwordBaru: String,
+        alamatBaru: String
     ) {
         val namaTrim   = namaBaru.trim()
         val emailTrim  = emailBaru.trim()
         val emailLower = emailTrim.lowercase(Locale.ROOT)            // ← normalisasi
         val oldEmailLower = (pengguna.pgnEmail ?: "").lowercase(Locale.ROOT)
+        val alamatTrim      = alamatBaru.trim()
+
         val isNamaBerubah = namaTrim != (pengguna.pgnNama ?: "")
         val isEmailBerubah = emailLower != oldEmailLower             // ← bandingkan lowercase
         val isPasswordBerubah = passwordBaru.isNotEmpty()
+        val isAlamatBerubah   = alamatTrim != (pengguna.pgnAlamat ?: "")
 
         if (namaTrim.isBlank() || emailLower.isBlank()) {
             _toast.tryEmit("Nama dan Email tidak boleh kosong")
             return
         }
-        if (!isNamaBerubah && !isEmailBerubah && !isPasswordBerubah) {
+
+        if (!isNamaBerubah && !isEmailBerubah && !isPasswordBerubah && !isAlamatBerubah) {
             _toast.tryEmit("Tidak ada perubahan data")
             return
         }
 
         // Pre-validasi email jika berubah
         if (isEmailBerubah) {
-            val emailOk = android.util.Patterns.EMAIL_ADDRESS.matcher(emailBaru.trim()).matches()
+            val emailOk = Patterns.EMAIL_ADDRESS.matcher(emailBaru.trim()).matches()
             if (!emailOk) {
                 _toast.tryEmit("Format email tidak valid")
                 return
@@ -72,6 +78,8 @@ class EditProfilViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
             try {
+                val userId = pengguna.pgnId
+
                 // Cek unik bila berubah (di tabel app)
                 if (isNamaBerubah && isNamaDipakai(namaTrim)) {
                     _toast.emit("Nama sudah digunakan, gunakan nama lain")
@@ -84,9 +92,7 @@ class EditProfilViewModel : ViewModel() {
                     return@launch
                 }
 
-                val userId = pengguna.pgnId
-
-                // 1) UPDATE AUTH DULU (email/password) — jika ada perubahan auth
+                // 1) UPDATE AUTH (email/password) — jika ada perubahan auth
                 if ((isEmailBerubah || isPasswordBerubah) && userId != null) {
                     try {
                         adminClient.auth.admin.updateUserById(uid = userId) {
@@ -111,11 +117,12 @@ class EditProfilViewModel : ViewModel() {
                     }
                 }
 
-                // 2) BARU UPDATE TABEL `pengguna` (nama/email di profil app)
-                if (isNamaBerubah || isEmailBerubah) {
+                // 2) UPDATE TABEL `pengguna` (nama,email, alamat di profil app)
+                if (isNamaBerubah || isEmailBerubah || isAlamatBerubah) {
                     client.from("pengguna").update({
-                        if (isNamaBerubah) set("pgnNama", namaBaru)
-                        if (isEmailBerubah) set("pgnEmail", emailLower)
+                        if (isNamaBerubah)   set("pgnNama",  namaTrim)
+                        if (isEmailBerubah)  set("pgnEmail", emailLower)
+                        if (isAlamatBerubah) set("pgnAlamat", alamatTrim) // ← update alamat
                     }) {
                         filter { userId?.let { eq("pgnId", it) } }
                     }

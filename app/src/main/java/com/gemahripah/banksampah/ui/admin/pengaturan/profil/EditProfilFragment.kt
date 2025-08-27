@@ -46,7 +46,18 @@ class EditProfilFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.judul.text = "Edit Pengguna"
+
+        binding.tvRekening.visibility = View.GONE
+        binding.rekening.visibility = View.GONE
+
+        binding.tvSaldo.visibility = View.GONE
+        binding.saldo.visibility = View.GONE
+
         binding.hapus.visibility = View.GONE
+
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
 
         // Prefill dari AdminViewModel (activity scope)
         adminViewModel.pengguna.observe(viewLifecycleOwner) { pengguna ->
@@ -54,6 +65,7 @@ class EditProfilFragment : Fragment() {
             if (pengguna != null) {
                 binding.nama.setText(pengguna.pgnNama ?: "")
                 binding.email.setText(pengguna.pgnEmail ?: "")
+                binding.alamat.setText(pengguna.pgnAlamat ?: "")
             }
         }
 
@@ -63,7 +75,8 @@ class EditProfilFragment : Fragment() {
             val namaBaru = binding.nama.text.toString().trim()
             val emailBaru = binding.email.text.toString().trim()
             val passwordBaru = binding.password.text.toString().trim()
-            vm.submitUpdate(pengguna, namaBaru, emailBaru, passwordBaru)
+            val alamatBaru = binding.alamat.text.toString().trim() // ← ambil alamat
+            vm.submitUpdate(pengguna, namaBaru, emailBaru, passwordBaru, alamatBaru)
         }
 
         setupPasswordToggle()

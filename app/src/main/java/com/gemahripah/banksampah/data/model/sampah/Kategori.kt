@@ -11,5 +11,3 @@ data class Kategori(
     val created_at: String? = null,
     val ktgNama: String? = null
 ) : Parcelable
-
-

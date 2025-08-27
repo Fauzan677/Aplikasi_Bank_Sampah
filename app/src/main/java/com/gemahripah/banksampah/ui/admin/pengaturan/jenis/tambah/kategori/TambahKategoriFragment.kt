@@ -33,6 +33,10 @@ class TambahKategoriFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         binding.hapus.visibility = View.GONE
 
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
         binding.konfirmasi.setOnClickListener {
             val nama = binding.kategori.text.toString().trim()
             if (nama.isEmpty()) {

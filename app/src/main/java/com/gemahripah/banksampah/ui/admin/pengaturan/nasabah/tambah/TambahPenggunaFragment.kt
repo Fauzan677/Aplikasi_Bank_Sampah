@@ -47,12 +47,20 @@ class TambahPenggunaFragment : Fragment() {
     private fun setupUI() {
         binding.hapus.visibility = View.GONE
 
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
         binding.konfirmasi.setOnClickListener {
-            val nama = binding.nama.text.toString().trim()
-            val email = binding.email.text.toString().trim()
+            val nama     = binding.nama.text.toString().trim()
+            val email    = binding.email.text.toString().trim()
             val password = binding.password.text.toString().trim()
-            // Serahin semua ke VM (validasi + proses)
-            vm.submit(nama, email, password)
+
+            val rekening = binding.rekening.text.toString().trim()
+            val alamat   = binding.alamat.text.toString().trim()
+            val saldoRaw = binding.saldo.text.toString()          // biarkan raw; parsing di VM
+
+            vm.submit(nama, email, password, rekening, alamat, saldoRaw)
         }
     }
 

@@ -56,6 +56,10 @@ class PenggunaFragment : Fragment(), Reloadable {
         setupSearch()
         setupBackPressHandling()
 
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
         binding.tambah.setOnClickListener {
             findNavController().navigate(R.id.action_penggunaFragment_to_tambahPenggunaFragment)
         }
@@ -81,9 +85,9 @@ class PenggunaFragment : Fragment(), Reloadable {
     override fun reloadData() {
         if (!updateInternetCard()) return
 
-        binding.scrollView.post {
-            binding.scrollView.scrollTo(0, 0)
-        }
+        binding.rvListNasabah.post { binding.rvListNasabah.scrollToPosition(0) }
+        binding.appbar.setExpanded(true, true)
+
         binding.searchNasabah.setText("")
         binding.searchNasabah.clearFocus()
 
@@ -119,25 +123,49 @@ class PenggunaFragment : Fragment(), Reloadable {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupSearch() {
-        binding.searchNasabah.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_UP) {
-                binding.scrollView.post {
-                    binding.scrollView.scrollTo(0, binding.pengguna.top)
-                }
+
+        // Saat TextInputLayout disentuh -> collapse header supaya searchBar menempel di atas
+        binding.searchBar.setOnTouchListener { _, ev ->
+            if (ev.action == MotionEvent.ACTION_DOWN) {
+                binding.appbar.setExpanded(false, true)   // collapse dengan animasi
             }
             false
         }
 
+        // Saat EditText fokus -> juga collapse
+        binding.searchNasabah.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                binding.appbar.setExpanded(false, true)
+            }
+        }
+
+        // (opsional) saat klik area barisan list_nasabah, expand lagi
+        binding.rvListNasabah.setOnTouchListener { _, _ ->
+            if (binding.searchNasabah.hasFocus()) {
+                binding.searchNasabah.clearFocus()
+            }
+            false
+        }
+
+        // existing behavior Anda
         binding.searchNasabah.doAfterTextChanged { text ->
             viewModel.setSearchQuery(text.toString())
         }
-
         binding.searchNasabah.setOnEditorActionListener { v, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                 hideKeyboard(v)
                 binding.searchNasabah.clearFocus()
                 true
             } else false
+        }
+
+        binding.searchBar.setEndIconOnClickListener {
+            // Karena kita override listener-nya, kita clear sendiri teksnya:
+            binding.searchNasabah.setText("")
+
+            // Tutup keyboard & hilangkan fokus
+            hideKeyboard(binding.searchNasabah)
+            binding.searchNasabah.clearFocus()
         }
     }
 
@@ -167,7 +195,8 @@ class PenggunaFragment : Fragment(), Reloadable {
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
             if (binding.searchNasabah.hasFocus()) {
                 binding.searchNasabah.clearFocus()
-                binding.scrollView.scrollTo(0, 0)
+                binding.appbar.setExpanded(true, true)
+                binding.rvListNasabah.scrollToPosition(0)
                 hideKeyboard(binding.searchNasabah)
             } else {
                 isEnabled = false

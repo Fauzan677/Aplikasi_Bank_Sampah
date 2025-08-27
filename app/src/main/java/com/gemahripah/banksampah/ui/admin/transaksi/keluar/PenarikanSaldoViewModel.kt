@@ -51,7 +51,11 @@ class PenarikanSaldoViewModel : ViewModel() {
     private val _navigateBack = MutableSharedFlow<Unit>(replay = 0, extraBufferCapacity = 1)
     val navigateBack: SharedFlow<Unit> = _navigateBack
 
-    private val rupiah: NumberFormat = NumberFormat.getNumberInstance(Locale("id", "ID"))
+    private val rupiah: NumberFormat =
+        NumberFormat.getNumberInstance(Locale("id","ID")).apply {
+            minimumFractionDigits = 2
+            maximumFractionDigits = 2
+        }
 
     /** Ambil daftar pengguna (non-admin). Selalu refresh agar up-to-date. */
     fun loadPengguna() {
@@ -87,11 +91,12 @@ class PenarikanSaldoViewModel : ViewModel() {
     fun fetchSaldo(pgnId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val saldo = client.postgrest.rpc(
-                    "hitung_saldo_pengguna",
-                    buildJsonObject { put("pgn_id_input", pgnId) }
-                ).data.toDoubleOrNull() ?: 0.0
+                val pengguna = client
+                    .from("pengguna")
+                    .select { filter { eq("pgnId", pgnId) } }
+                    .decodeSingle<Pengguna>()
 
+                val saldo = (pengguna.pgnSaldo ?: java.math.BigDecimal.ZERO).toDouble()
                 _saldoText.value = "Rp ${rupiah.format(saldo)}"
             } catch (_: Exception) {
                 _saldoText.value = "Rp 0"
@@ -102,39 +107,38 @@ class PenarikanSaldoViewModel : ViewModel() {
     /** Proses penarikan: validasi ringan + cek saldo via RPC + insert transaksi & detail. */
     fun submitPenarikan(jumlah: Double?, keterangan: String) {
         val pgnId = _selectedPgnId.value
-        if (pgnId.isNullOrBlank()) {
-            _toast.tryEmit("Silakan pilih nasabah terlebih dahulu")
-            return
-        }
-
-        if (jumlah == null || jumlah <= 0.0) {
-            _toast.tryEmit("Jumlah penarikan tidak valid")
-            return
-        }
+        if (pgnId.isNullOrBlank()) { _toast.tryEmit("Silakan pilih nasabah terlebih dahulu"); return }
+        if (jumlah == null || jumlah <= 0.0) { _toast.tryEmit("Jumlah penarikan tidak valid"); return }
 
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
             try {
-                // Cek saldo
-                val saldo = client.postgrest.rpc(
-                    "hitung_saldo_pengguna",
-                    buildJsonObject { put("pgn_id_input", pgnId) }
-                ).data.toString().toDoubleOrNull() ?: 0.0
+                // 1) Ambil saldo dari tabel pengguna
+                val pengguna = client
+                    .from("pengguna")
+                    .select { filter { eq("pgnId", pgnId) } }
+                    .decodeSingle<Pengguna>()
 
+                val saldoBD = pengguna.pgnSaldo ?: java.math.BigDecimal.ZERO
+                val saldo = saldoBD.toDouble()
+
+                // 2) Validasi saldo
                 if (saldo < jumlah) {
-                    _saldoKurang.emit(saldo) // biar fragment bisa set error di EditText
+                    _saldoKurang.emit(saldo)
                     _isLoading.value = false
                     return@launch
                 }
 
-                // Insert transaksi 'Keluar'
+                // 3) Insert transaksi 'Keluar'
                 val transaksi = client.postgrest["transaksi"]
-                    .insert(buildJsonObject {
-                        put("tskIdPengguna", pgnId)
-                        put("tskKeterangan", keterangan)
-                        put("tskTipe", "Keluar")
-                    }) { select() }
-                    .decodeSingle<Transaksi>()
+                    .insert(
+                        kotlinx.serialization.json.buildJsonObject {
+                            put("tskIdPengguna", pgnId)
+                            put("tskKeterangan", keterangan)
+                            put("tskTipe", "Keluar")
+                        }
+                    ) { select() }
+                    .decodeSingle<com.gemahripah.banksampah.data.model.transaksi.Transaksi>()
 
                 val transaksiId = transaksi.tskId
                 if (transaksiId == null) {
@@ -143,13 +147,23 @@ class PenarikanSaldoViewModel : ViewModel() {
                     return@launch
                 }
 
-                // Insert detail (hanya jumlah)
+                // 4) Insert detail → simpan ke dtlNominal (bukan dtlJumlah)
                 client.postgrest["detail_transaksi"]
-                    .insert(buildJsonObject {
-                        put("dtlTskId", transaksiId)
-                        put("dtlJumlah", jumlah)
-                    })
+                    .insert(
+                        kotlinx.serialization.json.buildJsonObject {
+                            put("dtlTskId", transaksiId)
+                            put("dtlNominal", jumlah) // ← diisi nilai penarikan
+                        }
+                    )
 
+                // 5) Update pgnSaldo = saldo lama - jumlah
+                val newSaldo = saldoBD.subtract(java.math.BigDecimal.valueOf(jumlah))
+                client
+                    .from("pengguna")
+                    .update(mapOf("pgnSaldo" to newSaldo)) { filter { eq("pgnId", pgnId) } }
+
+                // 6) Perbarui tampilan saldo & navigasi
+                _saldoText.value = "Rp ${rupiah.format(newSaldo.toDouble())}"
                 _toast.emit("Penarikan saldo berhasil")
                 _navigateBack.emit(Unit)
             } catch (_: Exception) {

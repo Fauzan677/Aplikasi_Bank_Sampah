@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
 import com.gemahripah.banksampah.databinding.ItemRiwayatBinding
+import java.math.RoundingMode
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -71,20 +72,25 @@ class RiwayatPagingAdapter(
             nominal.layoutParams = params
         }
 
+        private val NF2 = NumberFormat.getNumberInstance(Locale("id","ID")).apply {
+            minimumFractionDigits = 2
+            maximumFractionDigits = 2
+            roundingMode = RoundingMode.HALF_UP
+        }
+
         @SuppressLint("SetTextI18n")
         fun bind(item: RiwayatTransaksi) = with(binding) {
             resetView()
 
-            val formattedHarga = NumberFormat.getNumberInstance(Locale("in", "ID")).format(item.totalHarga?.toInt() ?: 0)
+            val hargaFormatted = NF2.format(item.totalHarga ?: java.math.BigDecimal.ZERO)
+            nominal.text = "Rp $hargaFormatted"
 
             nama.text = item.hari ?: item.nama
             tanggal.text = item.tanggal
-            nominal.text = "Rp $formattedHarga"
-
 
             if (item.tipe == "Masuk") {
                 berat.visibility = View.VISIBLE
-                berat.text = "${item.totalBerat ?: 0.0} Kg"
+                berat.text = "${NF2.format(item.totalBerat ?: java.math.BigDecimal.ZERO)} Kg"
             } else {
                 cardRiwayat.setCardBackgroundColor(merah)
                 lurus.visibility = View.GONE

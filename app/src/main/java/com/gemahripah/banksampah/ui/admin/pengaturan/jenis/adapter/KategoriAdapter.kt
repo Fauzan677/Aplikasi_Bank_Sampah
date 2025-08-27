@@ -9,17 +9,21 @@ import androidx.recyclerview.widget.RecyclerView
 import com.gemahripah.banksampah.data.model.sampah.Kategori
 import com.gemahripah.banksampah.data.model.sampah.KategoridanSampah
 import com.gemahripah.banksampah.data.model.sampah.Sampah
+import com.gemahripah.banksampah.data.model.sampah.gabungan.SampahRelasi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.ItemJenisSampahBinding
 import com.gemahripah.banksampah.ui.admin.pengaturan.jenis.JenisSampahFragmentDirections
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class KategoriAdapter(
     private var kategoriList: List<Kategori>,
-    private val onSampahClick: (KategoridanSampah) -> Unit
+    // onClick sekarang mengembalikan SampahRelasi
+    private val onSampahClick: (SampahRelasi) -> Unit
 ) : RecyclerView.Adapter<KategoriAdapter.KategoriViewHolder>() {
 
     @SuppressLint("NotifyDataSetChanged")
@@ -40,31 +44,39 @@ class KategoriAdapter(
                 itemView.findNavController().navigate(action)
             }
 
-            CoroutineScope(Dispatchers.Main).launch {
+            // ambil sampah dalam kategori ini sebagai SampahRelasi (embed kategori)
+            CoroutineScope(Dispatchers.IO).launch {
+                val columns = Columns.raw("""
+                    sphId,
+                    created_at,
+                    sphJenis,
+                    sphSatuan,
+                    sphHarga,
+                    sphKeterangan,
+                    sphKode,
+                    sphKtgId:kategori(
+                      ktgId,
+                      created_at,
+                      ktgNama
+                    )
+                """.trimIndent())
+
                 try {
-                    val jenisList = SupabaseProvider.client
+                    val jenisList: List<SampahRelasi> = SupabaseProvider.client
                         .from("sampah")
-                        .select() {
-                            filter {
-                                eq("sphKtgId", kategori.ktgId ?: 0)
-                            }
+                        .select(columns = columns) {
+                            filter { eq("sphKtgId", kategori.ktgId ?: -1) }
                         }
-                        .decodeList<Sampah>()
+                        .decodeList()
 
-                    val jenisWithKategori = jenisList.map {
-                        KategoridanSampah(it, kategori.ktgNama)
+                    withContext(Dispatchers.Main) {
+                        binding.kartuSampah.apply {
+                            layoutManager = GridLayoutManager(binding.root.context, 2)
+                            isNestedScrollingEnabled = false
+                            setHasFixedSize(false)
+                            adapter = SampahAdapter(jenisList, onSampahClick)
+                        }
                     }
-
-                    val adapter = SampahAdapter(jenisWithKategori, onSampahClick)
-
-                    binding.kartuSampah.apply {
-                        layoutManager = GridLayoutManager(binding.root.context, 2)
-                        isNestedScrollingEnabled = false
-                        setHasFixedSize(true)
-                    }
-
-                    binding.kartuSampah.layoutManager = GridLayoutManager(binding.root.context, 2)
-                    binding.kartuSampah.adapter = adapter
                 } catch (e: Exception) {
                     println("Gagal memuat jenis: ${e.message}")
                 }

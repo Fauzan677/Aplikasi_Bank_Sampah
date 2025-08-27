@@ -35,6 +35,10 @@ class TambahJenisSampahFragment :
 
         binding.hapus.visibility = View.GONE
 
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
         if (!updateInternetCard()) return
 
         setupKategoriDropdown()
@@ -95,11 +99,12 @@ class TambahJenisSampahFragment :
     private fun setupKonfirmasiButton() {
         binding.konfirmasi.setOnClickListener {
             val jenis = binding.jenis.text.toString().trim()
+            val kode  = binding.kode.text.toString().trim().uppercase() // ← pakai
             val satuan = binding.satuan.text.toString().trim()
-            val harga = binding.harga.text.toString().trim().toDoubleOrNull()
+            val harga = binding.harga.text.toString().trim().toLongOrNull() // angka bulat
             val keterangan = binding.keterangan.text.toString().trim()
 
-            vm.submit(jenis, satuan, harga, keterangan)
+            vm.submit(jenis = jenis, kode = kode, satuan = satuan, harga = harga, keterangan = keterangan)
         }
     }
 

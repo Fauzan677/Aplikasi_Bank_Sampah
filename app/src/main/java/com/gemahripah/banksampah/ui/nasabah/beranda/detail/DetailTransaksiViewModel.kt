@@ -8,15 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.gemahripah.banksampah.data.model.transaksi.gabungan.DetailTransaksiRelasi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.supervisorScope
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import kotlin.coroutines.cancellation.CancellationException
 
 class DetailTransaksiViewModel : ViewModel() {
@@ -42,12 +36,15 @@ class DetailTransaksiViewModel : ViewModel() {
                     return@launch
                 }
 
+                // Ambil langsung jumlah, nominal, dan relasi sampah (jenis & satuan)
                 val columns = Columns.raw(
                     """
                     dtlId,
                     dtlJumlah,
+                    dtlNominal,
                     dtlSphId (
-                        sphJenis
+                        sphJenis,
+                        sphSatuan
                     )
                     """.trimIndent()
                 )
@@ -59,28 +56,7 @@ class DetailTransaksiViewModel : ViewModel() {
                     }
                     .decodeList<DetailTransaksiRelasi>()
 
-                // Paralel + tahan error per-child agar tidak membatalkan semuanya
-                val enriched = supervisorScope {
-                    details.mapNotNull { detail ->
-                        detail.dtlId?.let { dtlId ->
-                            async(Dispatchers.IO) {
-                                try {
-                                    val resp = client.postgrest.rpc(
-                                        "hitung_harga_detail",
-                                        buildJsonObject { put("dtl_id_input", dtlId) }
-                                    )
-                                    val harga = resp.data.toDoubleOrNull() ?: 0.0
-                                    detail.copy(hargaDetail = harga)
-                                } catch (_: Exception) {
-                                    // Kalau satu gagal, baris itu saja yang di-skip
-                                    null
-                                }
-                            }
-                        }
-                    }.awaitAll().filterNotNull()
-                }
-
-                _detailList.postValue(enriched)
+                _detailList.postValue(details)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

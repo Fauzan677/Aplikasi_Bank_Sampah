@@ -21,6 +21,7 @@ import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -32,7 +33,11 @@ class EditTransaksiKeluarFragment : Fragment(), Reloadable {
     private val args: EditTransaksiKeluarFragmentArgs by navArgs()
     private val vm: EditTransaksiKeluarViewModel by viewModels()
 
-    private val rupiah = NumberFormat.getNumberInstance(Locale("id", "ID"))
+    private val rupiah: NumberFormat =
+        NumberFormat.getNumberInstance(Locale("id","ID")).apply {
+            minimumFractionDigits = 2
+            maximumFractionDigits = 2
+        }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -46,18 +51,31 @@ class EditTransaksiKeluarFragment : Fragment(), Reloadable {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Prefill form statis dari args (UI only)
+        // Prefill dari args
         binding.judul.text = "Edit Penarikan Saldo"
         binding.nama.setText(args.riwayat.nama, false)
         binding.keterangan.setText(args.riwayat.tskKeterangan ?: "")
-        val jumlahAwal = args.enrichedList.firstOrNull()?.dtlJumlah
-        binding.jumlah.setText(jumlahAwal?.toInt()?.toString() ?: "")
-        binding.nama.apply { isFocusable = false; isFocusableInTouchMode = false; isClickable = false; isEnabled = false }
 
-        // Init VM dengan args (memicu fetch saldo + penyesuaian)
+        // jumlah awal ambil dari NOMINAL
+        val jumlahAwal: BigDecimal? = args.enrichedList.firstOrNull()?.dtlNominal
+        binding.jumlah.setText(jumlahAwal?.toPlainString() ?: "")
+
+        // nama tidak bisa diubah
+        binding.nama.apply {
+            isFocusable = false
+            isFocusableInTouchMode = false
+            isClickable = false
+            isEnabled = false
+        }
+
+        // Init VM
         vm.setArgs(args.riwayat, args.enrichedList)
 
         // Actions
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
         binding.konfirmasi.setOnClickListener {
             val jumlahBaru = binding.jumlah.text.toString().toDoubleOrNull()
             val keterangan = binding.keterangan.text.toString()
@@ -80,17 +98,14 @@ class EditTransaksiKeluarFragment : Fragment(), Reloadable {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
-                // Loading
                 launch {
                     vm.isLoading.collect { showLoading(it) }
                 }
 
-                // Saldo text
                 launch {
                     vm.saldoText.collect { binding.saldo.text = it }
                 }
 
-                // Saldo kurang -> tampilkan error di EditText jumlah
                 launch {
                     vm.saldoKurang.collect { sisa ->
                         val formatted = rupiah.format(sisa)
@@ -99,22 +114,15 @@ class EditTransaksiKeluarFragment : Fragment(), Reloadable {
                     }
                 }
 
-                // Toast
                 launch {
                     vm.toast.collect { requireContext().toast(it) }
                 }
 
-                // Navigate & hapus EditTransaksiKeluarFragment dari back stack
+                // Sukses → kunci tombol & kembali ke layar sebelumnya
                 launch {
                     vm.navigateBack.collect {
-                        findNavController().navigate(
-                            R.id.navigation_transaksi,
-                            null,
-                            NavOptions.Builder()
-                                .setPopUpTo(R.id.editTransaksiKeluarFragment, true)
-                                .setLaunchSingleTop(true)
-                                .build()
-                        )
+                        binding.konfirmasi.isEnabled = false
+                        findNavController().popBackStack()
                     }
                 }
             }

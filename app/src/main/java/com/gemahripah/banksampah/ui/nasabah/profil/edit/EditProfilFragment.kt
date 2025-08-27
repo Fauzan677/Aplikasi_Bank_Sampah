@@ -27,7 +27,6 @@ class EditProfilFragment : Fragment() {
     private var _binding: FragmentTambahPenggunaBinding? = null
     private val binding get() = _binding!!
 
-    private val nasabahViewModel: NasabahViewModel by activityViewModels()
     private val editViewModel: EditProfilViewModel by viewModels()
 
     private var isPasswordVisible = false
@@ -44,10 +43,29 @@ class EditProfilFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.judul.text = "Edit Pengguna"
+        // Ubah judul & sembunyikan field yang tidak dipakai
+        binding.judul.text = "Ubah Password"
+
+        binding.tvRekening.visibility = View.GONE
+        binding.rekening.visibility = View.GONE
+
+        binding.tvNama.visibility = View.GONE
+        binding.nama.visibility = View.GONE
+
         binding.tvEmail.visibility = View.GONE
         binding.email.visibility = View.GONE
+
+        binding.tvAlamat.visibility = View.GONE
+        binding.alamat.visibility = View.GONE
+
+        binding.tvSaldo.visibility = View.GONE
+        binding.saldo.visibility = View.GONE
+
         binding.hapus.visibility = View.GONE
+
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
 
         observeViewModel()
         setupListeners()
@@ -55,18 +73,8 @@ class EditProfilFragment : Fragment() {
     }
 
     private fun observeViewModel() {
-        // Prefill data pengguna saat tersedia
-        nasabahViewModel.pengguna.observe(viewLifecycleOwner) { pengguna ->
-            pengguna?.let {
-                binding.nama.setText(it.pgnNama.orEmpty())
-                editViewModel.setInitialData(it)
-            }
-        }
-
-        // Collect state & event dengan lifecycle-aware
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // Loading
                 launch {
                     editViewModel.isLoading.collectLatest { loading ->
                         binding.loading.visibility = if (loading) View.VISIBLE else View.GONE
@@ -74,22 +82,15 @@ class EditProfilFragment : Fragment() {
                         binding.konfirmasi.isEnabled = !loading
                     }
                 }
-                // Toast event
                 launch {
                     editViewModel.toast.collectLatest { msg ->
                         Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
                     }
                 }
-                // Success event -> update VM bersama + navigate
                 launch {
                     editViewModel.success.collectLatest {
-                        val current = nasabahViewModel.pengguna.value
-                        val namaBaru = binding.nama.text.toString().trim()
-                        nasabahViewModel.setPengguna(current?.copy(pgnNama = namaBaru))
-
-                        findNavController().navigate(
-                            R.id.action_editProfilFragment_to_navigation_notifications
-                        )
+                        // Selesai: kembali ke layar sebelumnya
+                        findNavController().popBackStack()
                     }
                 }
             }
@@ -98,19 +99,18 @@ class EditProfilFragment : Fragment() {
 
     private fun setupListeners() {
         binding.konfirmasi.setOnClickListener {
-            val namaBaru = binding.nama.text.toString().trim()
             val passwordBaru = binding.password.text.toString().trim()
 
-            if (namaBaru.isEmpty()) {
-                Toast.makeText(requireContext(), "Nama tidak boleh kosong", Toast.LENGTH_SHORT).show()
+            if (passwordBaru.isEmpty()) {
+                Toast.makeText(requireContext(), "Password tidak boleh kosong", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             AlertDialog.Builder(requireContext())
-                .setTitle("Konfirmasi Perubahan")
-                .setMessage("Apakah Anda yakin ingin menyimpan perubahan profil?")
-                .setPositiveButton("Simpan") { _, _ ->
-                    editViewModel.updateProfil(namaBaru, passwordBaru)
+                .setTitle("Konfirmasi")
+                .setMessage("Ubah password akun Anda?")
+                .setPositiveButton("Ubah") { _, _ ->
+                    editViewModel.updatePassword(passwordBaru)
                 }
                 .setNegativeButton("Batal", null)
                 .show()
@@ -120,7 +120,7 @@ class EditProfilFragment : Fragment() {
     @SuppressLint("ClickableViewAccessibility")
     private fun setupPasswordToggle() {
         binding.password.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.visibility_off, 0)
-        binding.password.setOnTouchListener { v, event ->
+        binding.password.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
                 val drawableEndIndex = 2
                 val drawable = binding.password.compoundDrawables[drawableEndIndex]

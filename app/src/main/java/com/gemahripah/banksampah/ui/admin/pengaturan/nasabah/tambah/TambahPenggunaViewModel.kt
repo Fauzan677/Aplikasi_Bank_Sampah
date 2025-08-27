@@ -38,34 +38,44 @@ class TambahPenggunaViewModel : ViewModel() {
     val navigateBack: SharedFlow<Unit> = _navigateBack
 
     /** Submit tambah pengguna. Validasi, cek unik, buat akun auth, lalu insert row `pengguna`. */
-    fun submit(nama: String, email: String, password: String) {
+    fun submit(
+        nama: String,
+        email: String,
+        password: String,
+        rekening: String?,
+        alamat: String?,
+        saldoInput: String
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
-            val namaTrim = nama.trim()
-            val emailTrim = email.trim()
+            val namaTrim   = nama.trim()
+            val emailTrim  = email.trim()
             val emailLower = emailTrim.lowercase(Locale.ROOT)
-            val pwdTrim   = password.trim()
+            val pwdTrim    = password.trim()
+            val rekeningTrim = rekening?.trim().orEmpty()
+            val alamatTrim   = alamat?.trim().orEmpty()
 
-            // Validasi kosong
             if (namaTrim.isBlank() || emailLower.isBlank() || pwdTrim.isBlank()) {
                 _toast.emit("Semua isian wajib diisi")
                 return@launch
             }
-
-            // **Validasi format email lebih dulu**
             if (!Patterns.EMAIL_ADDRESS.matcher(emailLower).matches()) {
                 _toast.emit("Format email tidak valid")
                 return@launch
             }
-
-            // Validasi password
             if (pwdTrim.length < 6) {
                 _toast.emit("Password minimal 6 karakter")
                 return@launch
             }
 
+            // Parse saldo (boleh kosong). Dukung koma/titik.
+            val saldoParsed = parseDecimalOrNull(saldoInput)
+            if (saldoInput.isNotBlank() && saldoParsed == null) {
+                _toast.emit("Saldo awal tidak valid")
+                return@launch
+            }
+
             _isLoading.value = true
             try {
-                // Cek unik (case-insensitive)
                 if (isNamaDipakai(namaTrim)) {
                     _toast.emit("Nama sudah digunakan, gunakan nama lain")
                     return@launch
@@ -75,19 +85,26 @@ class TambahPenggunaViewModel : ViewModel() {
                     return@launch
                 }
 
-                // Buat user di Auth (autoConfirm) + metadata
+                // 1) Buat user auth + metadata opsional
                 val created = admin.auth.admin.createUserWithEmail {
                     this.email = emailTrim
                     this.password = pwdTrim
-                    userMetadata { put("name", namaTrim) }
+                    userMetadata {
+                        put("name", namaTrim)
+                        if (rekeningTrim.isNotBlank()) put("rekening", rekeningTrim)
+                        if (alamatTrim.isNotBlank())   put("alamat",   alamatTrim)
+                    }
                     autoConfirm = true
                 }
 
-                // Insert ke tabel aplikasi
+                // 2) Insert ke tabel aplikasi lengkap
                 val penggunaBaru = Pengguna(
-                    pgnId = created.id,
-                    pgnNama = namaTrim,
-                    pgnEmail = emailLower
+                    pgnId       = created.id,
+                    pgnNama     = namaTrim,
+                    pgnEmail    = emailLower,
+                    pgnRekening = rekeningTrim.ifBlank { null },
+                    pgnAlamat   = alamatTrim.ifBlank { null },
+                    pgnSaldo    = saldoParsed // null jika kosong
                 )
                 client.from("pengguna").insert(penggunaBaru)
 
@@ -97,12 +114,10 @@ class TambahPenggunaViewModel : ViewModel() {
             } catch (e: AuthWeakPasswordException) {
                 _toast.emit("Password minimal 6 karakter")
             } catch (e: AuthRestException) {
-                // Guard tambahan kalau Supabase menolak email walau sudah kita validasi
                 val msg = e.message?.lowercase().orEmpty()
-                val invalidEmail =
-                    e.error == "validation_failed" ||
-                            msg.contains("unable to validate email address") ||
-                            msg.contains("invalid format")
+                val invalidEmail = e.error == "validation_failed" ||
+                        msg.contains("unable to validate email address") ||
+                        msg.contains("invalid format")
                 _toast.emit(if (invalidEmail) "Format email tidak valid" else "Gagal membuat pengguna, periksa koneksi internet")
                 Log.e("TambahPenggunaVM", "Auth error: ${e.message}", e)
             } catch (ce: CancellationException) {
@@ -146,5 +161,29 @@ class TambahPenggunaViewModel : ViewModel() {
             Log.e("TambahPenggunaVM", "Gagal cek email unik: ${e.message}", e)
             false
         }
+    }
+
+    private fun parseDecimalOrNull(input: String): java.math.BigDecimal? {
+        val s = input.trim()
+        if (s.isBlank()) return null
+
+        val hasComma = s.contains(',')
+        val hasDot   = s.contains('.')
+        val normalized = when {
+            hasComma && hasDot -> {
+                val lastComma = s.lastIndexOf(',')
+                val lastDot   = s.lastIndexOf('.')
+                if (lastComma > lastDot) {
+                    // 1.234,56 -> remove group dots, replace decimal comma to dot
+                    s.replace(".", "").replace(',', '.')
+                } else {
+                    // 1,234.56 -> remove group commas (already dot decimal)
+                    s.replace(",", "")
+                }
+            }
+            hasComma -> s.replace(',', '.')
+            else     -> s
+        }
+        return runCatching { java.math.BigDecimal(normalized) }.getOrNull()
     }
 }

@@ -1,9 +1,12 @@
 package com.gemahripah.banksampah.data.model.transaksi
 
 import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
+import java.math.BigDecimal
 
-@kotlinx.parcelize.Parcelize
+@Parcelize
 @Serializable
 data class RiwayatTransaksi(
     val tskId: Long,
@@ -13,7 +16,7 @@ data class RiwayatTransaksi(
     val tanggal: String,
     val tipe: String,
     val tskKeterangan: String?,
-    val totalBerat: Double?,
-    val totalHarga: Double?,
+    @Contextual val totalBerat: BigDecimal?,
+    @Contextual val totalHarga: BigDecimal?,
     val hari: String?
 ) : Parcelable

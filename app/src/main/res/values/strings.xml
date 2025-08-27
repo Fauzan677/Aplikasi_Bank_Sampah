@@ -122,6 +122,13 @@
     <string name="keterangan_transaksi">keterangan transaksi</string>
     <string name="nama">nama</string>
     <string name="tidak_ada_keterangan">Tidak ada keterangan</string>
+    <string name="no_rekening">No Rekening</string>
+    <string name="masukkan_nomor_rekening">Masukkan Nomor Rekening</string>
+    <string name="kosong_jika_nasabah_baru">(kosong jika nasabah baru)</string>
+    <string name="alamat">Alamat</string>
+    <string name="masukkan_alamat_nasabah">Masukkan Alamat Nasabah</string>
+    <string name="masukkan_kode_sampah">Masukkan Kode Sampah</string>
+    <string name="kode">Kode</string>
 
     <!-- ===================== Arrays ===================== -->
     <string-array name="filter_transaksi">

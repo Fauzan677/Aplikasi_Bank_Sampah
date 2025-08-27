@@ -13,6 +13,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.paging.CombinedLoadStates
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.databinding.FragmentPengumumanBinding
@@ -63,7 +64,7 @@ class PengumumanFragment : Fragment(), Reloadable {
             findNavController().navigate(action)
         }
 
-        binding.rvPengumuman.layoutManager = GridLayoutManager(requireContext(), 2)
+        binding.rvPengumuman.layoutManager = LinearLayoutManager(requireContext())
         binding.rvPengumuman.adapter = adapter.withLoadStateHeaderAndFooter(
             header = LoadingStateAdapter { adapter.retry() },
             footer = LoadingStateAdapter { adapter.retry() }

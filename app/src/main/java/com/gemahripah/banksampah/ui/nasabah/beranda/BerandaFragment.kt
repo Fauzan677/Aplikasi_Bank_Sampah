@@ -35,6 +35,9 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.Job
+import java.math.BigDecimal
+import java.math.RoundingMode
+import java.text.NumberFormat
 
 class BerandaFragment : Fragment(), Reloadable {
 
@@ -50,6 +53,12 @@ class BerandaFragment : Fragment(), Reloadable {
 
     private lateinit var pagingAdapter: RiwayatPagingAdapter
     private var pagingJob: Job? = null
+
+    private val nf2 = NumberFormat.getNumberInstance(Locale("id","ID")).apply {
+        minimumFractionDigits = 2
+        maximumFractionDigits = 2
+        roundingMode = RoundingMode.HALF_UP
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -69,6 +78,7 @@ class BerandaFragment : Fragment(), Reloadable {
         setupRecyclerView()
 
         binding.swipeRefresh.setOnRefreshListener { reloadData() }
+
         binding.koneksiRiwayat.setOnClickListener {
             binding.koneksiRiwayat.visibility = View.GONE
             binding.loading.visibility = View.VISIBLE
@@ -83,8 +93,18 @@ class BerandaFragment : Fragment(), Reloadable {
         setupSetoran()
     }
 
+    private fun formatRupiah2(bd: BigDecimal?): String {
+        val v = (bd ?: BigDecimal.ZERO).setScale(3, RoundingMode.HALF_UP)
+        return "Rp ${nf2.format(v)}"   // contoh: Rp 1.234,567
+    }
+
     override fun reloadData() {
         if (!updateInternetCard()) return
+
+        nasabahViewModel.pengguna.value?.pgnId?.let { pgnId ->
+            nasabahViewModel.loadPenggunaById(pgnId)
+        }
+
         binding.swipeRefresh.isRefreshing = false
         refreshDashboardData()
     }
@@ -102,12 +122,13 @@ class BerandaFragment : Fragment(), Reloadable {
         spinner.setSelection(0, false)
         selectedFilter = resources.getStringArray(R.array.filter_transaksi)[0]
 
-        nasabahViewModel.pengguna.value?.pgnId?.let { pgnId ->
-            berandaViewModel.getSaldo(pgnId)
-            berandaViewModel.getTotalSetoran(pgnId)
-            berandaViewModel.getTotalTransaksi(pgnId, selectedFilter)
-
-            observePaging(pgnId)
+        nasabahViewModel.pengguna.value?.let { pengguna ->
+            binding.nominal.text = formatRupiah2(pengguna.pgnSaldo)
+            pengguna.pgnId?.let { pgnId ->
+                berandaViewModel.getTotalSetoran(pgnId)
+                berandaViewModel.getTotalTransaksi(pgnId, selectedFilter)
+                observePaging(pgnId)
+            }
         }
     }
 
@@ -157,23 +178,21 @@ class BerandaFragment : Fragment(), Reloadable {
             val pgnId = pengguna?.pgnId ?: return@observe
             if (!updateInternetCard()) return@observe
 
+            binding.nominal.text = formatRupiah2(pengguna.pgnSaldo)
+
             // Pastikan filter punya nilai default
             if (selectedFilter.isBlank()) {
                 selectedFilter = resources.getStringArray(R.array.filter_transaksi)[0]
             }
 
             // Muat semua ringkasan di header begitu pgnId tersedia
-            berandaViewModel.getSaldo(pgnId)
             berandaViewModel.getTotalSetoran(pgnId)                       // <-- ini yang hilang
             berandaViewModel.getTotalTransaksi(pgnId, selectedFilter)     // <-- panggil juga
-
-            // Mulai/refresh paging
             observePaging(pgnId)
+
+            binding.swipeRefresh.isRefreshing = false
         }
 
-        berandaViewModel.saldo.observe(viewLifecycleOwner) {
-            binding.nominal.text = it
-        }
         berandaViewModel.totalTransaksi.observe(viewLifecycleOwner) {
             binding.transaksi.text = it
         }
@@ -239,6 +258,7 @@ class BerandaFragment : Fragment(), Reloadable {
     private fun showDatePicker(onDateSelected: (String) -> Unit) {
         val datePicker = MaterialDatePicker.Builder.datePicker()
             .setTitleText("Pilih Tanggal")
+            .setTheme(R.style.ThemeOverlay_App_DatePicker)
             .build()
 
         datePicker.addOnPositiveButtonClickListener { selection ->
@@ -322,7 +342,8 @@ class BerandaFragment : Fragment(), Reloadable {
 
     private fun showDateRangePicker(onDateRangeSelected: (startDate: LocalDate, endDate: LocalDate) -> Unit) {
         val dateRangePicker = MaterialDatePicker.Builder.dateRangePicker()
-            .setTitleText("Pilih Rentang Tanggal Setoran")
+            .setTitleText("Pilih Rentang Tanggal")
+            .setTheme(R.style.ThemeOverlay_App_DatePicker)
             .build()
 
         dateRangePicker.show(parentFragmentManager, "DATE_RANGE_PICKER")

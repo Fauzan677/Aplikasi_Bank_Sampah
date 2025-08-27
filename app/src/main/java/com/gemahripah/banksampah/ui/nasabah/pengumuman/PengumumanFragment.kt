@@ -12,6 +12,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.databinding.FragmentPengumumanBinding
 import com.gemahripah.banksampah.ui.gabungan.adapter.common.LoadingStateAdapter
 import com.gemahripah.banksampah.ui.gabungan.adapter.pengumuman.PengumumanPagingAdapter
@@ -92,7 +93,7 @@ class PengumumanFragment : Fragment(), Reloadable {
         }
 
         binding.rvPengumuman.apply {
-            layoutManager = GridLayoutManager(requireContext(), 2)
+            layoutManager = LinearLayoutManager(requireContext())
             adapter = pagingAdapter.withLoadStateHeaderAndFooter(
                 header = LoadingStateAdapter { pagingAdapter.retry() },
                 footer = LoadingStateAdapter { pagingAdapter.retry() }

@@ -57,14 +57,35 @@ class EditPenggunaFragment : Fragment() {
     @SuppressLint("SetTextI18n")
     private fun setupUI(pengguna: Pengguna) {
         binding.judul.text = "Edit Pengguna"
-        binding.nama.setText(pengguna.pgnNama ?: "")
-        binding.email.setText(pengguna.pgnEmail ?: "")
+
+        // Prefill dari data lama
+        binding.nama.setText(pengguna.pgnNama.orEmpty())
+        binding.email.setText(pengguna.pgnEmail.orEmpty())
+        binding.rekening.setText(pengguna.pgnRekening.orEmpty())
+        binding.alamat.setText(pengguna.pgnAlamat.orEmpty())
+        binding.saldo.setText(pengguna.pgnSaldo?.toPlainString().orEmpty()) // tampilkan apa adanya
+
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
 
         binding.konfirmasi.setOnClickListener {
-            val namaBaru = binding.nama.text.toString()
-            val emailBaru = binding.email.text.toString()
+            val namaBaru     = binding.nama.text.toString()
+            val emailBaru    = binding.email.text.toString()
             val passwordBaru = binding.password.text.toString()
-            vm.submitEdit(namaBaru, emailBaru, passwordBaru)
+
+            val rekeningBaru = binding.rekening.text.toString()
+            val alamatBaru   = binding.alamat.text.toString()
+            val saldoRawBaru = binding.saldo.text.toString() // parsing di ViewModel
+
+            vm.submitEdit(
+                namaBaru      = namaBaru,
+                emailBaru     = emailBaru,
+                passwordBaru  = passwordBaru,
+                rekeningBaru  = rekeningBaru,
+                alamatBaru    = alamatBaru,
+                saldoInputBaru= saldoRawBaru
+            )
         }
 
         binding.hapus.setOnClickListener {

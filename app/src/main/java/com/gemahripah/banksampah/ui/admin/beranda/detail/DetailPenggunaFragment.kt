@@ -61,6 +61,10 @@ class DetailPenggunaFragment : Fragment(), Reloadable {
             reloadData()
         }
 
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
         pengguna?.pgnId?.let { id -> viewModel.loadPagingRiwayat(id) }
 
         if (updateInternetCard()) {
@@ -183,6 +187,11 @@ class DetailPenggunaFragment : Fragment(), Reloadable {
         binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
         binding.menarik.isEnabled = !isLoading
         binding.menabung.isEnabled = !isLoading
+    }
+
+    override fun onResume() {
+        super.onResume()
+        reloadData()
     }
 
     override fun onDestroyView() {

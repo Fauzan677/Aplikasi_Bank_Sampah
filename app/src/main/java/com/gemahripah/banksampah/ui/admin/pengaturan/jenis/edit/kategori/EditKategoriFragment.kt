@@ -46,11 +46,17 @@ class EditKategoriFragment : Fragment() {
         setupUI()
         setupListeners()
         collectVm()
+
+        vm.checkRelasiSampah()
     }
 
     private fun setupUI() {
         binding.judul.text = "Edit Kategori Sampah"
         binding.kategori.setText(kategori.ktgNama)
+
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
     }
 
     private fun setupListeners() {
@@ -89,6 +95,14 @@ class EditKategoriFragment : Fragment() {
                                 .setLaunchSingleTop(true)
                                 .build()
                         )
+                    }
+                }
+
+                launch {
+                    vm.inUse.collect { inUse ->
+                        val disabled = (inUse == true) || (inUse == null)
+                        binding.hapus.isEnabled = !disabled
+                        binding.hapus.alpha = if (disabled) 0.5f else 1f
                     }
                 }
             }

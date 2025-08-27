@@ -7,10 +7,12 @@ import com.gemahripah.banksampah.data.model.transaksi.DetailTransaksi
 import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
 import com.gemahripah.banksampah.data.model.transaksi.Transaksi
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.math.BigDecimal
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -21,6 +23,18 @@ class TransaksiPagingSource(
     private val startDate: String?, // UTC ISO, inklusif (>=)
     private val endDate: String?    // UTC ISO, eksklusif (<)
 ) : PagingSource<Int, RiwayatTransaksi>() {
+
+    private val ID_LOCALE = Locale("id","ID")
+    private val TGL_FMT   = DateTimeFormatter.ofPattern("dd MMM yyyy", ID_LOCALE)
+    private val JAM_FMT   = DateTimeFormatter.ofPattern("HH.mm",       ID_LOCALE)
+
+    private fun Any?.toBigDecimalOrNull(): BigDecimal? = when (this) {
+        null -> null
+        is BigDecimal -> this
+        is Number -> BigDecimal(this.toString())
+        is String -> this.takeIf { it.isNotBlank() }?.let { BigDecimal(it) }
+        else -> runCatching { BigDecimal(toString()) }.getOrNull()
+    }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, RiwayatTransaksi> = try {
         val page = params.key ?: 1
@@ -33,9 +47,6 @@ class TransaksiPagingSource(
                 order("created_at", Order.DESCENDING)
 
                 filter {
-                    // filter user pemilik transaksi (kalau ada)
-                    // eq("tskIdPengguna", <isi jika perlu>)
-
                     when {
                         !startDate.isNullOrEmpty() && !endDate.isNullOrEmpty() -> and {
                             gte("created_at", startDate) // inklusif
@@ -50,7 +61,6 @@ class TransaksiPagingSource(
             }
             .decodeList<Transaksi>()
 
-        // (opsional) filter nama di client (lebih aman kalau bisa join di server)
         val transaksiFilteredByName = if (!query.isNullOrBlank()) {
             transaksiList.filter { t ->
                 val pengguna = client.postgrest.from("pengguna")
@@ -66,26 +76,50 @@ class TransaksiPagingSource(
                 .decodeSingle<Pengguna>()
 
             val totalBerat = if (transaksi.tskTipe == "Masuk") {
-                client.postgrest.rpc("hitung_total_jumlah", buildJsonObject {
-                    put("tsk_id_input", transaksi.tskId)
-                }).data.toDoubleOrNull()
+                client.postgrest.rpc(
+                    "hitung_total_jumlah",
+                    buildJsonObject { put("tsk_id_input", transaksi.tskId!!) }
+                ).data.toBigDecimalOrNull()
             } else null
 
             val totalHarga = if (transaksi.tskTipe == "Keluar") {
-                val detail = client.postgrest.from("detail_transaksi")
+                client.from("detail_transaksi")
                     .select { filter { eq("dtlTskId", transaksi.tskId!!) } }
                     .decodeList<DetailTransaksi>()
-                detail.sumOf { it.dtlJumlah ?: 0.0 }
+                    .fold(BigDecimal.ZERO) { acc, row -> acc + (row.dtlNominal ?: BigDecimal.ZERO) }
             } else {
-                client.postgrest.rpc("hitung_total_harga", buildJsonObject {
-                    put("tsk_id_input", transaksi.tskId)
-                }).data.toDoubleOrNull()
+                client.postgrest.rpc(
+                    "hitung_total_harga",
+                    buildJsonObject { put("tsk_id_input", transaksi.tskId!!) }
+                ).data.toBigDecimalOrNull()
             }
 
             val tanggalFormatted = try {
-                OffsetDateTime.parse(transaksi.created_at)
-                    .format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id")))
-            } catch (_: Exception) { "Tanggal tidak valid" }
+                val raw = transaksi.created_at ?: ""
+
+                when {
+                    // ISO 8601 dengan offset (timestamptz), contoh: 2025-05-25T10:15:30.123Z / +07:00
+                    raw.contains("Z") || raw.contains("+") -> {
+                        val odt   = OffsetDateTime.parse(raw)
+                        val local = odt.atZoneSameInstant(java.time.ZoneId.systemDefault())
+                        "${local.format(TGL_FMT)}, ${local.format(JAM_FMT)}"
+                    }
+
+                    // LocalDateTime tanpa offset, contoh: 2025-05-25T10:15:30
+                    raw.length > 10 && raw[10] == 'T' -> {
+                        val ldt   = java.time.LocalDateTime.parse(raw)
+                        val zdt   = ldt.atZone(java.time.ZoneId.systemDefault())
+                        "${zdt.format(TGL_FMT)}, ${zdt.format(JAM_FMT)}"
+                    }
+
+                    // Hanya tanggal (kolom DATE lama)
+                    raw.length == 10 -> {
+                        java.time.LocalDate.parse(raw).format(TGL_FMT)
+                    }
+
+                    else -> "-"
+                }
+            } catch (_: Exception) { "-" }
 
             RiwayatTransaksi(
                 tskId = transaksi.tskId!!,

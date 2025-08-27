@@ -39,7 +39,10 @@ class BerandaViewModel : ViewModel() {
     private val _totalSetoran = MutableLiveData<String>()
     val totalSetoran: LiveData<String> = _totalSetoran
 
-    private val formatter = NumberFormat.getNumberInstance(Locale("id", "ID"))
+    private val formatter2 = NumberFormat.getNumberInstance(Locale("id", "ID")).apply {
+        minimumFractionDigits = 2
+        maximumFractionDigits = 2
+    }
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -74,7 +77,7 @@ class BerandaViewModel : ViewModel() {
             try {
                 val result = SupabaseProvider.client.postgrest.rpc("hitung_total_saldo_pengguna")
                 val saldo = result.data.toDoubleOrNull() ?: 0.0
-                _totalSaldo.postValue(formatter.format(saldo))
+                _totalSaldo.postValue(formatter2.format(saldo))
             } catch (e: Exception) {
                 _totalSaldo.postValue("Gagal memuat")
             }
@@ -100,33 +103,25 @@ class BerandaViewModel : ViewModel() {
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                // Map pilihan spinner -> argumen fungsi
+                val tipe = when (filter) {
+                    "Transaksi Masuk"  -> "Masuk"
+                    "Transaksi Keluar" -> "Keluar"
+                    else               -> null   // NULL = semua tipe
+                }
+
                 val params = buildJsonObject {
-                    if (filter == "Transaksi Keluar") {
-                        put("tipe_transaksi", "Keluar")
-                    }
+                    if (tipe != null) put("tipe_transaksi", tipe) else put("tipe_transaksi", JsonNull)
                     if (startDate != null) put("start_date", startDate.toString()) else put("start_date", JsonNull)
                     if (endDate != null) put("end_date", endDate.toString()) else put("end_date", JsonNull)
                 }
 
-                val total = when (filter) {
-                    "Transaksi Masuk" -> {
-                        val result = SupabaseProvider.client.postgrest.rpc(
-                            "hitung_total_transaksi_masuk", params
-                        )
-                        result.data.toDoubleOrNull() ?: 0.0
-                    }
+                // Panggil fungsi terpadu
+                val result = SupabaseProvider.client.postgrest.rpc("hitung_total_transaksi", params)
 
-                    "Transaksi Keluar" -> {
-                        val result = SupabaseProvider.client.postgrest.rpc(
-                            "hitung_total_jumlah_berdasarkan_tipe", params
-                        )
-                        result.data.toDoubleOrNull() ?: 0.0
-                    }
-
-                    else -> 0.0
-                }
-
-                _totalTransaksi.postValue(formatter.format(total))
+                // Fungsi DB sudah return numeric(20,2), parse ke Double untuk diformat
+                val total = result.data.toDoubleOrNull() ?: 0.0
+                _totalTransaksi.postValue(formatter2.format(total))
             } catch (e: Exception) {
                 Log.e("Supabase", "Gagal memuat total transaksi", e)
                 _totalTransaksi.postValue("Gagal memuat")
@@ -137,19 +132,16 @@ class BerandaViewModel : ViewModel() {
     fun getTotalSetoran(start: LocalDate? = null, end: LocalDate? = null) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val params = mutableMapOf(
-                    "tipe_transaksi" to "Masuk"
-                )
+                val params = buildJsonObject {
+                    if (start != null) put("start_date", start.toString()) else put("start_date", JsonNull)
+                    if (end   != null) put("end_date",   end.toString())   else put("end_date",   JsonNull)
+                }
 
-                start?.let { params["start_date"] = it.toString() }
-                end?.let { params["end_date"] = it.toString() }
-                val result = SupabaseProvider.client.postgrest.rpc(
-                    "hitung_total_jumlah_berdasarkan_tipe",
-                    params
-                )
+                val result = SupabaseProvider.client.postgrest
+                    .rpc("hitung_total_jumlah_setoran_seluruh", params)
 
-                val total = result.data.toDoubleOrNull() ?: 0.0
-                _totalSetoran.postValue("$total Kg")
+                val total = result.data.toString().toDoubleOrNull() ?: 0.0
+                _totalSetoran.postValue("${formatter2.format(total)} Kg")
             } catch (e: Exception) {
                 Log.e("Supabase", "Gagal memuat total setoran", e)
                 _totalSetoran.postValue("Gagal memuat")

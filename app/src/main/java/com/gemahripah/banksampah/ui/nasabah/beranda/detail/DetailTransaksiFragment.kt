@@ -19,6 +19,9 @@ import com.gemahripah.banksampah.ui.nasabah.NasabahActivity
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
 import androidx.core.view.isVisible
+import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
+import java.math.RoundingMode
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -29,6 +32,12 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
     private val binding get() = _binding!!
 
     private val viewModel: DetailTransaksiViewModel by viewModels()
+
+    private val nf2 = NumberFormat.getNumberInstance(Locale("id","ID")).apply {
+        minimumFractionDigits = 2
+        maximumFractionDigits = 2
+        roundingMode = RoundingMode.HALF_UP
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -45,6 +54,10 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
         observeViewModel()
 
         binding.swipeRefresh.setOnRefreshListener { reloadData() }
+
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
 
         if (!updateInternetCard()) return
         loadData()
@@ -66,9 +79,8 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
         binding.nama.text = riwayat.nama
         binding.tanggal.text = riwayat.tanggal
 
-        val amount = riwayat.totalHarga?.toLong() ?: 0L
-        val formatted = NumberFormat.getNumberInstance(Locale("id", "ID")).format(amount)
-        binding.nominal.text = "Rp $formatted"
+        val amount = riwayat.totalHarga ?: java.math.BigDecimal.ZERO
+        binding.nominal.text = "Rp ${nf2.format(amount)}"   // contoh: Rp 1.234,567
 
         val ket = riwayat.tskKeterangan?.trim()
         if (ket.isNullOrBlank()) {
@@ -122,7 +134,7 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
 
     private fun setupRecyclerView(detailList: List<DetailTransaksiRelasi>) {
         binding.rvDetail.apply {
-            layoutManager = GridLayoutManager(requireContext(), 2)
+            layoutManager = LinearLayoutManager(requireContext())
             adapter = DetailTransaksiAdapter(detailList)
         }
     }

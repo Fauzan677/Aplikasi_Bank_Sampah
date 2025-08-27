@@ -37,4 +37,42 @@
         <item name="itemRippleColor">@android:color/transparent</item>
     </style>
 
+    <!-- Overlay untuk Date/Range Date Picker (MDC) -->
+    <!-- Overlay untuk Date/Range Date Picker -->
+    <style name="ThemeOverlay.App.DatePicker" parent="ThemeOverlay.MaterialComponents.MaterialCalendar">
+        <!-- warna permukaan dialog -->
+        <item name="colorSurface">@color/light_gray</item>
+        <!-- warna teks utama di dialog -->
+        <item name="colorOnSurface">@android:color/black</item>
+
+        <!-- style kalender di dalam dialog -->
+        <item name="materialCalendarStyle">@style/Widget.App.MaterialCalendar</item>
+    </style>
+
+    <style name="Widget.App.DatePicker.TextButton" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@android:color/black</item>
+    </style>
+
+    <!-- Kalender -->
+    <style name="Widget.App.MaterialCalendar" parent="Widget.MaterialComponents.MaterialCalendar">
+        <item name="android:background">@color/light_gray</item>
+
+        <!-- Judul header (bulan/tahun) -->
+        <item name="materialCalendarHeaderTitle">@style/TextAppearance.App.DatePicker.Header</item>
+
+    </style>
+
+    <style name="TextAppearance.App.DatePicker.Header" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <style name="TextAppearance.App.DatePicker.DayOfWeek" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <style name="Widget.App.MaterialCalendar.Day" parent="Widget.MaterialComponents.MaterialCalendar.Day">
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+
 </resources>

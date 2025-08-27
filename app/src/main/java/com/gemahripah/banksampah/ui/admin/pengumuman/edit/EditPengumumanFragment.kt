@@ -68,6 +68,10 @@ class EditPengumumanFragment : Fragment(), Reloadable {
 
         binding.judul.text = "Edit Pengumuman"
 
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
         val pengumuman = arguments?.let {
             EditPengumumanFragmentArgs.fromBundle(it).pengumuman
         }

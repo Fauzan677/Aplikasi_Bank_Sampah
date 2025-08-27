@@ -9,10 +9,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SampahRelasi(
     val sphId: Long? = null,
-    val created_at: String? = null,
-    val sphKtgId: Kategori? = null,
+    val created_at: String? = null,          // timestamptz → String
+    val sphKtgId: Kategori? = null,          // relasi kategori
     val sphJenis: String? = null,
     val sphSatuan: String? = null,
-    val sphHarga: Double? = null,
-    val sphKeterangan: String? = null
+    val sphHarga: Long? = null,              // int8 → Long?
+    val sphKeterangan: String? = null,
+    val sphKode: String? = null              // ada di schema
 ) : Parcelable

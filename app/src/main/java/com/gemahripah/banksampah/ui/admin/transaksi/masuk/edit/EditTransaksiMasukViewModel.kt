@@ -2,6 +2,7 @@ package com.gemahripah.banksampah.ui.admin.transaksi.masuk.edit
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.model.sampah.Sampah
 import com.gemahripah.banksampah.data.model.transaksi.DetailTransaksi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
 
 class EditTransaksiMasukViewModel : ViewModel() {
 
@@ -38,22 +40,25 @@ class EditTransaksiMasukViewModel : ViewModel() {
     private val _navigateBack = MutableSharedFlow<Unit>(replay = 0, extraBufferCapacity = 1)
     val navigateBack: SharedFlow<Unit> = _navigateBack
 
+    private val _jenisToHargaMap = MutableStateFlow<Map<String, BigDecimal>>(emptyMap())
+    val jenisToHargaMap: StateFlow<Map<String, BigDecimal>> = _jenisToHargaMap.asStateFlow()
+
     /** Load master ‘sampah’ sekali */
     fun loadSampah() {
-        if (_jenisList.value.isNotEmpty()) return // sudah pernah load
+        if (_jenisList.value.isNotEmpty()) return
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
             try {
-                val data = client
-                    .from("sampah")
-                    .select()
-                    .decodeList<Sampah>()
+                val data = client.from("sampah").select().decodeList<Sampah>()
 
                 val listJenis = data.mapNotNull { it.sphJenis?.takeIf { s -> s.isNotBlank() } }
                 _jenisList.value = listJenis
 
-                _namaToIdMap.value = data.associate { (it.sphJenis ?: "Unknown") to (it.sphId ?: 0L) }
+                _namaToIdMap.value      = data.associate { (it.sphJenis ?: "Unknown") to (it.sphId ?: 0L) }
                 _jenisToSatuanMap.value = data.associate { (it.sphJenis ?: "Unknown") to (it.sphSatuan ?: "Unit") }
+                _jenisToHargaMap.value  = data.associate {
+                    (it.sphJenis ?: "Unknown") to BigDecimal.valueOf((it.sphHarga ?: 0L).toLong())
+                }
             } catch (e: Exception) {
                 viewModelScope.launch { _toast.emit("Gagal memuat jenis transaksi") }
             } finally {
@@ -77,26 +82,32 @@ class EditTransaksiMasukViewModel : ViewModel() {
         transaksiId: Long,
         userId: String,
         keterangan: String,
-        main: Pair<String, Double>,
-        tambahan: List<Pair<String, Double>>
+        main: Pair<String, BigDecimal>,
+        tambahan: List<Pair<String, BigDecimal>>
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
             try {
-                // update header
-                client
-                    .from("transaksi")
-                    .update({
-                        set("tskIdPengguna", userId)
-                        set("tskKeterangan", keterangan)
-                        set("tskTipe", "Masuk")
-                    }) {
-                        filter { eq("tskId", transaksiId) }
-                    }
+                // total LAMA sebelum dihapus
+                val oldTotal = getOldTotalNominal(transaksiId)
 
-                // replace detail
+                // update header
+                client.from("transaksi").update({
+                    set("tskIdPengguna", userId)
+                    set("tskKeterangan", keterangan)
+                    set("tskTipe", "Masuk")
+                }) { filter { eq("tskId", transaksiId) } }
+
+                // ganti detail
                 deleteOldDetails(transaksiId)
                 insertNewDetails(transaksiId, main, tambahan)
+
+                // total BARU dari input + harga master
+                val newTotal = calcNewTotal(main, tambahan)
+
+                // delta saldo = BARU - LAMA
+                val delta = newTotal.subtract(oldTotal)
+                updateSaldoPenggunaDelta(userId, delta)
 
                 _toast.emit("Data berhasil diperbarui")
                 _navigateBack.emit(Unit)
@@ -108,6 +119,39 @@ class EditTransaksiMasukViewModel : ViewModel() {
         }
     }
 
+    private suspend fun getOldTotalNominal(transaksiId: Long): BigDecimal {
+        val list = client
+            .from("detail_transaksi")
+            .select { filter { eq("dtlTskId", transaksiId) } }
+            .decodeList<DetailTransaksi>()
+        var total = BigDecimal.ZERO
+        list.forEach { d -> total = total.add(d.dtlNominal ?: BigDecimal.ZERO) }
+        return total
+    }
+
+    private fun calcNewTotal(main: Pair<String, BigDecimal>, tambahan: List<Pair<String, BigDecimal>>): BigDecimal {
+        var total = BigDecimal.ZERO
+        fun add(jenis: String, qty: BigDecimal) {
+            if (qty <= BigDecimal.ZERO) return
+            val harga = jenisToHargaMap.value[jenis] ?: BigDecimal.ZERO
+            total = total.add(qty.multiply(harga))
+        }
+        add(main.first, main.second)
+        tambahan.forEach { (j, q) -> add(j, q) }
+        return total
+    }
+
+    private suspend fun updateSaldoPenggunaDelta(userId: String, delta: BigDecimal) {
+        if (delta == BigDecimal.ZERO) return
+        val pengguna = client
+            .from("pengguna")
+            .select { filter { eq("pgnId", userId) } }
+            .decodeSingle<Pengguna>()
+        val saldoBaru = (pengguna.pgnSaldo ?: BigDecimal.ZERO).add(delta)
+        client.from("pengguna").update(mapOf("pgnSaldo" to saldoBaru)) { filter { eq("pgnId", userId) } }
+    }
+
+
     private suspend fun deleteOldDetails(transaksiId: Long) {
         client
             .from("detail_transaksi")
@@ -118,25 +162,28 @@ class EditTransaksiMasukViewModel : ViewModel() {
 
     private suspend fun insertNewDetails(
         transaksiId: Long,
-        main: Pair<String, Double>,
-        tambahan: List<Pair<String, Double>>
+        main: Pair<String, BigDecimal>,
+        tambahan: List<Pair<String, BigDecimal>>
     ) {
-        val map = namaToIdMap.value
+        val mapId    = namaToIdMap.value
+        val mapHarga = jenisToHargaMap.value
 
-        suspend fun insertOne(jenis: String, jumlah: Double) {
-            val sphId = map[jenis] ?: return
-            if (jumlah <= 0.0) return
+        suspend fun insertOne(jenis: String, jumlah: BigDecimal) {
+            val sphId = mapId[jenis] ?: return
+            if (jumlah <= BigDecimal.ZERO) return
+            val harga   = mapHarga[jenis] ?: BigDecimal.ZERO
+            val nominal = jumlah.multiply(harga)
+
             val detail = DetailTransaksi(
                 dtlTskId = transaksiId,
                 dtlSphId = sphId,
-                dtlJumlah = jumlah
+                dtlJumlah = jumlah,
+                dtlNominal = nominal
             )
             client.from("detail_transaksi").insert(detail)
         }
 
-        // utama
         insertOne(main.first, main.second)
-        // tambahan
         tambahan.forEach { (j, n) -> insertOne(j, n) }
     }
 }

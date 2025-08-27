@@ -21,6 +21,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.databinding.FragmentBerandaAdminBinding
 import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.ui.gabungan.adapter.listNasabah.NasabahPagingAdapter
@@ -108,22 +109,10 @@ class BerandaFragment : Fragment(), Reloadable {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupSearch() {
-        // Scroll ke list saat kolom search disentuh
-        binding.searchNasabah.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_UP) {
-                binding.scrollView.post {
-                    binding.scrollView.scrollTo(0, binding.listNasabah.top)
-                }
-            }
-            false
-        }
-
-        // Query berubah -> push ke ViewModel (debounce ada di layer Pager jika perlu)
+        // -- TEXT BEHAVIOR (EditText) --
         binding.searchNasabah.addTextChangedListener { text ->
             viewModel.setSearchQuery(text?.toString().orEmpty())
         }
-
-        // Tekan imeActionSearch -> tutup keyboard
         binding.searchNasabah.setOnEditorActionListener { v, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                 hideKeyboard(v)
@@ -131,7 +120,38 @@ class BerandaFragment : Fragment(), Reloadable {
                 true
             } else false
         }
+        binding.searchNasabah.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) binding.appbar.setExpanded(false, true) // collapse ke header pinned
+        }
+        binding.searchNasabah.setOnTouchListener { _, ev ->
+            if (ev.action == MotionEvent.ACTION_UP) binding.appbar.setExpanded(false, true)
+            false
+        }
+        // long-press untuk clear
+        binding.searchNasabah.setOnLongClickListener {
+            clearSearch()
+            true // konsumsi event supaya tidak masuk mode select text
+        }
+
+        // -- UI WRAPPER (TextInputLayout) --
+        binding.tilSearch.endIconMode = com.google.android.material.textfield.TextInputLayout.END_ICON_CLEAR_TEXT
+        binding.tilSearch.setEndIconOnClickListener { clearSearch() }
+        // opsional: klik area kosong -> fokuskan edittext + buka keyboard
+        binding.tilSearch.setOnClickListener {
+            binding.appbar.setExpanded(false, true)
+            binding.searchNasabah.requestFocus()
+            val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(binding.searchNasabah, InputMethodManager.SHOW_IMPLICIT)
+        }
     }
+
+    private fun clearSearch() {
+        binding.searchNasabah.setText("")
+        viewModel.setSearchQuery("")
+        hideKeyboard(binding.searchNasabah)
+        binding.searchNasabah.clearFocus()
+    }
+
 
     private fun setupSpinnerFilterTransaksi() {
         binding.spinnerFilterTransaksi.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -155,7 +175,10 @@ class BerandaFragment : Fragment(), Reloadable {
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
             if (binding.searchNasabah.hasFocus()) {
                 binding.searchNasabah.clearFocus()
-                binding.scrollView.scrollTo(0, 0)
+                // Kembalikan appbar ke posisi terbuka dan scroll RV ke atas
+                binding.appbar.setExpanded(true, true)
+                binding.rvListNasabah.stopScroll()
+                binding.rvListNasabah.smoothScrollToPosition(0)
                 hideKeyboard(binding.searchNasabah)
             } else {
                 isEnabled = false
@@ -291,6 +314,7 @@ class BerandaFragment : Fragment(), Reloadable {
     ) {
         val dateRangePicker = MaterialDatePicker.Builder.dateRangePicker()
             .setTitleText(title)
+            .setTheme(R.style.ThemeOverlay_App_DatePicker)
             .build()
 
         dateRangePicker.show(parentFragmentManager, "DATE_RANGE_PICKER")
@@ -313,16 +337,20 @@ class BerandaFragment : Fragment(), Reloadable {
             searchNasabah.clearFocus()
             tvTanggalTransaksi.gone()
             tvTanggalSetoran.gone()
-            scrollView.post { scrollView.scrollTo(0, 0) }
+
+            // Expand header & scroll list ke atas biar state bersih
+            appbar.setExpanded(true, true)
+            rvListNasabah.stopScroll()
+            rvListNasabah.smoothScrollToPosition(0)
+
             suppressSpinnerEvent = true
             spinnerFilterTransaksi.setSelection(0)
             val filter0 = spinnerFilterTransaksi.selectedItem?.toString().orEmpty()
             suppressSpinnerEvent = false
 
-            // panggil manual supaya pasti refresh transaksi
             viewModel.getTotalTransaksi(filter0)
-
         }
+
         pagingAdapter.refresh()
         viewModel.fetchDashboardData()
     }

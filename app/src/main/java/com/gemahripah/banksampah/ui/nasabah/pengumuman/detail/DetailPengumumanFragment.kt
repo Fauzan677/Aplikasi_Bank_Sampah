@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -45,6 +46,10 @@ class DetailPengumumanFragment : Fragment(), Reloadable {
 
         binding.edit.visibility = View.GONE
         binding.hapus.visibility = View.GONE
+
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
 
         showLoading(true)
         reloadData()

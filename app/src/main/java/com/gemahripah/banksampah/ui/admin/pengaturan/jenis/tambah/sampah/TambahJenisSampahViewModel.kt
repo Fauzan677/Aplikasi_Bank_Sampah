@@ -92,26 +92,52 @@ class TambahJenisSampahViewModel : ViewModel() {
         }
     }
 
+    private suspend fun isKodeDipakai(kode: String): Boolean = withContext(Dispatchers.IO) {
+        if (kode.isBlank()) return@withContext false
+        try {
+            client.from("sampah")
+                .select(columns = Columns.list("sphKode")) {
+                    filter { ilike("sphKode", kode.trim().uppercase()) }
+                }
+                .decodeList<Sampah>()
+                .isNotEmpty()
+        } catch (_: Exception) { false }
+    }
+
     /** Validasi + insert data. Semua di background, aman lifecycle. */
-    fun submit(jenis: String, satuan: String, harga: Double?, keterangan: String?) {
+    fun submit(
+        jenis: String,
+        kode: String?,                  // <-- baru
+        satuan: String,
+        harga: Long?,                   // <-- sesuaikan dengan toLongOrNull() di Fragment
+        keterangan: String?
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
             try {
                 val ktgId = selectedKategoriId
                 if (ktgId == null) {
                     _toast.emit("Silakan pilih kategori transaksi")
-                    _isLoading.value = false
                     return@launch
                 }
                 if (jenis.isBlank() || satuan.isBlank() || harga == null) {
                     _toast.emit("Isi semua data dengan benar")
-                    _isLoading.value = false
                     return@launch
                 }
 
+                // Normalisasi & cek unik kode (jika diisi)
+                val kodeFix = kode?.trim()?.uppercase()?.ifBlank { null }
+                if (!kodeFix.isNullOrEmpty() && isKodeDipakai(kodeFix)) {
+                    _toast.emit("Kode sudah digunakan")
+                    return@launch
+                }
+
+                // (opsional) kalau mau batasi panjang/karakter:
+                // if (!kodeFix.isNullOrEmpty() && kodeFix.length > 20) { ... }
+
+                // Cek duplikat jenis (logika lama kamu)
                 if (isJenisDipakai(jenis)) {
                     _toast.emit("Jenis sampah sudah digunakan, gunakan nama lain")
-                    _isLoading.value = false
                     return@launch
                 }
 
@@ -119,8 +145,9 @@ class TambahJenisSampahViewModel : ViewModel() {
                     sphKtgId = ktgId,
                     sphJenis = jenis.trim(),
                     sphSatuan = satuan.trim(),
-                    sphHarga = harga,
-                    sphKeterangan = keterangan?.ifBlank { null }
+                    sphHarga  = harga,
+                    sphKeterangan = keterangan?.ifBlank { null },
+                    sphKode = kodeFix                  // <-- simpan kode
                 )
 
                 client.postgrest["sampah"].insert(data)
@@ -128,8 +155,6 @@ class TambahJenisSampahViewModel : ViewModel() {
                 _toast.emit("Jenis sampah berhasil ditambahkan")
                 _navigateBack.emit(Unit)
 
-            } catch (ce: CancellationException) {
-                throw ce
             } catch (_: Exception) {
                 _toast.emit("Gagal menambahkan data, periksa koneksi internet")
             } finally {

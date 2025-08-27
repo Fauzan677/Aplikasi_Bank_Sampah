@@ -9,9 +9,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class TransaksiRelasi(
     val tskId: Long? = null,
-    val created_at: String? = null,
-    val tskIdPengguna: Pengguna? = null,
-    val tskGambar: String? = null,
+    val created_at: String? = null,          // date (yyyy-MM-dd)
+    val tskIdPengguna: Pengguna? = null,     // relasi pengguna
     val tskKeterangan: String? = null,
-    val tskTipe: String? = null,
+    val tskTipe: String? = null              // "Masuk" / "Keluar"
 ) : Parcelable

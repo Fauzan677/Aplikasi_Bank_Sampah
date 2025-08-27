@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gemahripah.banksampah.data.model.sampah.Kategori
+import com.gemahripah.banksampah.data.model.sampah.gabungan.SampahRelasi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -30,6 +32,9 @@ class EditKategoriViewModel : ViewModel() {
 
     private val _navigateBack = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val navigateBack: SharedFlow<Unit> = _navigateBack
+
+    private val _inUse = MutableStateFlow<Boolean?>(null)
+    val inUse: StateFlow<Boolean?> = _inUse.asStateFlow()
 
     // Data awal
     private var original: Kategori? = null
@@ -134,4 +139,23 @@ class EditKategoriViewModel : ViewModel() {
                 false
             }
         }
+
+    fun checkRelasiSampah() {
+        val id = original?.ktgId ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val list = client
+                    .from("sampah")
+                    .select(columns = Columns.list("sphId")) {
+                        filter { eq("sphKtgId", id) }
+                        limit(1) // cukup tahu eksistensi
+                    }
+                    .decodeList<SampahRelasi>()  // ← pakai model yang ada
+
+                _inUse.value = list.isNotEmpty()
+            } catch (e: Exception) {
+                _inUse.value = null  // konservatif: anggap tidak aman menghapus
+            }
+        }
+    }
 }

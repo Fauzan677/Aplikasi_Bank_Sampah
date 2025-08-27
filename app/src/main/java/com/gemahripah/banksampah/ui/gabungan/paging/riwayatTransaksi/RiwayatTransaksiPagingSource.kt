@@ -12,7 +12,10 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -21,6 +24,14 @@ class RiwayatTransaksiPagingSource(
     private val startDate: String? = null,
     private val endDate: String? = null
 ) : PagingSource<Int, RiwayatTransaksi>() {
+
+    private fun Any?.toBigDecimalOrNull(): BigDecimal? = when (this) {
+        null -> null
+        is BigDecimal -> this
+        is Number -> BigDecimal(this.toString())
+        is String -> this.takeIf { it.isNotBlank() }?.let { BigDecimal(it) }
+        else -> runCatching { BigDecimal(toString()) }.getOrNull()
+    }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, RiwayatTransaksi> {
         val page = params.key ?: 0
@@ -58,28 +69,39 @@ class RiwayatTransaksiPagingSource(
                     SupabaseProvider.client.postgrest.rpc(
                         "hitung_total_jumlah",
                         buildJsonObject { put("tsk_id_input", transaksi.tskId!!) }
-                    ).data.toDoubleOrNull()
+                    ).data.toBigDecimalOrNull()
                 } else null
 
                 val totalHarga = if (transaksi.tskTipe == "Keluar") {
                     SupabaseProvider.client.from("detail_transaksi")
                         .select { filter { eq("dtlTskId", transaksi.tskId!!) } }
                         .decodeList<DetailTransaksi>()
-                        .sumOf { it.dtlJumlah ?: 0.0 }
+                        .fold(BigDecimal.ZERO) { acc, row -> acc + (row.dtlNominal ?: BigDecimal.ZERO) }
                 } else {
                     SupabaseProvider.client.postgrest.rpc(
                         "hitung_total_harga",
                         buildJsonObject { put("tsk_id_input", transaksi.tskId!!) }
-                    ).data.toDoubleOrNull()
+                    ).data.toBigDecimalOrNull()
                 }
 
                 val (tanggalFormatted, hari) = try {
-                    val dateTime = OffsetDateTime.parse(transaksi.created_at)
-                    val tanggalFormat = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id"))
-                    val hariFormat = DateTimeFormatter.ofPattern("EEEE", Locale("id"))
-                    dateTime.format(tanggalFormat) to dateTime.format(hariFormat)
+                    val iso = transaksi.created_at ?: ""
+                    val odt = OffsetDateTime.parse(iso)
+                    val local = odt.atZoneSameInstant(ZoneId.systemDefault())
+
+                    val fmtTanggal = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id","ID"))
+                    val fmtHari    = DateTimeFormatter.ofPattern("EEEE",        Locale("id","ID"))
+                    val fmtJam     = DateTimeFormatter.ofPattern("HH.mm",       Locale("id","ID"))
+
+                    "${local.format(fmtTanggal)}, ${local.format(fmtJam)}" to local.format(fmtHari)
                 } catch (e: Exception) {
-                    "Tanggal tidak valid" to "Hari tidak valid"
+                    // fallback kalau ada data lama yang masih "YYYY-MM-DD"
+                    transaksi.created_at?.take(10)?.let { onlyDate ->
+                        val ld = LocalDate.parse(onlyDate)
+                        val fmtTanggal = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("id","ID"))
+                        val fmtHari    = DateTimeFormatter.ofPattern("EEEE",        Locale("id","ID"))
+                        ld.format(fmtTanggal) to ld.format(fmtHari)
+                    } ?: ("Tanggal tidak valid" to "Hari tidak valid")
                 }
 
                 RiwayatTransaksi(

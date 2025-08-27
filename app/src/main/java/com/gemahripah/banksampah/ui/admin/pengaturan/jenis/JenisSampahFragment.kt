@@ -38,6 +38,10 @@ class JenisSampahFragment : Fragment(), Reloadable {
         observeKategoriList()
         setupClickListeners()
 
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
         binding.swipeRefresh.setOnRefreshListener {
             reloadData()
         }

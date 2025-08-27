@@ -1,5 +1,6 @@
 package com.gemahripah.banksampah.ui.admin.transaksi.detail
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,7 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.databinding.FragmentDetailTransaksiBinding
 import com.gemahripah.banksampah.ui.admin.AdminActivity
@@ -22,6 +23,8 @@ import com.gemahripah.banksampah.ui.gabungan.adapter.transaksi.DetailTransaksiAd
 import com.gemahripah.banksampah.utils.NetworkUtil
 import com.gemahripah.banksampah.utils.Reloadable
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -32,6 +35,16 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
 
     private val args: DetailTransaksiFragmentArgs by navArgs()
     private val viewModel: DetailTransaksiViewModel by viewModels()
+
+    private var latestKeterangan: String? = null
+    private var latestTotalNominal: BigDecimal? = null
+
+
+    private val nf2 = NumberFormat.getNumberInstance(Locale("id","ID")).apply {
+        minimumFractionDigits = 2
+        maximumFractionDigits = 2
+        roundingMode = RoundingMode.HALF_UP
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -46,22 +59,25 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
         observeUiState()
         setupClickListeners()
 
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
         binding.swipeRefresh.setOnRefreshListener {
             if (!updateInternetCard()) return@setOnRefreshListener
             reloadData()
             binding.swipeRefresh.isRefreshing = false
         }
-
-        if (!updateInternetCard()) return
-        viewModel.getDetailTransaksi(args.riwayat.tskId)
     }
 
+    @SuppressLint("SetTextI18n")
     private fun setupUI() {
         val riwayat = args.riwayat
 
         binding.nama.text = riwayat.nama
         binding.tanggal.text = riwayat.tanggal
-        val formattedHarga = NumberFormat.getNumberInstance(Locale("in", "ID")).format(riwayat.totalHarga)
+
+        val formattedHarga = nf2.format(riwayat.totalHarga ?: BigDecimal.ZERO)
         binding.nominal.text = "Rp $formattedHarga"
 
         if (riwayat.tskKeterangan.isNullOrBlank()) {
@@ -72,11 +88,10 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
             binding.keterangan.visibility = View.VISIBLE
         }
 
-        if (riwayat.tipe.lowercase() == "keluar") {
+        if (riwayat.tipe.equals("keluar", ignoreCase = true)) {
             binding.detail.visibility = View.GONE
             binding.rvDetail.visibility = View.GONE
-            binding.jenis.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color
-                .merah))
+            binding.jenis.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.merah))
             binding.transaksi.text = "Transaksi Keluar"
         } else {
             binding.jenis.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.hijau))
@@ -98,22 +113,45 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
                         is DetailTransaksiUiState.Loading -> Unit
 
                         is DetailTransaksiUiState.Success -> {
+                            // set adapter seperti biasa
                             binding.rvDetail.apply {
-                                layoutManager = GridLayoutManager(requireContext(), 2)
+                                layoutManager = LinearLayoutManager(requireContext())
                                 adapter = DetailTransaksiAdapter(state.data)
                             }
 
+                            val totalNominal = state.data.fold(BigDecimal.ZERO) { acc, d ->
+                                acc + (d.dtlNominal ?: BigDecimal.ZERO)
+                            }
+                            binding.nominal.text = "Rp ${nf2.format(totalNominal)}"
+                            latestTotalNominal = totalNominal
+
+                            val ketBaru = state.data.firstOrNull()?.dtlTskId?.tskKeterangan
+                            latestKeterangan = ketBaru
+                            if (ketBaru.isNullOrBlank()) {
+                                binding.keterangan.visibility = View.GONE
+                                binding.textKosongKeterangan.visibility = View.VISIBLE
+                            } else {
+                                binding.keterangan.text = ketBaru
+                                binding.keterangan.visibility = View.VISIBLE
+                                binding.textKosongKeterangan.visibility = View.GONE
+                            }
+
                             binding.edit.setOnClickListener {
-                                val action = if (args.riwayat.tipe.lowercase() == "masuk") {
+                                val riwayatUpdated = args.riwayat.copy(
+                                    tskKeterangan = latestKeterangan,
+                                    totalHarga    = latestTotalNominal
+                                )
+
+                                val action = if (riwayatUpdated.tipe.lowercase() == "masuk") {
                                     DetailTransaksiFragmentDirections
                                         .actionDetailTransaksiFragmentToEditTransaksiMasukFragment(
-                                            riwayat = args.riwayat,
+                                            riwayat = riwayatUpdated,
                                             enrichedList = state.data.toTypedArray()
                                         )
                                 } else {
                                     DetailTransaksiFragmentDirections
                                         .actionDetailTransaksiFragmentToEditTransaksiKeluarFragment(
-                                            riwayat = args.riwayat,
+                                            riwayat = riwayatUpdated,
                                             enrichedList = state.data.toTypedArray()
                                         )
                                 }
@@ -161,6 +199,12 @@ class DetailTransaksiFragment : Fragment(), Reloadable {
         if (!updateInternetCard()) return
         viewModel.getDetailTransaksi(args.riwayat.tskId)
         binding.swipeRefresh.isRefreshing = false
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!updateInternetCard()) return
+        viewModel.getDetailTransaksi(args.riwayat.tskId)
     }
 
     override fun onDestroyView() {

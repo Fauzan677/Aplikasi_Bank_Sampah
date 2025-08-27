@@ -18,10 +18,12 @@ import androidx.navigation.fragment.navArgs
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.data.model.sampah.Kategori
 import com.gemahripah.banksampah.data.model.sampah.Sampah
+import com.gemahripah.banksampah.data.model.sampah.gabungan.SampahRelasi
 import com.gemahripah.banksampah.databinding.FragmentTambahJenisSampahBinding
 import com.gemahripah.banksampah.ui.admin.AdminActivity
 import com.gemahripah.banksampah.utils.NetworkUtil
 import kotlinx.coroutines.launch
+
 
 class EditJenisSampahFragment : Fragment() {
 
@@ -35,12 +37,20 @@ class EditJenisSampahFragment : Fragment() {
     private var satuanAdapter: ArrayAdapter<String>? = null
     private var kategoriList: List<Kategori> = emptyList()
 
+    private var lastLoading = false
+    private var canDeleteByUsage = true
+
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         _binding = FragmentTambahJenisSampahBinding.inflate(inflater, container, false)
         return binding.root
+    }
+
+    private fun applyDeleteEnabled() {
+        val enabled = !lastLoading && canDeleteByUsage
+        binding.hapus.isEnabled = enabled
+        binding.hapus.alpha = if (enabled) 1f else 0.5f
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -48,26 +58,30 @@ class EditJenisSampahFragment : Fragment() {
 
         binding.judul.text = "Edit Jenis Sampah"
 
-        val data = args.kategoridanSampah
-        val sampah: Sampah = data.sampah
-        val namaKategoriAwal: String = data.namaKategori.toString()
+        binding.btnBack.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
+        val relasi: SampahRelasi = args.SampahRelasi
+        val namaKategoriAwal = relasi.sphKtgId?.ktgNama.orEmpty()
 
         // Prefill form UI
         binding.kategori.setText(namaKategoriAwal, false)
-        binding.jenis.setText(sampah.sphJenis)
-        binding.satuan.setText(sampah.sphSatuan)
-        binding.harga.setText(sampah.sphHarga?.toLong()?.toString() ?: "")
-        binding.keterangan.setText(sampah.sphKeterangan ?: "")
+        binding.jenis.setText(relasi.sphJenis ?: "")
+        binding.kode.setText(relasi.sphKode ?: "")
+        binding.satuan.setText(relasi.sphSatuan ?: "")
+        binding.harga.setText(relasi.sphHarga?.toString() ?: "")
+        binding.keterangan.setText(relasi.sphKeterangan ?: "")
 
-        // Init VM state
-        vm.initFromArgs(sampah, namaKategoriAwal)
+        // Init VM state dari relasi
+        vm.initFromArgs(relasi)
 
         setupDropdownInteractions()
         setupButtons()
-
         collectVm()
 
         if (!updateInternetCard()) return
+        vm.checkUsedInDetail(relasi.sphId)
         vm.loadKategori()
         vm.loadDistinctSatuan()
     }
@@ -76,7 +90,13 @@ class EditJenisSampahFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 // Loading
-                launch { vm.isLoading.collect { showLoading(it) } }
+                launch {
+                    vm.isLoading.collect {
+                        lastLoading = it
+                        showLoading(it)
+                        applyDeleteEnabled()
+                    }
+                }
 
                 // Toast
                 launch { vm.toast.collect { Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show() } }
@@ -86,11 +106,14 @@ class EditJenisSampahFragment : Fragment() {
                     vm.kategoriList.collect { list ->
                         kategoriList = list
                         val names = list.mapNotNull { it.ktgNama }
-                        kategoriAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, names)
+                        kategoriAdapter = ArrayAdapter(
+                            requireContext(),
+                            android.R.layout.simple_dropdown_item_1line,
+                            names
+                        )
                         binding.kategori.setAdapter(kategoriAdapter)
                         binding.kategori.threshold = 0
 
-                        // sinkronkan pilihan id bila perlu
                         val current = binding.kategori.text?.toString()
                         if (!current.isNullOrBlank()) {
                             val id = list.find { it.ktgNama == current }?.ktgId
@@ -102,9 +125,20 @@ class EditJenisSampahFragment : Fragment() {
                 // Satuan list
                 launch {
                     vm.satuanList.collect { list ->
-                        satuanAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, list)
+                        satuanAdapter = ArrayAdapter(
+                            requireContext(),
+                            android.R.layout.simple_dropdown_item_1line,
+                            list
+                        )
                         binding.satuan.setAdapter(satuanAdapter)
                         binding.satuan.threshold = 1
+                    }
+                }
+
+                launch {
+                    vm.usedInDetail.collect { inUse ->
+                        canDeleteByUsage = (inUse == false)
+                        applyDeleteEnabled()
                     }
                 }
 
@@ -149,10 +183,11 @@ class EditJenisSampahFragment : Fragment() {
     private fun setupButtons() {
         binding.konfirmasi.setOnClickListener {
             val jenis = binding.jenis.text.toString().trim()
+            val kode  = binding.kode.text.toString().trim()
             val satuan = binding.satuan.text.toString().trim()
             val harga = binding.harga.text.toString().toLongOrNull()
             val ket = binding.keterangan.text.toString().trim()
-            vm.submitUpdate(jenis, satuan, harga, ket)
+            vm.submitUpdate(jenis, kode, satuan, harga, ket)
         }
 
         binding.hapus.setOnClickListener {
@@ -175,7 +210,6 @@ class EditJenisSampahFragment : Fragment() {
         binding.loading.visibility = if (isLoading) View.VISIBLE else View.GONE
         binding.layoutKonten.alpha = if (isLoading) 0.3f else 1f
         binding.konfirmasi.isEnabled = !isLoading
-        binding.hapus.isEnabled = !isLoading
     }
 
     private fun hideKeyboard() {
