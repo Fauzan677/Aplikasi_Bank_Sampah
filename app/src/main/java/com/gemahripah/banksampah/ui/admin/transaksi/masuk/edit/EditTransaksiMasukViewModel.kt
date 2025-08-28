@@ -52,13 +52,15 @@ class EditTransaksiMasukViewModel : ViewModel() {
                 val data = client.from("sampah").select().decodeList<Sampah>()
 
                 val listJenis = data.mapNotNull { it.sphJenis?.takeIf { s -> s.isNotBlank() } }
-                _jenisList.value = listJenis
 
                 _namaToIdMap.value      = data.associate { (it.sphJenis ?: "Unknown") to (it.sphId ?: 0L) }
                 _jenisToSatuanMap.value = data.associate { (it.sphJenis ?: "Unknown") to (it.sphSatuan ?: "Unit") }
                 _jenisToHargaMap.value  = data.associate {
                     (it.sphJenis ?: "Unknown") to BigDecimal.valueOf((it.sphHarga ?: 0L).toLong())
                 }
+
+                // <- set ini TERAKHIR supaya prefill dapat map yang sudah terisi
+                _jenisList.value = listJenis
             } catch (e: Exception) {
                 viewModelScope.launch { _toast.emit("Gagal memuat jenis transaksi") }
             } finally {
@@ -68,7 +70,11 @@ class EditTransaksiMasukViewModel : ViewModel() {
     }
 
     /** Satuan untuk label jumlah */
-    fun getSatuan(jenis: String?): String = jenisToSatuanMap.value[jenis] ?: "Unit"
+    fun getSatuan(jenis: String?): String {
+        val j = jenis ?: return "Unit"
+        val map = jenisToSatuanMap.value
+        return map[j] ?: map.entries.firstOrNull { it.key.equals(j, true) }?.value ?: "Unit"
+    }
 
     fun getAvailableJenis(currentJenis: String?, selectedSemua: Set<String>): List<String> {
         val all = jenisList.value

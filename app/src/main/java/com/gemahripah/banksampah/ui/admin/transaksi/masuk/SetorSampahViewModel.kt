@@ -51,17 +51,13 @@ class SetorSampahViewModel : ViewModel() {
     fun loadSampah() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val data = SupabaseProvider.client
-                    .from("sampah")
-                    .select()
-                    .decodeList<Sampah>()
+                val data = SupabaseProvider.client.from("sampah").select().decodeList<Sampah>()
 
-                namaToIdMap       = data.associate { (it.sphJenis ?: "Unknown") to (it.sphId ?: 0L) }
-                jenisToSatuanMap  = data.associate { (it.sphJenis ?: "Unknown") to (it.sphSatuan ?: "Unit") }
-                jenisToHargaMap   = data.associate { (it.sphJenis ?: "Unknown") to
+                namaToIdMap      = data.associate { (it.sphJenis?.lowercase() ?: "") to (it.sphId ?: 0L) }
+                jenisToSatuanMap = data.associate { (it.sphJenis?.lowercase() ?: "") to (it.sphSatuan ?: "Unit") }
+                jenisToHargaMap  = data.associate { (it.sphJenis?.lowercase() ?: "") to
                         BigDecimal.valueOf((it.sphHarga ?: 0).toLong())
                 }
-
                 _sampahList.value = data
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -93,9 +89,10 @@ class SetorSampahViewModel : ViewModel() {
 
                     // 2) hitung & insert detail
                     val (jenisUtama, jumlahUtama) = inputUtama
-                    val sphIdUtama   = namaToIdMap[jenisUtama] ?: error("Jenis tidak ditemukan")
-                    val hargaUtama   = jenisToHargaMap[jenisUtama] ?: BigDecimal.ZERO
-                    val nominalUtama = jumlahUtama.multiply(hargaUtama)
+                    val keyUtama   = jenisUtama.lowercase()
+                    val sphIdUtama = namaToIdMap[keyUtama] ?: error("Jenis tidak ditemukan")
+                    val hargaUtama = jenisToHargaMap[keyUtama] ?: BigDecimal.ZERO
+                    val nominalUtama = jumlahUtama * hargaUtama
 
                     SupabaseProvider.client.from("detail_transaksi").insert(
                         DetailTransaksi(
@@ -109,20 +106,17 @@ class SetorSampahViewModel : ViewModel() {
                     var totalNominal = nominalUtama
 
                     val bulk = inputTambahan.mapNotNull { (jenis, jumlah) ->
-                        val id = namaToIdMap[jenis] ?: return@mapNotNull null
+                        val key = jenis.lowercase()
+                        val id = namaToIdMap[key] ?: return@mapNotNull null
                         if (jumlah <= BigDecimal.ZERO) return@mapNotNull null
 
-                        val harga   = jenisToHargaMap[jenis] ?: BigDecimal.ZERO
-                        val nominal = jumlah.multiply(harga)
-                        totalNominal = totalNominal.add(nominal)
+                        val harga   = jenisToHargaMap[key] ?: BigDecimal.ZERO
+                        val nominal = jumlah * harga
+                        totalNominal += nominal
 
-                        DetailTransaksi(
-                            dtlTskId = transaksiId,
-                            dtlSphId = id,
-                            dtlJumlah = jumlah,
-                            dtlNominal = nominal
-                        )
+                        DetailTransaksi(dtlTskId = transaksiId, dtlSphId = id, dtlJumlah = jumlah, dtlNominal = nominal)
                     }
+
                     if (bulk.isNotEmpty()) {
                         SupabaseProvider.client.from("detail_transaksi").insert(bulk)
                     }

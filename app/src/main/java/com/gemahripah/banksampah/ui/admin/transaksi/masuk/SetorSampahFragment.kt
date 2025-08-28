@@ -124,11 +124,13 @@ class SetorSampahFragment : Fragment(), Reloadable {
             setOnTouchListener(null)
 
             addTextChangedListener(onTextChanged = { text, _, _, _ ->
+                viewModel.selectedUserId = null
+
                 if (hasFocus()) {
                     if (text.isNullOrEmpty()) {
                         dismissDropDown()
-                    } else {
-                        if (!isPopupShowing) showDropDown()
+                    } else if (!isPopupShowing) {
+                        showDropDown()
                     }
                 }
             })
@@ -170,8 +172,8 @@ class SetorSampahFragment : Fragment(), Reloadable {
             }
 
             setOnItemClickListener { parent, _, position, _ ->
-                val selectedJenis = parent.getItemAtPosition(position) as String  // adapter aktif
-                val satuan = viewModel.jenisToSatuanMap[selectedJenis] ?: "Unit"
+                val selectedJenis = parent.getItemAtPosition(position) as String
+                val satuan = viewModel.jenisToSatuanMap[selectedJenis.lowercase()] ?: "Unit"
                 binding.jumlahLabel1.text = "Jumlah Setor ($satuan)"
                 updateAllAdapters()
             }
@@ -207,19 +209,39 @@ class SetorSampahFragment : Fragment(), Reloadable {
         val tambahan: List<Pair<String, BigDecimal>>,
     )
 
+    @SuppressLint("SetTextI18n")
     private fun validateAndBuildInput(): InputData? {
-        val userId = viewModel.selectedUserId
-        val keterangan = binding.keterangan.text.toString()
+        val namaInput = binding.nama.text.toString().trim()
 
+        var userId = viewModel.selectedUserId
         if (userId == null) {
-            requireContext().toast("Silakan pilih nama nasabah dari daftar")
+            val p = canonicalPenggunaByNameOrNull(namaInput)
+            if (p != null && !p.pgnId.isNullOrBlank()) {
+                // pakai ejaan resmi + set user id
+                binding.nama.setText(p.pgnNama, false)
+                viewModel.selectedUserId = p.pgnId
+                userId = p.pgnId
+            }
+        }
+
+        val keterangan = binding.keterangan.text.toString()
+        if (userId == null) {
+            requireContext().toast("Silakan pilih nama nasabah dari daftar atau ketik sesuai nama yang terdaftar")
             return null
         }
 
-        val jenisUtama = binding.jenis1.text.toString()
-        if (jenisUtama.isBlank() || !isInAdapter(binding.jenis1, jenisUtama)) {
-            requireContext().toast("Pilih jenis sampah dari daftar")
+        // --- Jenis utama ---
+        val jenisUtamaInput = binding.jenis1.text.toString().trim()
+
+        val jenisUtama = canonicalJenisOrNull(jenisUtamaInput) ?: run {
+            requireContext().toast("Jenis sampah tidak valid. Pilih dari daftar atau ketik sesuai nama yang ada")
             return null
+        }
+
+        if (!jenisUtama.equals(jenisUtamaInput, ignoreCase = true)) {
+            binding.jenis1.setText(jenisUtama, false)
+            val satuan = viewModel.jenisToSatuanMap[jenisUtama.lowercase()] ?: "Unit"
+            binding.jumlahLabel1.text = "Jumlah Setor ($satuan)"
         }
 
         val jumlahUtama = binding.jumlah1.text.toString().toBigDecimalFlexible()
@@ -228,13 +250,21 @@ class SetorSampahFragment : Fragment(), Reloadable {
             return null
         }
 
+        // === Item tambahan ===
         val tambahan = mutableListOf<Pair<String, BigDecimal>>()
         tambahanSampahList.forEachIndexed { index, item ->
-            val jenis = item.autoCompleteJenis.text.toString()
-            if (jenis.isBlank() || !isInAdapter(item.autoCompleteJenis, jenis)) {
-                requireContext().toast("Jenis sampah ${index + 2} tidak valid. Pilih dari daftar")
+            val raw = item.autoCompleteJenis.text.toString().trim()
+            val jenis = canonicalJenisOrNull(raw) ?: run {
+                requireContext().toast("Jenis sampah ${index + 2} tidak valid. Pilih dari daftar atau ketik sesuai nama yang ada")
                 return null
             }
+
+            if (!jenis.equals(raw, ignoreCase = true)) {
+                item.autoCompleteJenis.setText(jenis, false)
+                val satuan = viewModel.jenisToSatuanMap[jenis.lowercase()] ?: "Unit"
+                item.jumlahSetorLabel.text = "Jumlah Setor ${index + 2} ($satuan)"
+            }
+
             val jumlah = item.editTextJumlah.text.toString().toBigDecimalFlexible()
             if (jumlah == null || jumlah <= BigDecimal.ZERO) {
                 requireContext().toast("Jumlah sampah ${index + 2} harus lebih dari 0")
@@ -279,8 +309,8 @@ class SetorSampahFragment : Fragment(), Reloadable {
             }
 
             setOnItemClickListener { parent, _, position, _ ->
-                val jenis = parent.getItemAtPosition(position) as String          // adapter aktif
-                val satuan = viewModel.jenisToSatuanMap[jenis] ?: "Unit"
+                val jenis = parent.getItemAtPosition(position) as String
+                val satuan = viewModel.jenisToSatuanMap[jenis.lowercase()] ?: "Unit"
                 itemBinding.jumlahSetorLabel.text = "Jumlah Setor ($satuan)"
                 updateAllAdapters()
             }
@@ -383,6 +413,24 @@ class SetorSampahFragment : Fragment(), Reloadable {
         }
         return false
     }
+
+    /** Kembalikan object Pengguna dengan ejaan nama resmi (case-insensitive), atau null jika tidak ada. */
+    private fun canonicalPenggunaByNameOrNull(input: String): Pengguna? {
+        if (input.isBlank()) return null
+        val v = input.trim()
+        return viewModel.penggunaList.value
+            .firstOrNull { it.pgnNama?.equals(v, ignoreCase = true) == true }
+    }
+
+    /** Kembalikan ejaan resmi jenis sampah dari master (case-insensitive), atau null jika tidak ada. */
+    private fun canonicalJenisOrNull(input: String): String? {
+        if (input.isBlank()) return null
+        val v = input.trim()
+        return viewModel.sampahList.value
+            .mapNotNull { it.sphJenis }
+            .firstOrNull { it.equals(v, ignoreCase = true) }
+    }
+
 
     private fun String.toBigDecimalFlexible(): BigDecimal? =
         this.trim()

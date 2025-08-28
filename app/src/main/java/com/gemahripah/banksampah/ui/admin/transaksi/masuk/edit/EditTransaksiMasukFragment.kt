@@ -147,13 +147,17 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
             val jenis = item.dtlSphId?.sphJenis.orEmpty()
             val jumlah = item.dtlJumlah
 
-            inputView.autoCompleteJenis.post {
-                inputView.autoCompleteJenis.setText(jenis, false)
-                inputView.editTextJumlah.setText(jumlah.toString())
-                updateAllAdapters()
-            }
+            inputView.autoCompleteJenis.setText(jenis, false)
+            inputView.editTextJumlah.setText(jumlah.toString())
+
+            val idx = tambahanSampahList.indexOf(inputView) // 0 untuk baris tambahan pertama
+            inputView.jumlahSetorLabel.text =
+                "Jumlah Setor ${idx + 2} (${vm.getSatuan(jenis)})"
+
+            updateAllAdapters()
         }
     }
+
 
     // --- Adapters ---
     @SuppressLint("ClickableViewAccessibility", "SetTextI18n")
@@ -293,10 +297,16 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
             return
         }
 
-        val jenisUtama = binding.jenis1.text.toString()
-        if (jenisUtama.isBlank() || !isInAdapter(binding.jenis1, jenisUtama)) {
-            requireContext().toast("Pilih jenis sampah dari daftar")
+        // === Jenis utama (kanonisasi) ===
+        val jenisUtamaInput = binding.jenis1.text.toString().trim()
+        val jenisUtama = canonicalJenisOrNull(jenisUtamaInput) ?: run {
+            requireContext().toast("Jenis sampah tidak valid. Pilih dari daftar atau ketik sesuai nama yang ada")
             return
+        }
+        // Sinkronkan tampilan & label satuan bila ejaan berubah
+        if (!jenisUtama.equals(jenisUtamaInput, ignoreCase = true)) {
+            binding.jenis1.setText(jenisUtama, false)
+            binding.jumlahLabel1.text = "Jumlah Setor (${vm.getSatuan(jenisUtama)})"
         }
 
         val jumlahUtama = binding.jumlah1.text.toString().toBigDecimalFlexible()
@@ -305,13 +315,19 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
             return
         }
 
+        // === Item tambahan (kanonisasi per-baris) ===
         val tambahan = mutableListOf<Pair<String, BigDecimal>>()
         tambahanSampahList.forEachIndexed { idx, item ->
-            val jenis = item.autoCompleteJenis.text.toString()
-            if (jenis.isBlank() || !isInAdapter(item.autoCompleteJenis, jenis)) {
-                requireContext().toast("Jenis sampah ${idx + 2} tidak valid. Pilih dari daftar")
+            val raw = item.autoCompleteJenis.text.toString().trim()
+            val jenis = canonicalJenisOrNull(raw) ?: run {
+                requireContext().toast("Jenis sampah ${idx + 2} tidak valid. Pilih dari daftar atau ketik sesuai nama yang ada")
                 return
             }
+            if (!jenis.equals(raw, ignoreCase = true)) {
+                item.autoCompleteJenis.setText(jenis, false)
+                item.jumlahSetorLabel.text = "Jumlah Setor ${idx + 2} (${vm.getSatuan(jenis)})"
+            }
+
             val jumlah = item.editTextJumlah.text.toString().toBigDecimalFlexible()
             if (jumlah == null || jumlah <= BigDecimal.ZERO) {
                 requireContext().toast("Jumlah sampah ${idx + 2} harus lebih dari 0")
@@ -320,6 +336,7 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
             tambahan += jenis to jumlah
         }
 
+        // Submit dengan ejaan resmi (match key di VM)
         vm.submitEditTransaksiMasuk(
             transaksiId = args.riwayat.tskId,
             userId = userId,
@@ -362,6 +379,13 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
             if (item.equals(v, ignoreCase = true)) return true
         }
         return false
+    }
+
+    /** Ambil ejaan resmi jenis (case-insensitive) dari VM, atau null jika tak ada. */
+    private fun canonicalJenisOrNull(input: String): String? {
+        if (input.isBlank()) return null
+        val v = input.trim()
+        return vm.jenisList.value.firstOrNull { it.equals(v, ignoreCase = true) }
     }
 
     private fun String.toBigDecimalFlexible(): BigDecimal? =
