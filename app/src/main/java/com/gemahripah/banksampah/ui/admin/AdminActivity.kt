@@ -39,7 +39,7 @@ class AdminActivity : AppCompatActivity() {
             showLoading(true)
 
             lifecycleScope.launch {
-                kotlinx.coroutines.delay(1000)
+                delay(1000)
                 if (NetworkUtil.isInternetAvailable(this@AdminActivity)) {
                     showNoInternetCard(false)
                     (navHostFragment.childFragmentManager.primaryNavigationFragment as? Reloadable)

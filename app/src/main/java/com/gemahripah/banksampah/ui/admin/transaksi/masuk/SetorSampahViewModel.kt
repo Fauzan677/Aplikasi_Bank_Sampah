@@ -28,9 +28,9 @@ class SetorSampahViewModel : ViewModel() {
     val sampahList: StateFlow<List<Sampah>> get() = _sampahList
 
     var selectedUserId: String? = null
-    var namaToIdMap: Map<String, Long> = emptyMap()
+    private var namaToIdMap: Map<String, Long> = emptyMap()
     var jenisToSatuanMap: Map<String, String> = emptyMap()
-    var jenisToHargaMap: Map<String, BigDecimal> = emptyMap()
+    private var jenisToHargaMap: Map<String, BigDecimal> = emptyMap()
 
     fun loadPengguna() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -110,7 +110,7 @@ class SetorSampahViewModel : ViewModel() {
 
                     val bulk = inputTambahan.mapNotNull { (jenis, jumlah) ->
                         val id = namaToIdMap[jenis] ?: return@mapNotNull null
-                        if (jumlah.compareTo(BigDecimal.ZERO) <= 0) return@mapNotNull null
+                        if (jumlah <= BigDecimal.ZERO) return@mapNotNull null
 
                         val harga   = jenisToHargaMap[jenis] ?: BigDecimal.ZERO
                         val nominal = jumlah.multiply(harga)

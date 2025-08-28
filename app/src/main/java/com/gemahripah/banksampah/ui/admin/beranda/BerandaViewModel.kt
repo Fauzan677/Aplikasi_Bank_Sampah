@@ -44,7 +44,7 @@ class BerandaViewModel : ViewModel() {
     }
 
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery
+    private val searchQuery: StateFlow<String> = _searchQuery
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
@@ -71,7 +71,7 @@ class BerandaViewModel : ViewModel() {
         getTotalSetoran()
     }
 
-    fun getTotalSaldo() {
+    private fun getTotalSaldo() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val result = SupabaseProvider.client.postgrest.rpc("hitung_total_saldo_pengguna")
@@ -83,7 +83,7 @@ class BerandaViewModel : ViewModel() {
         }
     }
 
-    fun getTotalNasabah() {
+    private fun getTotalNasabah() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val result = SupabaseProvider.client.postgrest.rpc("hitung_total_nasabah")
@@ -139,7 +139,7 @@ class BerandaViewModel : ViewModel() {
                 val result = SupabaseProvider.client.postgrest
                     .rpc("hitung_total_jumlah_setoran_seluruh", params)
 
-                val total = result.data.toString().toDoubleOrNull() ?: 0.0
+                val total = result.data.toDoubleOrNull() ?: 0.0
                 _totalSetoran.postValue("${formatter2.format(total)} Kg")
             } catch (e: Exception) {
                 Log.e("Supabase", "Gagal memuat total setoran", e)

@@ -131,7 +131,7 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
 
                 // Saldo kurang -> set error di jumlah
                 launch {
-                    vm.saldoKurang.collect { sisa ->
+                    vm.saldoKurang.collect {
                         binding.jumlah.requestFocus()
                         binding.jumlah.error = "Saldo tidak mencukupi"
                     }

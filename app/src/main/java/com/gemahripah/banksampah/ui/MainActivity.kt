@@ -8,7 +8,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.core.view.WindowCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.gemahripah.banksampah.databinding.ActivityMainBinding

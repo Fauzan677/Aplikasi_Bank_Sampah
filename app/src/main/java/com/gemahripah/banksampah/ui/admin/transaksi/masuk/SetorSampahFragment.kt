@@ -223,7 +223,7 @@ class SetorSampahFragment : Fragment(), Reloadable {
         }
 
         val jumlahUtama = binding.jumlah1.text.toString().toBigDecimalFlexible()
-        if (jumlahUtama == null || jumlahUtama.compareTo(BigDecimal.ZERO) <= 0) {
+        if (jumlahUtama == null || jumlahUtama <= BigDecimal.ZERO) {
             requireContext().toast("Jumlah sampah harus lebih dari 0")
             return null
         }

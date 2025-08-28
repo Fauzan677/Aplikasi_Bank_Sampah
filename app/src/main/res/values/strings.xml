@@ -130,6 +130,10 @@
     <string name="masukkan_kode_sampah">Masukkan Kode Sampah</string>
     <string name="kode">Kode</string>
     <string name="selamat_datang">Selamat Datang</string>
+    <string name="tutup">Tutup</string>
+    <string name="simpan_excel">Simpan Excel</string>
+    <string name="semua_tanggal">Semua tanggal</string>
+    <string name="masukkan_kategori_sampah">Masukkan Kategori Sampah</string>
 
     <!-- ===================== Arrays ===================== -->
     <string-array name="filter_transaksi">

@@ -116,7 +116,7 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
                         setAdapterJenisUtama(jenisList)
 
                         if (!prefillDone) {
-                            prefillFromArgs(jenisList)
+                            prefillFromArgs()
                             prefillDone = true
                         }
 
@@ -129,7 +129,7 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
 
     // Prefill field utama + item tambahan dari args.enrichedList
     @SuppressLint("SetTextI18n")
-    private fun prefillFromArgs(jenisList: List<String>) {
+    private fun prefillFromArgs() {
         val enrichedList = args.enrichedList
         if (enrichedList.isEmpty()) return
 
@@ -300,7 +300,7 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
         }
 
         val jumlahUtama = binding.jumlah1.text.toString().toBigDecimalFlexible()
-        if (jumlahUtama == null || jumlahUtama.compareTo(BigDecimal.ZERO) <= 0) {
+        if (jumlahUtama == null || jumlahUtama <= BigDecimal.ZERO) {
             requireContext().toast("Jumlah sampah harus lebih dari 0")
             return
         }
@@ -313,7 +313,7 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
                 return
             }
             val jumlah = item.editTextJumlah.text.toString().toBigDecimalFlexible()
-            if (jumlah == null || jumlah.compareTo(BigDecimal.ZERO) <= 0) {
+            if (jumlah == null || jumlah <= BigDecimal.ZERO) {
                 requireContext().toast("Jumlah sampah ${idx + 2} harus lebih dari 0")
                 return
             }

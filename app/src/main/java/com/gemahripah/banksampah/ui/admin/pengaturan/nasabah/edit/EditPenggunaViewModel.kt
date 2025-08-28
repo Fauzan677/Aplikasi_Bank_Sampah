@@ -153,8 +153,8 @@ class EditPenggunaViewModel : ViewModel() {
                 client.from("pengguna").update({
                     if (isNamaBerubah)   set("pgnNama", namaTrim)
                     if (isEmailBerubah)  set("pgnEmail", emailLower)
-                    if (isRekBerubah)    set("pgnRekening", if (rekTrim.isBlank()) null else rekTrim)
-                    if (isAlamatBerubah) set("pgnAlamat",   if (alamatTrim.isBlank()) null else alamatTrim)
+                    if (isRekBerubah)    set("pgnRekening", rekTrim.ifBlank { null })
+                    if (isAlamatBerubah) set("pgnAlamat", alamatTrim.ifBlank { null })
                     if (isSaldoBerubah)  set("pgnSaldo",    saldoParsedBaru) // boleh null / BigDecimal
                 }) {
                     filter { eq("pgnId", current.pgnId!!) }
@@ -164,8 +164,8 @@ class EditPenggunaViewModel : ViewModel() {
                 original = current.copy(
                     pgnNama     = namaTrim,
                     pgnEmail    = emailTrim,
-                    pgnRekening = if (rekTrim.isBlank()) null else rekTrim,
-                    pgnAlamat   = if (alamatTrim.isBlank()) null else alamatTrim,
+                    pgnRekening = rekTrim.ifBlank { null },
+                    pgnAlamat   = alamatTrim.ifBlank { null },
                     pgnSaldo    = if (isSaldoBerubah) saldoParsedBaru else current.pgnSaldo
                 )
 

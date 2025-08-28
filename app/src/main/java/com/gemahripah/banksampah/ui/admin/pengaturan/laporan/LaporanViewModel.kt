@@ -647,5 +647,5 @@ class LaporanViewModel : ViewModel() {
         catch (_: Exception) { Instant.ofEpochMilli(Long.MAX_VALUE) } // yang gagal parse taruh di bawah
 
     private fun String?.orDashIfBlank(): String =
-        if (this == null || this.isBlank() || this.equals("EMPTY", true)) "-" else this
+        if (this.isNullOrBlank() || this.equals("EMPTY", true)) "-" else this
 }

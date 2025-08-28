@@ -46,7 +46,7 @@ class TambahJenisSampahViewModel : ViewModel() {
         loadSatuanSuggestions()
     }
 
-    fun loadKategori() {
+    private fun loadKategori() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val list = client.postgrest["kategori"]
@@ -60,7 +60,7 @@ class TambahJenisSampahViewModel : ViewModel() {
         }
     }
 
-    fun loadSatuanSuggestions() {
+    private fun loadSatuanSuggestions() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val rows = client

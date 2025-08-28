@@ -1,5 +1,6 @@
 package com.gemahripah.banksampah.ui.admin.pengaturan.jenis.edit.sampah
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
 import android.view.*
@@ -52,6 +53,7 @@ class EditJenisSampahFragment : Fragment() {
         binding.hapus.alpha = if (enabled) 1f else 0.5f
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 

@@ -24,7 +24,7 @@ class PenggunaViewModel : ViewModel() {
     val totalNasabah: StateFlow<Int> = _totalNasabah
 
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery
+    private val searchQuery: StateFlow<String> = _searchQuery
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query

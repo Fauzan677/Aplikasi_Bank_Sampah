@@ -36,7 +36,6 @@ class EditJenisSampahViewModel : ViewModel() {
     val satuanList: StateFlow<List<String>> = _satuanList
 
     private val _selectedKategoriId = MutableStateFlow<Long?>(null)
-    val selectedKategoriId: StateFlow<Long?> = _selectedKategoriId
 
     private val _usedInDetail = MutableStateFlow<Boolean?>(null)   // null = gagal cek/belum
     val usedInDetail: StateFlow<Boolean?> = _usedInDetail.asStateFlow()
@@ -119,11 +118,10 @@ class EditJenisSampahViewModel : ViewModel() {
         val jenisBaru = inputJenis.trim()
         val kodeBaru  = inputKode.trim()
         val satuanBaru = inputSatuan.trim()
-        val hargaBaru = inputHarga
         val ketBaru = inputKeterangan.trim()
 
         if (kategoriIdBaru == null || jenisBaru.isEmpty() || kodeBaru.isEmpty() ||
-            satuanBaru.isEmpty() || hargaBaru == null) {
+            satuanBaru.isEmpty() || inputHarga == null) {
             _toast.tryEmit("Isi semua data dengan benar")
             return
         }
@@ -132,9 +130,9 @@ class EditJenisSampahViewModel : ViewModel() {
         val noChange =
             (kategoriIdBaru == (old.sphKtgId?.ktgId)) &&
                     (jenisBaru == (old.sphJenis ?: "")) &&
-                    (kodeBaru  == (old.sphKode  ?: "")) &&
+                    (kodeBaru == (old.sphKode ?: "")) &&
                     (satuanBaru == (old.sphSatuan ?: "")) &&
-                    (hargaBaru == (old.sphHarga ?: -1L)) &&
+                    (inputHarga == (old.sphHarga ?: -1L)) &&
                     (ketBaru == (old.sphKeterangan ?: ""))
 
         if (noChange) {
@@ -160,7 +158,7 @@ class EditJenisSampahViewModel : ViewModel() {
                     set("sphJenis", jenisBaru)
                     set("sphKode",  kodeBaru)
                     set("sphSatuan", satuanBaru)
-                    set("sphHarga",  hargaBaru)
+                    set("sphHarga", inputHarga)
                     set("sphKeterangan", ketBaru.ifEmpty { null })
                 }) {
                     filter { eq("sphId", id) }
@@ -170,9 +168,9 @@ class EditJenisSampahViewModel : ViewModel() {
                 originalRelasi = old.copy(
                     sphKtgId = old.sphKtgId?.copy(ktgId = kategoriIdBaru) ?: old.sphKtgId,
                     sphJenis = jenisBaru,
-                    sphKode  = kodeBaru,
+                    sphKode = kodeBaru,
                     sphSatuan = satuanBaru,
-                    sphHarga  = hargaBaru,
+                    sphHarga = inputHarga,
                     sphKeterangan = ketBaru.ifEmpty { null }
                 )
 

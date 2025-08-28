@@ -17,7 +17,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.gemahripah.banksampah.R
 import com.gemahripah.banksampah.databinding.FragmentTambahPenggunaBinding
-import com.gemahripah.banksampah.ui.nasabah.NasabahViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 

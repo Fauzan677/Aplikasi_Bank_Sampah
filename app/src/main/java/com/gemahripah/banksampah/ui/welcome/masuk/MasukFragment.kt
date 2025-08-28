@@ -90,7 +90,7 @@ class MasukFragment : Fragment() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupPasswordToggle() {
-        binding.password.setOnTouchListener { v, event ->
+        binding.password.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
                 val drawableEndIndex = 2
                 val drawableEnd = binding.password.compoundDrawables[drawableEndIndex]
