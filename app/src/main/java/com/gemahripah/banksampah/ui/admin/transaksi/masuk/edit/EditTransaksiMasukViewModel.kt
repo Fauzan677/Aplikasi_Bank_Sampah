@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
+import java.math.RoundingMode
 
 class EditTransaksiMasukViewModel : ViewModel() {
 
@@ -42,6 +43,16 @@ class EditTransaksiMasukViewModel : ViewModel() {
 
     private val _jenisToHargaMap = MutableStateFlow<Map<String, BigDecimal>>(emptyMap())
     val jenisToHargaMap: StateFlow<Map<String, BigDecimal>> = _jenisToHargaMap.asStateFlow()
+
+    private val DECIMAL_SCALE = 2
+
+    private fun BigDecimal.hasMoreThanTwoDecimals(): Boolean =
+        this.stripTrailingZeros().scale() > DECIMAL_SCALE
+
+    /** Paksa skala = 2. Akan throw jika butuh pembulatan (>2 desimal). */
+    private fun BigDecimal.enforceScale2(): BigDecimal =
+        this.stripTrailingZeros().setScale(DECIMAL_SCALE, RoundingMode.UNNECESSARY)
+
 
     /** Load master ‘sampah’ sekali */
     fun loadSampah() {
@@ -94,6 +105,14 @@ class EditTransaksiMasukViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.value = true
             try {
+                // ===== VALIDASI 2 DESIMAL MAKS =====
+                val allQty = sequenceOf(main.second) + tambahan.asSequence().map { it.second }
+                if (allQty.any { it.hasMoreThanTwoDecimals() }) {
+                    _isLoading.value = false
+                    _toast.emit("Format jumlah tidak valid (maksimal 2 angka di belakang koma)")
+                    return@launch
+                }
+
                 // total LAMA sebelum dihapus
                 val oldTotal = getOldTotalNominal(transaksiId)
 
@@ -111,7 +130,6 @@ class EditTransaksiMasukViewModel : ViewModel() {
                 // total BARU dari input + harga master
                 val newTotal = calcNewTotal(main, tambahan)
 
-                // delta saldo = BARU - LAMA
                 val delta = newTotal.subtract(oldTotal)
                 updateSaldoPenggunaDelta(userId, delta)
 
@@ -137,7 +155,8 @@ class EditTransaksiMasukViewModel : ViewModel() {
 
     private fun calcNewTotal(main: Pair<String, BigDecimal>, tambahan: List<Pair<String, BigDecimal>>): BigDecimal {
         var total = BigDecimal.ZERO
-        fun add(jenis: String, qty: BigDecimal) {
+        fun add(jenis: String, qtyRaw: BigDecimal) {
+            val qty = qtyRaw.enforceScale2() // <= pastikan skala 2
             if (qty <= BigDecimal.ZERO) return
             val harga = jenisToHargaMap.value[jenis] ?: BigDecimal.ZERO
             total = total.add(qty.multiply(harga))
@@ -174,8 +193,9 @@ class EditTransaksiMasukViewModel : ViewModel() {
         val mapId    = namaToIdMap.value
         val mapHarga = jenisToHargaMap.value
 
-        suspend fun insertOne(jenis: String, jumlah: BigDecimal) {
+        suspend fun insertOne(jenis: String, jumlahRaw: BigDecimal) {
             val sphId = mapId[jenis] ?: return
+            val jumlah = jumlahRaw.enforceScale2() // <= pastikan skala 2
             if (jumlah <= BigDecimal.ZERO) return
             val harga   = mapHarga[jenis] ?: BigDecimal.ZERO
             val nominal = jumlah.multiply(harga)

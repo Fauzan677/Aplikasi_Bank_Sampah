@@ -3,12 +3,14 @@ package com.gemahripah.banksampah.ui.admin.transaksi.masuk
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
+import android.text.InputFilter
+import android.text.Spanned
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.AutoCompleteTextView
+import android.widget.EditText
 import android.widget.Toast
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
@@ -51,6 +53,8 @@ class SetorSampahFragment : Fragment(), Reloadable {
         bindArgsIfAny()
         setupActions()
         setupCollectors()
+
+        binding.jumlah1.applyTwoDecimalsFilter()
 
         if (!updateInternetCard()) return
         requestInitialData()
@@ -246,7 +250,7 @@ class SetorSampahFragment : Fragment(), Reloadable {
 
         val jumlahUtama = binding.jumlah1.text.toString().toBigDecimalFlexible()
         if (jumlahUtama == null || jumlahUtama <= BigDecimal.ZERO) {
-            requireContext().toast("Jumlah sampah harus lebih dari 0")
+            requireContext().toast("Jumlah sampah harus lebih dari 0 (maksimal 2 angka di belakang koma)")
             return null
         }
 
@@ -267,7 +271,7 @@ class SetorSampahFragment : Fragment(), Reloadable {
 
             val jumlah = item.editTextJumlah.text.toString().toBigDecimalFlexible()
             if (jumlah == null || jumlah <= BigDecimal.ZERO) {
-                requireContext().toast("Jumlah sampah ${index + 2} harus lebih dari 0")
+                requireContext().toast("Jumlah sampah ${index + 2} harus lebih dari 0 (maksimal 2 angka di belakang koma)")
                 return null
             }
             tambahan += jenis to jumlah
@@ -285,6 +289,7 @@ class SetorSampahFragment : Fragment(), Reloadable {
     @SuppressLint("SetTextI18n", "ClickableViewAccessibility")
     private fun tambahInputSampah() {
         val itemBinding = ItemSetorSampahBinding.inflate(layoutInflater)
+        itemBinding.editTextJumlah.applyTwoDecimalsFilter()
 
         val nextIndex = tambahanSampahList.size + 2
         itemBinding.jenisSampahLabel.text = "Jenis Sampah $nextIndex"
@@ -403,15 +408,27 @@ class SetorSampahFragment : Fragment(), Reloadable {
     private fun Context.toast(msg: String) =
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 
-    // Cek apakah value ada di adapter aktif
-    private fun isInAdapter(view: AutoCompleteTextView, value: String): Boolean {
-        val a = view.adapter ?: return false
-        val v = value.trim()
-        for (i in 0 until a.count) {
-            val item = a.getItem(i)?.toString() ?: continue
-            if (item.equals(v, ignoreCase = true)) return true
-        }
-        return false
+    private val TWO_DECIMALS_FILTER = InputFilter { source: CharSequence, start: Int, end: Int,
+                                                    dest: Spanned, dstart: Int, dend: Int ->
+        // calon teks setelah input diterapkan
+        val candidate = (dest.subSequence(0, dstart).toString() +
+                source.subSequence(start, end) +
+                dest.subSequence(dend, dest.length)).replace(',', '.')
+
+        // kosong boleh (biar user bisa hapus)
+        if (candidate.isEmpty()) return@InputFilter null
+
+        // hanya satu pemisah desimal
+        if (candidate.count { it == '.' } > 1) return@InputFilter ""
+
+        // pola: digit optional + optional (. + maks 2 digit)
+        val regex = Regex("^\\d*(?:\\.\\d{0,2})?$")
+        if (regex.matches(candidate)) null else ""
+    }
+
+    private fun EditText.applyTwoDecimalsFilter() {
+        val old = filters ?: emptyArray()
+        filters = old + TWO_DECIMALS_FILTER
     }
 
     /** Kembalikan object Pengguna dengan ejaan nama resmi (case-insensitive), atau null jika tidak ada. */
@@ -432,8 +449,11 @@ class SetorSampahFragment : Fragment(), Reloadable {
     }
 
 
-    private fun String.toBigDecimalFlexible(): BigDecimal? =
-        this.trim()
-            .replace(",", ".")           // terima koma sebagai desimal
-            .toBigDecimalOrNull()
+    private fun String.toBigDecimalFlexible(): BigDecimal? {
+        val s = trim().replace(",", ".")
+        if (s.isEmpty()) return null
+        // Hanya terima maks 2 angka di belakang koma
+        if (!Regex("^\\d*(?:\\.\\d{0,2})?$").matches(s)) return null
+        return s.toBigDecimalOrNull()
+    }
 }

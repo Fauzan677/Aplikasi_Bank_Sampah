@@ -3,11 +3,14 @@ package com.gemahripah.banksampah.ui.admin.transaksi.keluar
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
+import android.text.InputFilter
+import android.text.Spanned
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.EditText
 import android.widget.Toast
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
@@ -49,6 +52,8 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
             findNavController().popBackStack()
         }
 
+        binding.jumlah.applyTwoDecimalsFilter()
+
         if (!updateInternetCard()) return
         vm.loadPengguna()
 
@@ -76,7 +81,9 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
     private fun setupUiActions() {
         // Konfirmasi
         binding.konfirmasi.setOnClickListener {
-            val jumlah = binding.jumlah.text.toString().toDoubleOrNull()
+            val jumlah = binding.jumlah.text.toString()
+                .replace(',', '.')       // terima koma sebagai desimal
+                .toDoubleOrNull()
             val keterangan = binding.keterangan.text.toString()
             vm.submitPenarikan(jumlah, keterangan)
         }
@@ -175,4 +182,29 @@ class PenarikanSaldoFragment : Fragment(), Reloadable {
 
     private fun Context.toast(msg: String) =
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+
+    // --- Filter 2 desimal ---
+    private val TWO_DECIMALS_FILTER = InputFilter { source: CharSequence, start: Int, end: Int,
+                                                    dest: Spanned, dstart: Int, dend: Int ->
+        // teks calon hasil setelah input diterapkan
+        val candidate = (dest.subSequence(0, dstart).toString() +
+                source.subSequence(start, end) +
+                dest.subSequence(dend, dest.length)).replace(',', '.')
+
+        // kosong boleh (biar user bisa hapus semua)
+        if (candidate.isEmpty()) return@InputFilter null
+
+        // hanya boleh satu pemisah desimal
+        if (candidate.count { it == '.' } > 1) return@InputFilter ""
+
+        // format: angka + opsional . + maks 2 angka desimal
+        val regex = Regex("^\\d*(?:\\.\\d{0,2})?$")
+        if (regex.matches(candidate)) null else ""
+    }
+
+    private fun EditText.applyTwoDecimalsFilter() {
+        val old = filters ?: emptyArray()
+        filters = old + TWO_DECIMALS_FILTER
+    }
+
 }

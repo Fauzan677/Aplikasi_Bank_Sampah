@@ -65,7 +65,6 @@ class SetorSampahViewModel : ViewModel() {
         }
     }
 
-
     fun simpanTransaksi(
         keterangan: String,
         userId: String,
