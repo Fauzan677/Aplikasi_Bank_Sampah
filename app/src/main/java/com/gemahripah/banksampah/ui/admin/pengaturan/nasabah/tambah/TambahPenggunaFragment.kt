@@ -2,11 +2,14 @@ package com.gemahripah.banksampah.ui.admin.pengaturan.nasabah.tambah
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.text.InputFilter
 import android.text.InputType
+import android.text.Spanned
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -45,6 +48,7 @@ class TambahPenggunaFragment : Fragment() {
     }
 
     private fun setupUI() {
+        binding.saldo.applyTwoDecimalsFilter()
         binding.hapus.visibility = View.GONE
 
         binding.btnBack.setOnClickListener {
@@ -58,7 +62,7 @@ class TambahPenggunaFragment : Fragment() {
 
             val rekening = binding.rekening.text.toString().trim()
             val alamat   = binding.alamat.text.toString().trim()
-            val saldoRaw = binding.saldo.text.toString()          // biarkan raw; parsing di VM
+            val saldoRaw = binding.saldo.text.toString()
 
             vm.submit(nama, email, password, rekening, alamat, saldoRaw)
         }
@@ -133,5 +137,29 @@ class TambahPenggunaFragment : Fragment() {
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()
+    }
+
+    // --- Filter 2 desimal untuk saldo ---
+    private val TWO_DECIMALS_FILTER = InputFilter { source: CharSequence, start: Int, end: Int,
+                                                    dest: Spanned, dstart: Int, dend: Int ->
+        // calon teks setelah input diterapkan; validasi pakai '.' agar koma juga diterima
+        val candidate = (dest.subSequence(0, dstart).toString() +
+                source.subSequence(start, end) +
+                dest.subSequence(dend, dest.length)).replace(',', '.')
+
+        // boleh kosong (agar bisa dihapus total)
+        if (candidate.isEmpty()) return@InputFilter null
+
+        // hanya satu pemisah desimal
+        if (candidate.count { it == '.' } > 1) return@InputFilter ""
+
+        // angka + opsional . + maksimal 2 angka desimal
+        val regex = Regex("^\\d*(?:\\.\\d{0,2})?$")
+        if (regex.matches(candidate)) null else ""
+    }
+
+    private fun EditText.applyTwoDecimalsFilter() {
+        val old = filters ?: emptyArray()
+        filters = old + TWO_DECIMALS_FILTER
     }
 }

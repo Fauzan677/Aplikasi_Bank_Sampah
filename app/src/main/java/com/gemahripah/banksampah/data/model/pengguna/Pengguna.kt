@@ -15,7 +15,7 @@ data class Pengguna(
     val pgnEmail: String? = null,
     val pgnIsAdmin: Boolean? = null,
     @Contextual
-    val pgnSaldo: BigDecimal? = null,   // ← ganti jadi BigDecimal? langsung
+    val pgnSaldo: BigDecimal? = null,
     val pgnAlamat: String? = null,
     val pgnRekening: String? = null
 ) : Parcelable

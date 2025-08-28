@@ -63,10 +63,11 @@ class DetailPenggunaFragment : Fragment(), Reloadable {
             findNavController().popBackStack()
         }
 
-        pengguna?.pgnId?.let { id -> viewModel.loadPagingRiwayat(id) }
-
-        if (updateInternetCard()) {
-            pengguna?.pgnId?.let { viewModel.loadData(it) }
+        pengguna?.pgnId?.let { id ->
+            viewModel.loadPagingRiwayat(id)
+            if (updateInternetCard()) {
+                viewModel.loadData(id)
+            }
         }
     }
 

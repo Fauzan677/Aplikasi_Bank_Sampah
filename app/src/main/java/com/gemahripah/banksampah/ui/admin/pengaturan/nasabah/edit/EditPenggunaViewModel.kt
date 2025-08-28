@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import org.apache.logging.log4j.CloseableThreadContext.put
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.Locale
 
 class EditPenggunaViewModel : ViewModel() {
@@ -69,25 +71,29 @@ class EditPenggunaViewModel : ViewModel() {
             return
         }
 
-        // Apakah ada perubahan?
         val isNamaBerubah     = namaTrim   != (current.pgnNama ?: "")
         val isEmailBerubah    = emailTrim  != (current.pgnEmail ?: "")
         val isPasswordBerubah = pwdTrim.isNotEmpty()
         val isRekBerubah      = rekTrim    != (current.pgnRekening ?: "")
         val isAlamatBerubah   = alamatTrim != (current.pgnAlamat ?: "")
 
-        // Saldo: kosong = tidak diubah. Kalau diisi -> parse & bandingkan.
-        val saldoParsedBaru = parseDecimalOrNull(saldoInputBaru)
-        if (saldoInputBaru.isNotBlank() && saldoParsedBaru == null) {
-            _toast.tryEmit("Saldo tidak valid")
+        val parsed = if (saldoInputBaru.isBlank()) {
+            BigDecimal.ZERO
+        } else {
+            parseDecimalOrNull(saldoInputBaru) ?: run {
+                _toast.tryEmit("Saldo tidak valid")
+                return
+            }
+        }
+
+        val targetSaldo = parsed.setScale(2, RoundingMode.HALF_UP)
+        if (targetSaldo < BigDecimal.ZERO) {
+            _toast.tryEmit("Saldo tidak boleh negatif")
             return
         }
-        val isSaldoBerubah = when {
-            saldoInputBaru.isBlank() -> false // user tidak mengubah saldo
-            current.pgnSaldo == null && saldoParsedBaru != null -> true
-            current.pgnSaldo != null && saldoParsedBaru == null -> true
-            else -> current.pgnSaldo?.compareTo(saldoParsedBaru) != 0
-        }
+
+        val currentSaldo = (current.pgnSaldo ?: BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP)
+        val isSaldoBerubah = currentSaldo.compareTo(targetSaldo) != 0
 
         if (!isNamaBerubah && !isEmailBerubah && !isPasswordBerubah &&
             !isRekBerubah && !isAlamatBerubah && !isSaldoBerubah) {
@@ -95,7 +101,6 @@ class EditPenggunaViewModel : ViewModel() {
             return
         }
 
-        // Validasi format bila perlu
         if (isEmailBerubah) {
             val emailOk = android.util.Patterns.EMAIL_ADDRESS.matcher(emailTrim).matches()
             if (!emailOk) {
@@ -121,7 +126,6 @@ class EditPenggunaViewModel : ViewModel() {
                     _isLoading.value = false; return@launch
                 }
 
-                // 1) Update Auth (email/password) bila perlu
                 // 1) Update Auth (email/password) bila perlu
                 if (isEmailBerubah || isPasswordBerubah) {
                     try {
@@ -155,18 +159,17 @@ class EditPenggunaViewModel : ViewModel() {
                     if (isEmailBerubah)  set("pgnEmail", emailLower)
                     if (isRekBerubah)    set("pgnRekening", rekTrim.ifBlank { null })
                     if (isAlamatBerubah) set("pgnAlamat", alamatTrim.ifBlank { null })
-                    if (isSaldoBerubah)  set("pgnSaldo",    saldoParsedBaru) // boleh null / BigDecimal
+                    if (isSaldoBerubah)  set("pgnSaldo", targetSaldo)   // ← pakai targetSaldo
                 }) {
                     filter { eq("pgnId", current.pgnId!!) }
                 }
 
-                // Simpan state baru untuk VM
                 original = current.copy(
                     pgnNama     = namaTrim,
                     pgnEmail    = emailTrim,
                     pgnRekening = rekTrim.ifBlank { null },
                     pgnAlamat   = alamatTrim.ifBlank { null },
-                    pgnSaldo    = if (isSaldoBerubah) saldoParsedBaru else current.pgnSaldo
+                    pgnSaldo    = if (isSaldoBerubah) targetSaldo else current.pgnSaldo
                 )
 
                 _toast.emit("Pengguna berhasil diperbarui")
@@ -183,7 +186,7 @@ class EditPenggunaViewModel : ViewModel() {
         }
     }
 
-    private fun parseDecimalOrNull(input: String): java.math.BigDecimal? {
+    private fun parseDecimalOrNull(input: String): BigDecimal? {
         val s = input.trim()
         if (s.isBlank()) return null
         val hasComma = s.contains(',')
@@ -193,17 +196,15 @@ class EditPenggunaViewModel : ViewModel() {
                 val lastComma = s.lastIndexOf(',')
                 val lastDot   = s.lastIndexOf('.')
                 if (lastComma > lastDot) {
-                    // 1.234,56 -> hapus titik pemisah ribuan, ganti koma ke titik
                     s.replace(".", "").replace(',', '.')
                 } else {
-                    // 1,234.56 -> hapus koma pemisah ribuan
                     s.replace(",", "")
                 }
             }
             hasComma -> s.replace(',', '.')
             else     -> s
         }
-        return runCatching { java.math.BigDecimal(normalized) }.getOrNull()
+        return runCatching { BigDecimal(normalized) }.getOrNull()
     }
 
     fun deleteUser() {

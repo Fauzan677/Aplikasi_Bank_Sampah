@@ -9,7 +9,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.AutoCompleteTextView
 import android.widget.EditText
 import android.widget.Toast
 import androidx.core.widget.addTextChangedListener
@@ -398,17 +397,6 @@ class EditTransaksiMasukFragment : Fragment(), Reloadable {
     private fun EditText.applyTwoDecimalsFilter() {
         val old = filters ?: emptyArray()
         filters = old + TWO_DECIMALS_FILTER
-    }
-
-    // Cek apakah value ada di adapter aktif
-    private fun isInAdapter(view: AutoCompleteTextView, value: String): Boolean {
-        val a = view.adapter ?: return false
-        val v = value.trim()
-        for (i in 0 until a.count) {
-            val item = a.getItem(i)?.toString() ?: continue
-            if (item.equals(v, ignoreCase = true)) return true
-        }
-        return false
     }
 
     /** Ambil ejaan resmi jenis (case-insensitive) dari VM, atau null jika tak ada. */

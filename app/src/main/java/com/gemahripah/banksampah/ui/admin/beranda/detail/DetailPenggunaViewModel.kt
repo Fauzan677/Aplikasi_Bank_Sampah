@@ -6,9 +6,11 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.gemahripah.banksampah.data.model.beranda.TotalSampahPerJenis
+import com.gemahripah.banksampah.data.model.pengguna.Pengguna
 import com.gemahripah.banksampah.data.model.transaksi.RiwayatTransaksi
 import com.gemahripah.banksampah.data.supabase.SupabaseProvider
 import com.gemahripah.banksampah.ui.gabungan.paging.riwayatTransaksi.RiwayatTransaksiPagingSource
+import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,6 +21,7 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.math.BigDecimal
 import java.text.NumberFormat
 import java.util.*
 
@@ -26,7 +29,7 @@ class DetailPenggunaViewModel : ViewModel() {
 
     private val client = SupabaseProvider.client
 
-    private val _saldo = MutableStateFlow("Rp 0")
+    private val _saldo = MutableStateFlow("Rp 0,00")
     val saldo: StateFlow<String> = _saldo.asStateFlow()
 
     private val _totalSampah = MutableStateFlow<List<TotalSampahPerJenis>>(emptyList())
@@ -63,15 +66,26 @@ class DetailPenggunaViewModel : ViewModel() {
         }
     }
 
+    fun refreshSaldo(pgnId: String) {
+        viewModelScope.launch(Dispatchers.IO) { getSaldo(pgnId) }
+    }
+
     private suspend fun getSaldo(pgnId: String) = withContext(Dispatchers.IO) {
         try {
-            val result = client.postgrest.rpc("hitung_saldo_pengguna",
-                buildJsonObject { put("pgn_id_input", pgnId) })
-            val saldoDouble = result.data.toDoubleOrNull() ?: 0.0
-            val formatted = NumberFormat.getNumberInstance(Locale("id", "ID")).format(saldoDouble)
+            val pengguna = client
+                .from("pengguna")
+                .select { filter { eq("pgnId", pgnId) } }
+                .decodeSingle<Pengguna>()
+
+            val saldoBD: BigDecimal = pengguna.pgnSaldo ?: BigDecimal.ZERO
+            val formatted = NumberFormat.getNumberInstance(Locale("id","ID")).apply {
+                minimumFractionDigits = 2
+                maximumFractionDigits = 2
+            }.format(saldoBD)
+
             _saldo.value = formatted
-        } catch (e: Exception) {
-            _saldo.value = "Rp 0"
+        } catch (_: Exception) {
+            _saldo.value = "0,00"
         }
     }
 

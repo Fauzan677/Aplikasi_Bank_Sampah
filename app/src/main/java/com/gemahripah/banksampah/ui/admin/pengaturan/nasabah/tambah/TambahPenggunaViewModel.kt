@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.put
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.Locale
 
 class TambahPenggunaViewModel : ViewModel() {
@@ -62,6 +64,7 @@ class TambahPenggunaViewModel : ViewModel() {
                 _toast.emit("Format email tidak valid")
                 return@launch
             }
+
             if (pwdTrim.length < 6) {
                 _toast.emit("Password minimal 6 karakter")
                 return@launch
@@ -70,8 +73,12 @@ class TambahPenggunaViewModel : ViewModel() {
             // Parse saldo (boleh kosong). Dukung koma/titik.
             val saldoParsed = parseDecimalOrNull(saldoInput)
             if (saldoInput.isNotBlank() && saldoParsed == null) {
-                _toast.emit("Saldo awal tidak valid")
-                return@launch
+                _toast.emit("Saldo awal tidak valid"); return@launch
+            }
+
+            val saldoFinal = (saldoParsed ?: BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP)
+            if (saldoFinal < BigDecimal.ZERO) {
+                _toast.emit("Saldo tidak boleh negatif"); return@launch
             }
 
             _isLoading.value = true
@@ -104,7 +111,7 @@ class TambahPenggunaViewModel : ViewModel() {
                     pgnEmail    = emailLower,
                     pgnRekening = rekeningTrim.ifBlank { null },
                     pgnAlamat   = alamatTrim.ifBlank { null },
-                    pgnSaldo    = saldoParsed // null jika kosong
+                    pgnSaldo    = saldoFinal
                 )
                 client.from("pengguna").insert(penggunaBaru)
 
@@ -163,7 +170,7 @@ class TambahPenggunaViewModel : ViewModel() {
         }
     }
 
-    private fun parseDecimalOrNull(input: String): java.math.BigDecimal? {
+    private fun parseDecimalOrNull(input: String): BigDecimal? {
         val s = input.trim()
         if (s.isBlank()) return null
 
@@ -184,6 +191,6 @@ class TambahPenggunaViewModel : ViewModel() {
             hasComma -> s.replace(',', '.')
             else     -> s
         }
-        return runCatching { java.math.BigDecimal(normalized) }.getOrNull()
+        return runCatching { BigDecimal(normalized) }.getOrNull()
     }
 }
